@@ -17,19 +17,25 @@ import PackingLibrary
 /// months). The card — its count capsule and its border — red when any line is red, else orange
 /// while anything is left, green "All set" once nothing is (only To charge can get there: every
 /// thing charged). All set, the card folds to its one line; a tap on it opens it again.
+///
+/// Folds whenever he likes (0.101, his list of 26 Oct 2026: "I would like that to be collapsible so
+/// I can toggle it into one line"): the chevron is always at the right of its line — folded, the
+/// card is that one line, "Before you go", the count in its colour and the chevron. A tap on the
+/// line folds it or opens it, and this device keeps that per trip (`TripFolds.beforeYouGoFolded`,
+/// in the trip's folds); until he chooses, it folds only All set, as before.
 struct BeforeYouGoCard: View {
     let tripId: String
     /// Open the thing (the trip holds the sheet: a flag goes when it is put right).
     let open: (String) -> Void
     @EnvironmentObject var model: LibraryModel
-    /// All set, the card is folded unless he opened it (never kept: a trip opens folded).
-    @State private var unfolded = false
+    /// His fold, kept with the trip's folded headings (0.101; `TripFolds.beforeYouGoFolded`).
+    @AppStorage("ams.trip.folded") private var foldedRaw = ""
 
     var body: some View {
         let card = model.library.beforeYouGo(tripId: tripId, today: Today.local)
         if !card.isEmpty {
             let tint = BeforeYouGoCard.color(card.tone)
-            let folded = card.allSet && !unfolded
+            let folded = TripFolds.beforeYouGoFolded(foldedRaw, trip: tripId, allSet: card.allSet)
             VStack(alignment: .leading, spacing: 6) {
                 header(card, tint: tint, folded: folded)
                 if !folded {
@@ -49,7 +55,8 @@ struct BeforeYouGoCard: View {
                 }
             }
             // Folded, one line as slim as the Bags card's: the chevron's square is tap room enough.
-            .padding(.horizontal, 14).padding(.vertical, folded ? 6 : 14)
+            // Open, the header line is the chevron's square too: 6 above it, as folded.
+            .padding(.horizontal, 14).padding(.top, 6).padding(.bottom, folded ? 6 : 14)
             .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(tint, lineWidth: 1.2))
             .accessibilityElement(children: .contain)
@@ -65,8 +72,9 @@ struct BeforeYouGoCard: View {
         }
     }
 
-    /// "Before you go" and one count capsule: everything left, or "All set". All set, a
-    /// chevron at the right folds and opens the card (and so does a tap on the line).
+    /// "Before you go" and one count capsule: everything left, or "All set". A chevron at the
+    /// right folds and opens the card (and so does a tap on the line) — since 0.101 always, not
+    /// only All set.
     private func header(_ card: BeforeYouGo, tint: Color, folded: Bool) -> some View {
         HStack(spacing: 8) {
             Text("Before you go").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink)
@@ -77,26 +85,28 @@ struct BeforeYouGoCard: View {
                 .accessibilityLabel(card.allSet ? "All set" : "\(card.left) left")
                 .accessibilityIdentifier("trip-beforego-count")
             Spacer()
-            if card.allSet {
-                Button { fold() } label: {
-                    SVGPath.path(folded ? "M9 6l6 6-6 6" : "M6 9l6 6 6-6")
-                        .stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
-                        .frame(width: 22, height: 22).foregroundStyle(Theme.muted)
-                        .frame(width: Metrics.tap, height: Metrics.tap).contentShape(Rectangle())
-                }
-                .buttonStyle(.plain).focusEffectDisabled()
-                .accessibilityLabel(folded ? "Show what is charged" : "Fold")
-                .accessibilityValue(folded ? "folded" : "open")
-                .accessibilityIdentifier("trip-beforego-fold")
+            Button { fold(card) } label: {
+                SVGPath.path(folded ? "M9 6l6 6-6 6" : "M6 9l6 6 6-6")
+                    .stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
+                    .frame(width: 22, height: 22).foregroundStyle(Theme.muted)
+                    .frame(width: Metrics.tap, height: Metrics.tap).contentShape(Rectangle())
             }
+            .buttonStyle(.plain).focusEffectDisabled()
+            .accessibilityLabel(folded ? "Show Before you go" : "Fold Before you go")
+            .accessibilityValue(folded ? "folded" : "open")
+            .accessibilityIdentifier("trip-beforego-fold")
         }
-        .frame(minHeight: card.allSet ? Metrics.tap : nil)
+        .frame(minHeight: Metrics.tap)
         .contentShape(Rectangle())
-        .onTapGesture { if card.allSet { fold() } }
+        .onTapGesture { fold(card) }
     }
 
-    private func fold() {
-        withAnimation(.easeInOut(duration: 0.2)) { unfolded.toggle() }
+    /// The other way from how it shows, kept on this device for this trip (0.101).
+    private func fold(_ card: BeforeYouGo) {
+        let trips = Set(model.library.trips.map(\.id))
+        withAnimation(.easeInOut(duration: 0.2)) {
+            foldedRaw = TripFolds.beforeYouGoToggled(foldedRaw, trip: tripId, allSet: card.allSet, trips: trips)
+        }
     }
 
     /// A hairline between two parts.

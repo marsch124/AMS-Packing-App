@@ -122,6 +122,61 @@ struct TripScreen: View {
         foldedRaw = TripFolds.toggled(foldedRaw, foldKey(label), trips: Set(model.library.trips.map(\.id)))
     }
 
+    /// Fold all / Unfold all (0.101, his list of 26 Oct 2026: "toggle or collapse all items with one
+    /// click, not only the individual 'From where', 'Into' etc areas"): every heading of this sorting
+    /// folded, or — when all are — every one opened. Each heading's own arrow works on as before.
+    private func foldAll(_ headings: [String], folded: Bool) {
+        withAnimation(.easeInOut(duration: reduceMotion ? 0.2 : 0.3)) {
+            foldedRaw = TripFolds.settingAll(foldedRaw, trip: tripId, view: view, headings: headings, folded: folded,
+                                             trips: Set(model.library.trips.map(\.id)))
+        }
+    }
+
+    /// A heading's arrow: folds or opens that heading — and on the Mac, Option-click folds or opens
+    /// every heading the way this one goes (the Finder's outline, 0.101).
+    private func pressFold(_ label: String, headings: [String]) {
+        #if os(macOS)
+        if NSEvent.modifierFlags.contains(.option) { foldAll(headings, folded: !isFolded(label)); return }
+        #endif
+        toggleFold(label)
+    }
+
+    /// Beside the sorting (0.101): Fold all while any heading is open, Unfold all once all are
+    /// folded. A drawn glyph in a ring the field's height — two chevrons closing on a line (fold
+    /// all), or opening from it (unfold all) — filled the trip's green while all are folded; on the
+    /// Mac its words beside it. On the iPhone the words did not fit: the sorting's field shrank to
+    /// "Fr…" and Pack by voice to "Voice". Selected (for VoiceOver and the tests) when all are folded.
+    private func foldAllButton(_ headings: [String]) -> some View {
+        let all = TripFolds.allFolded(foldedRaw, trip: tripId, view: view, headings: headings)
+        let tint = AppSection.events.color
+        return Button { foldAll(headings, folded: !all) } label: {
+            HStack(spacing: 5) {
+                SVGPath.path(all ? "M7 9l5-5 5 5 M7 15l5 5 5-5" : "M7 4l5 5 5-5 M7 20l5-5 5 5")
+                    .stroke(style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                    .frame(width: 18, height: 18)
+                #if os(macOS)
+                Text(all ? "Unfold all" : "Fold all").font(.system(.subheadline, weight: .semibold)).lineLimit(1)
+                #endif
+            }
+            .fixedSize()
+            .foregroundStyle(all ? Color.white : tint)
+            #if os(macOS)
+            .padding(.horizontal, 10)
+            #else
+            .frame(minWidth: Metrics.tap + 6)
+            #endif
+            .frame(minHeight: Metrics.tap)
+            .background(Capsule().fill(all ? tint : tint.opacity(0.10)))
+            .overlay(Capsule().stroke(tint, lineWidth: 1.4))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .accessibilityIdentifier("trip-fold-all")
+        .accessibilityLabel(all ? "Unfold all" : "Fold all")
+        .accessibilityAddTraits(all ? .isSelected : [])
+        .help(all ? "Open every heading" : "Fold every heading \u{2014} Option-click a heading\u{2019}s arrow does it too")
+    }
+
     /// Sorting: ONE drop-down since 0.64 — five pills do not fit an iPhone's line, and he
     /// asked for drop-downs everywhere (6 Oct 2026). "Sorting" stays to the left of its
     /// field, on the same line (his marks, 2026-09-25). Its rows keep the pills' ids,
@@ -176,6 +231,9 @@ struct TripScreen: View {
         // Where the trip stands in the loop, on the screen's clock — the strip, Take a break and the
         // Packing day read the same answer.
         let step = model.library.loopStep(tripId: tripId, today: Today.iso(clock), time: Today.time(of: clock))
+        // The groups, asked once: the list and Fold all (0.101) read the same headings.
+        let grouped = groups(shownLines)
+        let headings = grouped.filter { !$0.entries.isEmpty }.map(\.label)
         ScrollViewReader { proxy in
         VStack(spacing: 0) {
             // ONE centre line (0.73, his ask of 12 Oct 2026): the name, its pen right
@@ -313,9 +371,9 @@ struct TripScreen: View {
                 Group {
                     #if os(iOS)
                     // The panel gone, Weigh may open now if the walk packed the last thing (0.79).
-                    VoiceSortingRow(tripId: tripId) { sorting } closed: { weighByItself() }
+                    VoiceSortingRow(tripId: tripId) { sorting; foldAllButton(headings) } closed: { weighByItself() }
                     #else
-                    sorting
+                    HStack(spacing: 8) { sorting; foldAllButton(headings) }
                     #endif
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -342,7 +400,7 @@ struct TripScreen: View {
                 LazyVStack(alignment: .leading, spacing: 0) {
                     // One level of groups; inside a group the lines keep the trip's own order.
                     // (The web app nests: When → by bag inside; the others → by When inside.)
-                    ForEach(Array(groups(shownLines).enumerated()), id: \.offset) { g, group in
+                    ForEach(Array(grouped.enumerated()), id: \.offset) { g, group in
                         if !group.entries.isEmpty {
                             // The heading, and one press to tick the whole section
                             // (his ask: "so that I could toggle all done").
@@ -354,7 +412,7 @@ struct TripScreen: View {
                                 // Fold the section away, or open it again. The arrow is its own
                                 // button: the Mac folds a button's texts into the button, and the
                                 // heading's name must stay a text of its own.
-                                Button { toggleFold(group.label) } label: {
+                                Button { pressFold(group.label, headings: headings) } label: {
                                     SVGPath.path("M9 6l6 6-6 6")
                                         .stroke(style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
                                         .onGrid(Metrics.glyph)
@@ -721,7 +779,9 @@ struct TripScreen: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { reviewing = true }
         } else if focus.charge {
             // A tapped "Charge tonight" (0.87): every line, Before you go's To charge in view —
-            // once the screen has arrived and laid out its cards.
+            // once the screen has arrived and laid out its cards. Folded by his choice (0.101), the
+            // card opens: his choice is forgotten, and with something left to charge it shows.
+            foldedRaw = TripFolds.beforeYouGoReset(foldedRaw, trip: tripId)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { toCharge += 1 }
         } else if focus.home {
             homeFromDoor = true

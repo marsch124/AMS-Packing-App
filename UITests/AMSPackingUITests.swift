@@ -989,6 +989,59 @@ final class AMSPackingUITests: XCTestCase {
                       "opening '\(heading)' did not bring its lines back")
     }
 
+    /// Fold all (0.101, his list of 26 Oct 2026: "the ability to toggle or collapse all items with
+    /// one click, not only the individual 'From where', 'Into' etc areas"): beside the sorting, one
+    /// press folds every heading (sorted From where: one per place) — the headings stay, their
+    /// lines go — and says so; a heading opened by its own arrow makes it Fold all again; a press
+    /// with all folded opens them all.
+    /// On the Mac, Option-click on a heading's arrow does the same (the Finder's way).
+    func testFoldAllFoldsEveryHeadingAndOpensThemAgain() {
+        let app = launch()
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let progress = app.staticTexts["trip-progress"]
+        XCTAssertTrue(progress.waitForExistence(timeout: 5))
+        let total = Int(words(progress).split(separator: "/").last ?? "") ?? 0
+        choose(app, "trip-view", 2)                               // From where: a heading per place
+        XCTAssertTrue(app.staticTexts["trip-group-1-label"].waitForExistence(timeout: 5), "fewer than two headings to fold")
+        func anyLine() -> Bool { (0..<total).contains { app.buttons["trip-line-\($0)"].exists } }
+        XCTAssertTrue(anyLine(), "no lines on the trip to fold")
+        let all = app.buttons["trip-fold-all"]
+        XCTAssertTrue(all.waitForExistence(timeout: 5), "no Fold all beside the sorting")
+        XCTAssertFalse(isOn(all), "with every heading open, Fold all says all are folded")
+
+        tap(app, id: "trip-fold-all")
+        XCTAssertTrue(waitUntil { !anyLine() }, "Fold all left lines on screen")
+        XCTAssertTrue(app.staticTexts["trip-group-0-label"].exists && app.staticTexts["trip-group-1-label"].exists,
+                      "Fold all took the headings away")
+        XCTAssertTrue(waitUntil { self.isOn(all) }, "all folded, the button does not say so")
+        shot(app, "fold-all-folded")
+
+        // One heading opened by its own arrow: only its lines, and the button folds again.
+        tap(app, id: "trip-group-0-fold")
+        XCTAssertTrue(waitUntil { anyLine() }, "the arrow did not open its heading")
+        XCTAssertTrue(waitUntil { !self.isOn(all) }, "with a heading open, the button still says all are folded")
+        tap(app, id: "trip-fold-all")
+        XCTAssertTrue(waitUntil { !anyLine() }, "Fold all did not fold the heading opened by hand")
+
+        // All folded: the same press opens them all.
+        tap(app, id: "trip-fold-all")
+        XCTAssertTrue(waitUntil { anyLine() }, "Unfold all did not bring the lines back")
+        XCTAssertTrue(waitUntil { !self.isOn(all) }, "all open, the button still says all are folded")
+        shot(app, "fold-all-open")
+
+        #if os(macOS)
+        // Option-click on a heading's arrow folds every heading, and opens them all again.
+        let arrow = app.buttons["trip-group-1-fold"]
+        XCUIElement.perform(withKeyModifiers: .option) { arrow.click() }
+        XCTAssertTrue(waitUntil { !anyLine() }, "Option-click on a heading's arrow did not fold every heading")
+        XCUIElement.perform(withKeyModifiers: .option) { app.buttons["trip-group-1-fold"].click() }
+        XCTAssertTrue(waitUntil { anyLine() }, "a second Option-click did not open them all")
+        XCTAssertTrue(waitUntil { !self.isOn(all) }, "Option-click opened them, but the button says all are folded")
+        #endif
+    }
+
     /// His standing rule (the web apps; roadmap phase D): every release has its line
     /// in What's new. This fails the build when the newest entry is not the version
     /// being built — the version marker under the tab bar says which that is.
@@ -4971,7 +5024,8 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil(timeout: 10) { self.words(app.staticTexts["buy-count"]) == "All bought." },
                       "back from the shop, the ticks did not come: '\(words(app.staticTexts["buy-count"]))'")
         // Unticked here, it stays unticked: its reminder is unticked too, so the
-        // next read back does not tick it again (the spec pass, 5 Oct 2026).
+        // next read back does not tick it again (the spec pass, 5 Oct 2026). Bought is folded (0.101).
+        tap(app, id: "buy-done-fold")
         tap(app, id: "buy-0")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["buy-count"]) == "1 to buy" }, "the untick did not take")
         XCUIDevice.shared.press(.home)
@@ -6408,10 +6462,13 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(row.waitForExistence(timeout: 5), "the to-do is not listed")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["actions-count"]).hasPrefix("1 ") }, "not counted: '\(words(app.staticTexts["actions-count"]))'")
         row.tap()
-        XCTAssertTrue(waitUntil { self.isOn(row) }, "the tick did not take")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["actions-count"]).hasPrefix("All done") }, "'\(words(app.staticTexts["actions-count"]))'")
+        // Ticked, it is in Done, folded away (0.101): opened, there it is, ticked.
+        tap(app, id: "actions-done-fold")
+        XCTAssertTrue(waitUntil { self.isOn(row) }, "the tick did not take")
         tab(app, "home")
         tab(app, "actions")
+        tap(app, id: "actions-done-fold")
         XCTAssertTrue(waitUntil(timeout: 10) { self.isOn(app.buttons["action-0"]) }, "the tick was lost on the way out and back")
     }
     /// A thing added to a template is there — and still there after closing and reopening.
@@ -11393,6 +11450,93 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["actions-count"]) == "1 to do" }, "Undo did not bring the to-do back")
     }
 
+    /// The To do page in three parts (0.101, his list of 26 Oct 2026: "completed to-do's should be
+    /// tucked away in a toggle. Priority to-do's in a separate area"): Priority at the top, the
+    /// others under it, and Done (n) folded at the foot. Held (right-clicked on the Mac), a to-do
+    /// is marked a priority and goes up — and taken off again. Ticked, a to-do goes into Done,
+    /// with Undo under the list; Done opened shows it ticked; unticked there, it is back. To buy:
+    /// what is bought goes into Bought (n), folded the same way.
+    func testPriorityToDosStandApartAndDoneOnesTuckAway() {
+        let app = launch()
+        tab(app, "actions")
+        XCTAssertTrue(appears(app, "screen-actions"))
+        for text in ["Book the ferry", "Charge the lamp", "Print the map"] {
+            type(text, into: app.textFields["action-add-text"])
+            tap(app, id: "action-add")
+        }
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["actions-count"]) == "3 to do" },
+                      "not three to-dos: '\(words(app.staticTexts["actions-count"]))'")
+        hideKeyboard(app)
+        XCTAssertNil(find(app, "actions-priority"), "a Priority area with no priority in it")
+        // Newest first: Print the map, Charge the lamp, Book the ferry.
+        XCTAssertTrue(words(app.buttons["action-2"]).contains("Book the ferry"), "'\(words(app.buttons["action-2"]))'")
+
+        // Held: Mark as priority. It goes up, into the Priority area.
+        let mark = contextMenu(app, on: app.buttons["action-2"], item: "action-2-priority")
+        XCTAssertTrue(mark.exists, "holding a to-do offers no Mark as priority")
+        #if os(macOS)
+        mark.click()
+        #else
+        mark.tap()
+        #endif
+        XCTAssertTrue(appears(app, "actions-priority", timeout: 5), "marked, there is no Priority area")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["action-0"]).contains("Book the ferry") },
+                      "the priority is not first: '\(words(app.buttons["action-0"]))'")
+        let heading = app.staticTexts["actions-priority-title"], others = app.staticTexts["actions-others-title"]
+        XCTAssertTrue(heading.waitForExistence(timeout: 5) && others.waitForExistence(timeout: 5), "no Priority and Others headings")
+        let first = app.buttons["action-0"].frame, second = app.buttons["action-1"].frame
+        XCTAssertTrue(heading.frame.maxY <= first.minY + 2 && first.maxY <= others.frame.minY + 2 && others.frame.maxY <= second.minY + 2,
+                      "not Priority, the priority, Others, the rest: \(heading.frame.minY) \(first.minY) \(others.frame.minY) \(second.minY)")
+        shot(app, "todo-priority")
+
+        // Ticked: it leaves the open ones for Done, folded; Undo brings it back.
+        tap(app, id: "action-2")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["actions-count"]) == "2 to do" }, "'\(words(app.staticTexts["actions-count"]))'")
+        let done = app.buttons["actions-done-fold"]
+        XCTAssertTrue(done.waitForExistence(timeout: 5), "ticked, there is no Done fold")
+        XCTAssertFalse(isOn(done), "Done is open by itself")
+        XCTAssertTrue(waitUntil { !app.buttons["action-2"].exists }, "ticked, the to-do is still on the list")
+        XCTAssertTrue(words(app.staticTexts["action-tick-undo-says"]).contains("Charge the lamp"),
+                      "it does not say what was done: '\(words(app.staticTexts["action-tick-undo-says"]))'")
+        shot(app, "todo-done-folded")
+        tap(app, id: "action-tick-undo")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["actions-count"]) == "3 to do" }, "Undo did not untick it")
+        XCTAssertTrue(waitUntil { !app.buttons["actions-done-fold"].exists }, "nothing done, but a Done fold")
+
+        // Ticked again and Done opened: there, ticked; unticked there, back among the open ones.
+        tap(app, id: "action-2")
+        tap(app, id: "actions-done-fold")
+        XCTAssertTrue(waitUntil { self.isOn(done) }, "Done did not open")
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["action-2"]) }, "Done opened shows no ticked to-do")
+        shot(app, "todo-done-open")
+        tap(app, id: "action-2")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["actions-count"]) == "3 to do" }, "unticked in Done, it is not open again")
+
+        // Held again: the priority taken off — no Priority area.
+        let off = contextMenu(app, on: app.buttons["action-0"], item: "action-0-priority")
+        XCTAssertTrue(off.exists, "holding a priority offers nothing to take it off")
+        #if os(macOS)
+        off.click()
+        #else
+        off.tap()
+        #endif
+        XCTAssertTrue(disappears(app, "actions-priority", timeout: 5), "taken off, the Priority area stayed")
+
+        // To buy: bought goes into Bought, folded.
+        tap(app, id: "actions-tab-buy")
+        type("Milk", into: app.textFields["buy-add-text"])
+        tap(app, id: "buy-add")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["buy-count"]) == "1 to buy" })
+        hideKeyboard(app)
+        tap(app, id: "buy-0")
+        let bought = app.buttons["buy-done-fold"]
+        XCTAssertTrue(bought.waitForExistence(timeout: 5), "bought, there is no Bought fold")
+        XCTAssertTrue(waitUntil { !app.buttons["buy-0"].exists }, "bought, the line is still on the list")
+        tap(app, id: "buy-done-fold")
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["buy-0"]) }, "Bought opened shows no ticked line")
+        shot(app, "buy-bought-open")
+    }
+
     /// A line whose reminder was deleted in Reminders can be sent again — when he
     /// presses Send. ("-pretendShopDeleted": a Reminders list he has emptied.)
     func testALineWhoseReminderWasDeletedCanBeSentAgain() {
@@ -14627,7 +14771,6 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(left).hasPrefix("4") }, "one flag, one to do and two to charge are not 4 left: '\(words(left))'")
         XCTAssertTrue(words(app.buttons["trip-check-cabin-0"]).contains("Power bank"), "'\(words(app.buttons["trip-check-cabin-0"]))'")
         XCTAssertTrue(words(app.buttons["trip-check-todo-0"]).contains("Check the forecast"), "'\(words(app.buttons["trip-check-todo-0"]))'")
-        XCTAssertFalse(app.buttons["trip-beforego-fold"].exists, "with things left, the card can be folded")
         shot(app, "beforego-trip")
 
         // The reminder ticked: To do goes, 3 left.
@@ -14643,7 +14786,6 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(count).hasPrefix("2 of 2") }, "'\(words(count))'")
         XCTAssertTrue(waitUntil { self.words(left).hasPrefix("1") }, "charged things are still counted: '\(words(left))'")
         XCTAssertTrue(appears(app, "trip-beforego-part-charge", timeout: 2), "with a flag left, the card folded")
-        XCTAssertFalse(app.buttons["trip-beforego-fold"].exists, "with a flag left, the card can be folded")
 
         // The power bank's battery off: no flag, and it leaves To charge — All set, folded.
         tap(app, id: "trip-check-cabin-0")
@@ -14657,14 +14799,51 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "trip-beforego", timeout: 2), "all set, the card went")
         shot(app, "beforego-allset")
 
-        // Opened by its chevron; a charge taken back counts again and the chevron goes.
+        // Opened by its chevron; a charge taken back counts again, and the card stays open (since
+        // 0.101 the chevron stays: he folds it whenever he likes).
         tap(app, id: "trip-beforego-fold")
         XCTAssertTrue(appears(app, "trip-beforego-part-charge", timeout: 5), "the chevron does not open the card")
         XCTAssertTrue(waitUntil { self.words(count).hasPrefix("1 of 1") }, "'\(words(count))'")
         shot(app, "beforego-allset-open")
         tap(app, id: "trip-charge-0")
         XCTAssertTrue(waitUntil { self.words(left).hasPrefix("1") }, "the charge taken back is not counted: '\(words(left))'")
-        XCTAssertTrue(waitUntil { !app.buttons["trip-beforego-fold"].exists }, "with something left, the card can still be folded")
+        XCTAssertTrue(appears(app, "trip-beforego-part-charge", timeout: 2), "with something left again, the card folded")
+    }
+
+    /// Before you go folds to one line (0.101, his list of 26 Oct 2026: "I would like that to be
+    /// collapsible so I can toggle it into one line"): with things left the chevron is there too.
+    /// Folded, the card is one line — "Before you go", the count, the chevron — and stays folded
+    /// when the trip is opened again (this device remembers it, per trip); a tap on the line opens it.
+    func testBeforeYouGoFoldsToOneLineAndStaysSo() {
+        let app = launch("-uiTestingBattery", ["-batteryByPlane", "-batteryToDo"])
+        openKitTrip(app)
+        let parts = ["trip-beforego-part-flags", "trip-beforego-part-todo", "trip-beforego-part-charge"]
+        for id in parts { XCTAssertTrue(appears(app, id, timeout: 5), "Before you go has no \(id)") }
+        let left = app.staticTexts["trip-beforego-count"]
+        XCTAssertTrue(waitUntil { self.words(left).hasPrefix("4") }, "not 4 left: '\(words(left))'")
+        let fold = app.buttons["trip-beforego-fold"]
+        XCTAssertTrue(fold.waitForExistence(timeout: 5), "with things left, Before you go has no chevron to fold it")
+
+        tap(app, id: "trip-beforego-fold")
+        for id in parts { XCTAssertTrue(disappears(app, id, timeout: 5), "folded, \(id) is still on the card") }
+        XCTAssertTrue(waitUntil { self.words(left).hasPrefix("4") }, "folded, the count is not on its line: '\(words(left))'")
+        let height = find(app, "trip-beforego")?.frame.height ?? 999
+        XCTAssertLessThan(height, 72, "folded, the card is more than one line: \(height) points")
+        shot(app, "beforego-folded")
+
+        // Remembered: the trip closed and opened again finds it folded.
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+        openKitTrip(app)
+        XCTAssertTrue(appears(app, "trip-beforego", timeout: 5), "no Before you go on the trip opened again")
+        XCTAssertTrue(waitUntil { self.words(left).hasPrefix("4") }, "'\(words(left))'")
+        sleep(1)
+        XCTAssertNil(find(app, "trip-beforego-part-todo"), "opened again, the card forgot it was folded")
+
+        // A tap on its chevron opens it again.
+        tap(app, id: "trip-beforego-fold")
+        for id in parts { XCTAssertTrue(appears(app, id, timeout: 5), "the chevron did not open \(id) again") }
+        shot(app, "beforego-open")
     }
 
     /// A past trip keeps what was inside its kits (0.73): reviewed, the Camp pouch's line
