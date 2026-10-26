@@ -468,14 +468,26 @@ struct IconPickerScreen: View {
 /// it; the one in force is ringed. The swatches stand edge to edge, so each one's whole share of
 /// the row takes the tap (46 points on a 402-point iPhone, Apple's 44 or more). Ids
 /// `template-colour-auto` and `template-colour-<key>`, the one in force `.isSelected`.
+///
+/// 0.101 — his words (26 Oct 2026): "Add Template Icons Colours: Light blue and Light yellow." Nine
+/// to a row: on the iPhone the rows reach out over the page's margins to the screen's edges, so each
+/// share is still 44 points or more (44.7 on a 402-point iPhone; 41 inside the margins); a two-word
+/// name stands on two lines under its swatch ("Light / blue"), the rows' swatches aligned at the top.
 struct TemplateColourSwatches: View {
     let list: PackList
     /// The colour he chose (a hex), nil = Automatic.
     let chosen: String?
     /// nil = Automatic.
     let pick: (String?) -> Void
-    /// Automatic and the palette in `TemplateColour.pickerRows` (two) rows: eight to a row.
+    /// Automatic and the palette in `TemplateColour.pickerRows` (two) rows: nine to a row (0.101).
     private let columns = TemplateColour.pickerColumns
+    /// How far the rows reach out over the page's margins (0.101): the iPhone's 16 — the screen's
+    /// edge — so nine shares stay 44 points wide; none on the Mac's wider sheet.
+    #if os(iOS)
+    private let reach: CGFloat = 16
+    #else
+    private let reach: CGFloat = 0
+    #endif
     /// A swatch's cover (34 until 0.91, when eight came to a row).
     private let size: Double = 32
 
@@ -491,7 +503,7 @@ struct TemplateColourSwatches: View {
         }
         VStack(alignment: .leading, spacing: 6) {
             ForEach(rows.indices, id: \.self) { r in
-                HStack(spacing: 0) {
+                HStack(alignment: .top, spacing: 0) {
                     ForEach(rows[r], id: \.key) { s in
                         // A colour from the web app that is none of these rings none.
                         swatch(s, on: s.hex == mine)
@@ -500,6 +512,7 @@ struct TemplateColourSwatches: View {
                 }
             }
         }
+        .padding(.horizontal, -reach)
     }
 
     private func swatch(_ s: Swatch, on: Bool) -> some View {
@@ -511,13 +524,18 @@ struct TemplateColourSwatches: View {
                 Cover(list: look, size: size)
                     .padding(3)
                     .overlay(RoundedRectangle(cornerRadius: size * 0.28 + 3).stroke(on ? Theme.ink : Color.clear, lineWidth: 2))
-                Text(s.name)
+                // A two-word name on two lines (0.101: "Light / blue"); a one-word name stays on one
+                // line, made smaller rather than broken ("Auto-matic" in the first build of 0.101).
+                let words = s.name.split(separator: " ").count
+                Text(s.name.replacingOccurrences(of: " ", with: "\n"))
                     .font(.system(.caption2, weight: on ? .bold : .regular))
                     .foregroundStyle(on ? Theme.ink : Theme.muted)
-                    .lineLimit(1).minimumScaleFactor(0.7)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(words).minimumScaleFactor(0.7)
                     .padding(.horizontal, 1)
             }
-            .frame(maxWidth: .infinity, minHeight: 60)
+            // From the top, so the covers of a row stand on one line whatever the words under them.
+            .frame(maxWidth: .infinity, minHeight: 60, alignment: .top)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain).focusEffectDisabled()

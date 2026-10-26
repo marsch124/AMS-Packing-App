@@ -18,6 +18,7 @@ struct SyncCard: View {
     /// What the store's record said at the last look (0.92: shared with Home's sync light).
     @State private var seen: SyncWatch.Seen? = SyncWatch.last
     @State private var said = ""
+    @Environment(\.colorScheme) private var scheme
 
     static var device: String {
         #if os(macOS)
@@ -32,19 +33,34 @@ struct SyncCard: View {
         let on = seen?.on ?? SyncWatch.on(model)
         let c = seen?.check
         let now = seen?.now ?? Date()
-        // The pill says what Home's light says (0.92): the same rules, words and colours.
+        // It says what Home's light says (0.92): the same rules, words and colours.
         let state = SyncCheck.light(usesICloud: on, check: c, now: now, awake: SyncWatch.awake)
         let stuck = state == .stuck
         // Compact, as Settings' cards are (8 points between its lines, 14 inside, until 0.67).
         VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text("iCloud sync").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                 Spacer()
-                Text(state.word)
-                    .font(.system(.footnote, weight: .semibold)).foregroundStyle(.white)
-                    .padding(.horizontal, 10).padding(.vertical, 3)
-                    .background(Capsule().fill(SyncLight.color(state.colour)))
-                    .accessibilityIdentifier("sync-state")
+                // 0.101 — his words (26 Oct 2026): "should not look as a pill. Please design it." Home's
+                // own sync dot (8 points, `SyncLight`) and the words after it in its colour — made
+                // readable as words on this card (`SyncLight.words`) — no capsule, no fill. A white word
+                // on a coloured capsule until 0.101.
+                HStack(spacing: 6) {
+                    Circle().fill(SyncLight.color(state.colour))
+                        .frame(width: SyncLight.dot, height: SyncLight.dot)
+                        .accessibilityElement()
+                        .accessibilityAddTraits(.isImage)
+                        .accessibilityLabel("iCloud sync")
+                        #if DEBUG
+                        // The tests' only way to see the dot's colour, as Home's dot.
+                        .accessibilityValue(state.colour.rawValue)
+                        #endif
+                        .accessibilityIdentifier("sync-state-dot")
+                    Text(state.word)
+                        .font(.system(.subheadline, weight: .semibold))
+                        .foregroundStyle(SyncLight.words(state.colour, scheme))
+                        .accessibilityIdentifier("sync-state")
+                }
             }
             if !on {
                 quiet("This copy of the app keeps its library on this device only.", id: "sync-off")
@@ -211,6 +227,18 @@ enum SyncWatch {
 
     private static func read() -> SyncCheck? { invented.map { $0.check } ?? SyncCheck.read() }
 
+    /// This device checks in by itself while it syncs (0.101, `Library.checkInIfDue` — his Mac said
+    /// "This Mac checked in 10 Oct 19:11" while it sent and received every day: only Sync now wrote a
+    /// check-in). With iCloud on and the library read, once its last check-in is a quarter of an hour
+    /// old. Asked as the app opens, when it comes to the front, and every minute while it runs
+    /// (`RootView`); a page's copy never checks in. With iCloud off there is no other device to tell.
+    @MainActor
+    static func checkInIfDue(_ model: LibraryModel) {
+        guard on(model), !model.isDraft, model.state == .ready,
+              model.library.checkInDue(device: SyncCard.device, now: Date()) else { return }
+        model.change { _ = $0.checkInIfDue(device: SyncCard.device, now: Date()) }
+    }
+
     /// UI tests only (`-syncLight insync|sending|receiving|hung|failed|waited|unknown|off`, with a
     /// `-uiTesting…` library): an invented record, its times counted back from the launch. The tests'
     /// libraries keep everything on the device, so without it the light never shows there.
@@ -274,6 +302,19 @@ struct SyncLight: View {
         case .red: return AppSection.actions.color
         case .grey: return Theme.muted
         }
+    }
+
+    /// The same colour as words on a card (0.101, the sync card's "In sync"): darkened by day and
+    /// lightened by night until it reads as text does (`readableHex`); grey is `muted`, which reads.
+    static func words(_ c: SyncCheck.Light.Colour, _ scheme: ColorScheme) -> Color {
+        let hex: String
+        switch c {
+        case .green: hex = "#2f9e63"
+        case .orange: hex = "#dd7324"
+        case .red: hex = "#dc3d43"
+        case .grey: return Theme.muted
+        }
+        return Color(hexString: readableHex(hex, dark: scheme == .dark))
     }
 
     var body: some View {

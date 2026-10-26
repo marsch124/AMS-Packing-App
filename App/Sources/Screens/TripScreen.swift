@@ -122,8 +122,11 @@ struct TripScreen: View {
         foldedRaw = TripFolds.toggled(foldedRaw, foldKey(label), trips: Set(model.library.trips.map(\.id)))
     }
 
-    /// Sorting: ONE drop-down since 0.64 — five pills do not fit an iPhone's line, and he
-    /// asked for drop-downs everywhere (6 Oct 2026). "Sorting" stays to the left of its
+    /// Group by — "Sorting" until 0.101, his words of 26 Oct 2026: "please change the word 'Sorting'
+    /// into 'Grouping', I believe that is more correct": each choice puts the list under headings, so
+    /// it is Apple's own name for that, as in the Finder and Files. ONE drop-down since 0.64 — five
+    /// pills do not fit an iPhone's line, and he asked for drop-downs everywhere (6 Oct 2026). The
+    /// ids stay `trip-view…`. The words stay to the left of its
     /// field, on the same line (his marks, 2026-09-25). Its rows keep the pills' ids,
     /// `trip-view-0…4`; the field is `trip-view`, the word `trip-view-label`.
     /// The groups the lines stand in under the chosen sorting: Template is the library's
@@ -146,7 +149,7 @@ struct TripScreen: View {
     }
 
     private var sorting: some View {
-        DropDown(title: "Sorting", heading: .beside, options: TripScreen.views.map { ($0.id, $0.label) },
+        DropDown(title: "Group by", heading: .beside, options: TripScreen.views.map { ($0.id, $0.label) },
                  selected: TripScreen.views.contains { $0.id == view } ? view : "when",
                  id: DropDownIds(field: "trip-view", list: "trip-view-list", row: "trip-view", title: "trip-view-label"),
                  tint: AppSection.events.color) { view = $0 }
@@ -162,7 +165,7 @@ struct TripScreen: View {
         let index: [String: Int] = Dictionary(trip.entries.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { first, _ in first })
         // Opened from a place's code: its lines only — and nothing else on the page, so
         // they are what he sees first (his plan, stop A: "the trip opens showing only
-        // what to take from the garage"). The chip under Sorting shows everything again.
+        // what to take from the garage"). The chip under Group by shows everything again.
         // A tapped door check (0.69) shows only the lines still unticked; both may hold.
         let placeLines = placeFilter.map { place in trip.entries.filter { Library.isKept($0.storage, at: place) } } ?? trip.entries
         let shownLines = onlyUnticked ? placeLines.filter { !$0.checked && !isSetAside($0) } : placeLines
@@ -308,7 +311,7 @@ struct TripScreen: View {
                 }
                 // The sorting, DIRECTLY above the list it sorts (0.74, his ask of 12 Oct 2026:
                 // under the loop strip it sat far above the lines, "disconnected from it").
-                // His marks (2026-09-25): "Sorting" on the left, the choice on the same line —
+                // His marks (2026-09-25): "Sorting" (Group by since 0.101) on the left, the choice on the same line —
                 // and on the iPhone, Pack by voice at its end (0.71, a test: spec 07 part 10).
                 Group {
                     #if os(iOS)

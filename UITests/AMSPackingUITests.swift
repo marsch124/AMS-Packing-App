@@ -4278,6 +4278,41 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "leave-after")
     }
 
+    /// 0.101 — his words (26 Oct 2026): "The upper 'pack pill' should have the same colour shading as
+    /// the lower Station: Pack as they are ongoing. The full colour means Done." The strip says what
+    /// its colours show (`LoopDoor.said`): on a trip at Pack, Plan done, Pack the one being worked on,
+    /// the rest ahead — with Bags out done, the Stations' Pack is lit the same way below it; on a trip
+    /// under way, Plan and Pack done. The pictures show the two rows alike, day and night.
+    func testTheLoopStripSaysDoneAndHereAsTheStationsDo() {
+        let app = launch("-uiTestingPackingDay")
+        openPackingDayTrip(app)
+        let strip = app.buttons["trip-loop"]
+        XCTAssertTrue(strip.waitForExistence(timeout: 5), "the trip does not show the loop")
+        XCTAssertTrue(waitUntil { (strip.value as? String) == "Pack" }, "the trip being packed is at '\(strip.value as? String ?? "")'")
+        XCTAssertEqual(strip.label, "The loop. Done: Plan. You are here: Pack. Ahead: On site, Review, Refine.",
+                       "the strip does not show Plan done and Pack being worked on")
+        // Bags out done: Pack becomes the Stations' next to do, lit as the strip's Pack is.
+        station(app, "bags")
+        XCTAssertTrue(appears(app, "day-view-bags", timeout: 5), "the sheet is not on Bags out")
+        tap(app, id: "day-bag-0")
+        tap(app, id: "day-bag-1")
+        XCTAssertTrue(waitUntil { self.value(app.buttons["day-sheet-station-bags"]) == "done" }, "Bags out is not done")
+        tap(app, id: "day-done")
+        XCTAssertTrue(disappears(app, "day-sheet", timeout: 5), "Done did not close the Packing Stations")
+        XCTAssertTrue(waitUntil { app.buttons["day-station-pack"].isSelected }, "Pack is not the next station")
+        shot(app, "look101-loop-pack")
+        app.terminate()
+        let away = launch("-uiTestingOnSite")
+        tab(away, "events")
+        tap(away, id: "trip-row-0")
+        XCTAssertTrue(appears(away, "trip-detail", timeout: 5))
+        let later = away.buttons["trip-loop"]
+        XCTAssertTrue(waitUntil { (later.value as? String) == "On site" }, "the trip under way is at '\(later.value as? String ?? "")'")
+        XCTAssertEqual(later.label, "The loop. Done: Plan, Pack. You are here: On site. Ahead: Review, Refine.",
+                       "under way, Plan and Pack are not done")
+        shot(away, "look101-loop-onsite")
+    }
+
     // MARK: - Take a break, and messages when a trip moves on (0.77, spec 07 part 16)
 
     /// A named element that is no button — a pill of the break's overview: an Other on the
@@ -4675,6 +4710,81 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "synclight2-hung-details")
         tap(app, id: "sync-details-done")
         XCTAssertTrue(disappears(app, "sync-details", timeout: 5), "Done did not close Sync details")
+    }
+
+    /// The sync card's state dot (0.101): an image on the iPhone, found among the other kinds too.
+    private func syncStateDot(_ app: XCUIApplication) -> XCUIElement {
+        for query in [app.images, app.otherElements, app.groups] where query["sync-state-dot"].exists { return query["sync-state-dot"] }
+        return app.images["sync-state-dot"]
+    }
+
+    /// 0.101 — his words (26 Oct 2026) on Sync details' "In sync": "should not look as a pill. Please
+    /// design it." Home's own 8-point dot, and the words after it in its colour, on the card's own
+    /// line: green In sync, orange on its way, red Stuck.
+    func testTheSyncCardSaysItsStateWithHomesDotNotAPill() {
+        for (state, colour, says) in [("insync", "green", "In sync"), ("sending", "orange", "Sending\u{2026}"), ("hung", "red", "Stuck")] {
+            let app = launch("-uiTesting", ["-syncLight", state])
+            tab(app, "settings")
+            XCTAssertTrue(appears(app, "screen-settings"))
+            let word = app.staticTexts["sync-state"]
+            XCTAssertTrue(word.waitForExistence(timeout: 5), "no iCloud sync card in Settings")
+            XCTAssertTrue(waitUntil { self.words(word) == says }, "the card says '\(words(word))' for \(state), not \(says)")
+            let dot = syncStateDot(app)
+            XCTAssertTrue(dot.waitForExistence(timeout: 5), "no dot before the sync card's '\(says)' — still a pill?")
+            XCTAssertEqual(dot.value as? String, colour, "the dot for \(state) is not \(colour)")
+            XCTAssertEqual(dot.frame.width, 8, accuracy: 1, "the dot is not Home's 8 points: \(dot.frame)")
+            XCTAssertLessThan(dot.frame.maxX, word.frame.minX + 1, "the dot is not before the words (\(dot.frame) vs \(word.frame))")
+            XCTAssertEqual(dot.frame.midY, word.frame.midY, accuracy: 4, "the dot is not on the words' line (\(dot.frame) vs \(word.frame))")
+            bringIntoView(app, word)
+            shot(app, "look101-sync-\(state)")
+            app.terminate()
+        }
+    }
+
+    /// 0.101 — his Sync details on the Mac (26 Oct 2026): "This Mac checked in 10 Oct 19:11" while it sent
+    /// and received every day; only Sync now wrote a check-in. With iCloud on, this device now checks in
+    /// by itself as the app opens — no press. (The tests' own library keeps iCloud off: there it waits
+    /// for Sync now, `testSyncNowChecksInFromThisDevice`.)
+    func testThisDeviceChecksInByItselfWithICloudOn() {
+        let app = launch("-uiTesting", ["-syncLight", "insync"])
+        tab(app, "settings")
+        XCTAssertTrue(appears(app, "screen-settings"))
+        let me = app.staticTexts["sync-self"]
+        XCTAssertTrue(me.waitForExistence(timeout: 5), "no iCloud sync card in Settings")
+        XCTAssertTrue(waitUntil { self.words(me).contains("checked in today") },
+                      "with iCloud on, this device did not check in by itself: '\(words(me))'")
+        XCTAssertFalse(app.staticTexts["sync-said"].exists, "it says Sync now was pressed")
+        bringIntoView(app, me)
+        shot(app, "look101-sync-checkin")
+    }
+
+    /// 0.101 — his words (26 Oct 2026): "To-do and to-buy counters on the 'To do' navigation
+    /// pill/button". Apple's way: the tab's badge, the open to-dos and to-buys together; none open, no
+    /// badge; a tick takes one off. VoiceOver (and the Mac's tooltip) says the two counts.
+    func testTheToDoTabCountsWhatIsStillOpen() {
+        let app = launch()
+        let todo = app.buttons["tab-actions"]
+        XCTAssertTrue(todo.waitForExistence(timeout: 10), "no To do tab")
+        XCTAssertTrue(waitUntil { self.value(todo).hasPrefix("no badge") }, "the To do tab with nothing open says '\(value(todo))'")
+        tab(app, "actions")
+        for (n, line) in ["Book the ferry", "Pay the parking"].enumerated() {
+            type(line, into: app.textFields["action-add-text"])
+            tap(app, id: "action-add")
+            XCTAssertTrue(app.buttons["action-\(n)"].waitForExistence(timeout: 5), "the to-do '\(line)' was not made")
+        }
+        tap(app, id: "actions-tab-buy")
+        type("Sun cream", into: app.textFields["buy-add-text"])
+        tap(app, id: "buy-add")
+        XCTAssertTrue(app.buttons["buy-0"].waitForExistence(timeout: 5), "the line to buy was not made")
+        XCTAssertTrue(waitUntil { self.value(todo) == "badge 3 \u{00B7} 2 to do \u{00B7} 1 to buy" },
+                      "the To do tab does not count two to do and one to buy: '\(value(todo))'")
+        hideKeyboard(app)
+        shot(app, "look101-todo-badge-open")
+        tap(app, id: "buy-0")
+        XCTAssertTrue(waitUntil { self.value(todo) == "badge 2 \u{00B7} 2 to do" }, "a bought line still counts: '\(value(todo))'")
+        tab(app, "home")
+        XCTAssertTrue(appears(app, "screen-home"))
+        shot(app, "look101-todo-badge")
     }
 
     /// This Device as in 0.91 (0.92's sync dot must not move anything): its tiles 76 tall, and Create new
@@ -7727,7 +7837,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(app.buttons["template-colour-auto"].waitForExistence(timeout: 5), "no colours on the picker")
         XCTAssertTrue(app.buttons["template-colour-auto"].isSelected, "Automatic is not ringed before any choice")
         let swatches = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'template-colour-'"))
-        XCTAssertEqual(swatches.count, 16, "Automatic and fifteen colours (eleven until 0.91)")
+        XCTAssertEqual(swatches.count, 18, "Automatic and seventeen colours (eleven until 0.91, fifteen until 0.101)")
         shot(app, "tmpl-colours-picker")
         tap(app, id: "template-colour-blue")
         XCTAssertTrue(disappears(app, "icon-picker", timeout: 5), "a colour did not close the picker")
@@ -7993,14 +8103,14 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "template-cover")
         XCTAssertTrue(appears(app, "icon-picker", timeout: 5), "the cover did not open the picker")
         let query = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'template-colour-'"))
-        XCTAssertTrue(waitUntil { query.count == 16 }, "not Automatic and fifteen colours: \(query.count)")
+        XCTAssertTrue(waitUntil { query.count == 18 }, "not Automatic and seventeen colours (0.101): \(query.count)")
         // The rows, by where the swatches stand: a swatch more than 8 points lower starts a new one.
         let swatches = query.allElementsBoundByIndex.map { ($0.identifier, $0.frame) }
         var rows: [[(String, CGRect)]] = []
         for s in swatches.sorted(by: { ($0.1.midY, $0.1.midX) < ($1.1.midY, $1.1.midX) }) {
             if let first = rows.last?.first, abs(first.1.midY - s.1.midY) < 8 { rows[rows.count - 1].append(s) } else { rows.append([s]) }
         }
-        XCTAssertEqual(rows.map(\.count), [8, 8], "the colours are not on two lines of eight: \(rows.map { $0.map(\.0) })")
+        XCTAssertEqual(rows.map(\.count), [9, 9], "the colours are not on two lines of nine (0.101): \(rows.map { $0.map(\.0) })")
         XCTAssertEqual(rows.first?.first?.0, "template-colour-auto", "Automatic does not lead")
         let window = app.windows.firstMatch.frame
         for (id, frame) in swatches {
@@ -8024,6 +8134,38 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { app.buttons["template-colour-navy"].isSelected }, "the chosen Navy is not ringed")
         tap(app, id: "icon-cancel")
         XCTAssertTrue(disappears(app, "icon-picker", timeout: 5))
+    }
+
+    /// 0.101 — his words (26 Oct 2026): "Add Template Icons Colours: Light blue and Light yellow." Both
+    /// on the picker, Light blue after Navy and Light yellow before Sand, their names whole; Light
+    /// yellow paints Hiking's cover on the Templates tab (its icon in the app's dark ink — the pictures).
+    func testLightBlueAndLightYellowAreTemplateColours() {
+        let app = launch()
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        let card = app.buttons["template-row-1"]                    // Hiking
+        XCTAssertTrue(card.waitForExistence(timeout: 5))
+        card.tap()
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        tap(app, id: "template-cover")
+        XCTAssertTrue(appears(app, "icon-picker", timeout: 5), "the cover did not open the picker")
+        let blue = app.buttons["template-colour-lightblue"], yellow = app.buttons["template-colour-lightyellow"]
+        XCTAssertTrue(blue.waitForExistence(timeout: 5), "no Light blue on the picker")
+        XCTAssertTrue(yellow.exists, "no Light yellow on the picker")
+        XCTAssertEqual(blue.label, "Light blue")
+        XCTAssertEqual(yellow.label, "Light yellow")
+        let navy = app.buttons["template-colour-navy"].frame, sand = app.buttons["template-colour-sand"].frame
+        XCTAssertEqual(blue.frame.minY, navy.minY, accuracy: 2, "Light blue is not on Navy's line")
+        XCTAssertGreaterThan(blue.frame.minX, navy.minX, "Light blue is not after Navy")
+        XCTAssertEqual(yellow.frame.minY, sand.minY, accuracy: 2, "Light yellow is not on Sand's line")
+        XCTAssertLessThan(yellow.frame.minX, sand.minX, "Light yellow is not before Sand")
+        shot(app, "look101-colours-picker")
+        tap(app, id: "template-colour-lightyellow")
+        XCTAssertTrue(disappears(app, "icon-picker", timeout: 5), "Light yellow did not close the picker")
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { (card.value as? String) == "#ffef8a" }, "Hiking's cover is not light yellow: '\(card.value as? String ?? "")'")
+        shot(app, "look101-colours-lightyellow")
     }
 
     /// 0.91 — his words (19 Oct 2026): "Also add the possibility to search for icons, and also add
@@ -8253,10 +8395,13 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "trip-row-0")
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
         let label = app.staticTexts["trip-view-label"]
-        XCTAssertTrue(label.waitForExistence(timeout: 5), "no Sorting label")
-        XCTAssertEqual(words(label), "Sorting")
+        XCTAssertTrue(label.waitForExistence(timeout: 5), "no Group by label")
+        // "Sorting" until 0.101 — his words (26 Oct 2026): "please change the word 'Sorting' into
+        // 'Grouping'": Apple's name for it, Group by, on the row and said by VoiceOver on the field.
+        XCTAssertEqual(words(label), "Group by")
         let field = app.buttons["trip-view"]
-        XCTAssertTrue(field.waitForExistence(timeout: 5), "Sorting is not a drop-down")
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "Group by is not a drop-down")
+        XCTAssertEqual(field.label, "Group by", "VoiceOver does not call the field Group by")
         XCTAssertFalse(app.buttons["trip-view-0"].exists, "the sortings are out before the list is opened")
         XCTAssertLessThan(label.frame.maxX, field.frame.minX, "Sorting is not to the LEFT of its field")
         XCTAssertLessThan(abs(label.frame.midY - field.frame.midY), 10, "Sorting is not on the SAME line as its field")
@@ -8264,7 +8409,8 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertLessThanOrEqual(field.frame.maxX, sheet.maxX + 1, "the field runs off the screen")
         XCTAssertGreaterThanOrEqual(label.frame.minX, sheet.minX - 1, "Sorting is pushed off the screen")
         let screen = app.windows.firstMatch.frame
-        XCTAssertTrue(screen.contains(label.frame) && screen.contains(field.frame), "the Sorting row runs off the screen")
+        XCTAssertTrue(screen.contains(label.frame) && screen.contains(field.frame), "the Group by row runs off the screen")
+        shot(app, "look101-groupby")
         XCTAssertEqual(chosen(app, "trip-view"), "When", "When is not the starting sort")
 
         // The list: the six sortings (Template since 0.74), When ticked, every row on the screen.

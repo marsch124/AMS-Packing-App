@@ -123,6 +123,15 @@ struct RootView: View {
                 if AMSPackingApp.testing { RootView.playWhatHappenedWhileAway(model) }
             }
         }
+        // This device checks in by itself while it syncs (0.101, `SyncWatch.checkInIfDue`): as the app
+        // opens, every minute while it runs (a quarter of an hour apart at most), and back in front.
+        .task {
+            while !Task.isCancelled {
+                SyncWatch.checkInIfDue(model)
+                try? await Task.sleep(for: .seconds(60))
+            }
+        }
+        .onChange(of: scenePhase) { _, phase in if phase == .active { SyncWatch.checkInIfDue(model) } }
         // A place's printed code, read by the iPhone's Camera (0.69): it opens on Home.
         .onOpenURL { model.open($0) }
         // A thing's result tapped in Spotlight (0.92) — at a cold start or while the app runs, on
@@ -245,16 +254,30 @@ private struct SectionScreen: View {
 
 private struct TabBar: View {
     @Binding var section: AppSection
+    @EnvironmentObject var model: LibraryModel
 
     var body: some View {
+        // What is still open on the To do tab's two sides (0.101, `Library.toDoTabCount`).
+        let open = model.library.toDoTabCount()
         VStack(spacing: 0) {
             HStack(spacing: 0) {
                 ForEach(AppSection.allCases) { s in
-                    Button { section = s } label: { TabButtonLabel(section: s, active: s == section) }
+                    let count = s == .actions ? open : nil
+                    Button { section = s } label: { TabButtonLabel(section: s, active: s == section, badge: count?.badge) }
                         .buttonStyle(.plain)
                         .focusEffectDisabled()      // no keyboard ring round a tab on the Mac
                         .accessibilityIdentifier("tab-\(s.rawValue)")
                         .accessibilityLabel(s.label)
+                        // The two counts behind the badge, in words: VoiceOver says them, and on the Mac
+                        // they are the tab's tooltip (0.101). The tests read the badge's number too.
+                        #if DEBUG
+                        .accessibilityValue(count.map { c in (c.badge.map { "badge \($0) \u{00B7} " } ?? "no badge \u{00B7} ") + c.words } ?? "")
+                        #else
+                        .accessibilityValue(count.flatMap { $0.total > 0 ? $0.words : nil } ?? "")
+                        #endif
+                        #if os(macOS)
+                        .help(count.flatMap { $0.total > 0 ? $0.words : nil } ?? "")
+                        #endif
                         .accessibilityAddTraits(s == section ? .isSelected : [])
                 }
             }
@@ -280,6 +303,9 @@ private struct TabBar: View {
 private struct TabButtonLabel: View {
     let section: AppSection
     let active: Bool
+    /// The tab's badge (0.101 — his words, 26 Oct 2026: "To-do and to-buy counters on the 'To do'
+    /// navigation pill/button"): To do's open to-dos and to-buys together, nil = none.
+    var badge: String? = nil
 
     var body: some View {
         VStack(spacing: 3) {
@@ -287,6 +313,7 @@ private struct TabButtonLabel: View {
                 .foregroundStyle(active ? Color.white : section.color)
                 .frame(width: 46, height: 30)
                 .background(Capsule().fill(active ? section.color : section.color.opacity(0.14)))
+                .overlay(alignment: .topTrailing) { if let badge { TabBadge(text: badge).offset(x: 9, y: -6) } }
             Text(section.label)
                 .font(.system(.caption, weight: .semibold))
                 .foregroundStyle(active ? Theme.ink : Theme.muted)
@@ -295,6 +322,27 @@ private struct TabButtonLabel: View {
         }
         .frame(maxWidth: .infinity, minHeight: 54)
         .contentShape(Rectangle())
+    }
+}
+
+/// A tab's badge, as Apple draws one on a tab bar (0.101): the number in white on red, a capsule at
+/// least as wide as it is tall, at the top right of the tab's mark — ringed in the bar's own colour,
+/// so it stands apart from the To do mark's red when that tab is open. Hidden from VoiceOver: the
+/// tab says the counts in words.
+private struct TabBadge: View {
+    let text: String
+
+    var body: some View {
+        Text(text)
+            .font(.system(.caption2, weight: .semibold).monospacedDigit())
+            .foregroundStyle(.white)
+            .lineLimit(1).fixedSize()
+            .padding(.horizontal, 5)
+            .frame(minWidth: 18, minHeight: 18)
+            .background(Capsule().fill(AppSection.actions.color))
+            .padding(2)
+            .background(Capsule().fill(Theme.card))
+            .accessibilityHidden(true)
     }
 }
 

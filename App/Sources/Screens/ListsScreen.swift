@@ -61,7 +61,7 @@ struct ListsPage: View {
         /// totally clear to the user".
         var hint: String {
             switch self {
-            case .places: return "Where a thing is kept at home — a cupboard, the garage, the basement. You give a thing its place under Kept at home; a trip sorted by From where then lists what to fetch room by room. The square beside a place is its code: print its label, and the iPhone\u{2019}s Camera opens the app on that place."
+            case .places: return "Where a thing is kept at home — a cupboard, the garage, the basement. You give a thing its place under Kept at home; a trip grouped by From where then lists what to fetch room by room. The square beside a place is its code: print its label, and the iPhone\u{2019}s Camera opens the app on that place."
             case .owners: return "Whose a thing is — you, your partner, a child. You pick it under Whose it is on a thing, so on a shared trip everyone sees which things are theirs."
             case .people: return "Who packs a thing. You set it in the All your things table (Packed by), so you can see who is in charge of what."
             case .conditions: return "How worn a thing is: New, Good, Worn, Needs replacing. You set it under Condition on a thing; a thing that needs replacing is suggested on To buy."

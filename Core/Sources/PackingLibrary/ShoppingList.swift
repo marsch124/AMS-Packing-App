@@ -59,3 +59,36 @@ extension Library {
         return true
     }
 }
+
+// The To do tab's count (0.101 — his words, 26 Oct 2026: "To-do and to-buy counters on the
+// 'To do' navigation pill/button"). Apple's way for a tab: a badge with one number — what is still
+// open on BOTH sides of the tab, to do and to buy — and the two counts said in words (VoiceOver,
+// and the Mac's tooltip on the tab). Nothing open: no badge at all.
+
+/// What is still open on each side of the To do tab — the same counts its page shows ("3 to do",
+/// "2 to buy").
+public struct ToDoTabCount: Equatable, Sendable {
+    public let toDo: Int
+    public let toBuy: Int
+    public init(toDo: Int, toBuy: Int) { self.toDo = toDo; self.toBuy = toBuy }
+
+    public var total: Int { toDo + toBuy }
+
+    /// The badge's number; "99+" past 99, as Apple's own badges; nil = nothing open, no badge.
+    public var badge: String? { total == 0 ? nil : total > 99 ? "99+" : "\(total)" }
+
+    /// The two counts in words — "3 to do · 2 to buy", a side with nothing open left out;
+    /// "Nothing open" when both are empty.
+    public var words: String {
+        let parts = [toDo > 0 ? "\(toDo) to do" : nil, toBuy > 0 ? "\(toBuy) to buy" : nil].compactMap { $0 }
+        return parts.isEmpty ? "Nothing open" : parts.joined(separator: " \u{00B7} ")
+    }
+}
+
+extension Library {
+    /// The lines on the buy-list not bought yet — To buy's "2 to buy".
+    public func openToBuyCount() -> Int { buyList().filter { !$0.done }.count }
+
+    /// The To do tab's count: open to-dos and open to-buys (0.101).
+    public func toDoTabCount() -> ToDoTabCount { ToDoTabCount(toDo: openToDoCount(), toBuy: openToBuyCount()) }
+}

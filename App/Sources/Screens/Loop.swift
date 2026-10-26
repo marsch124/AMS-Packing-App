@@ -222,8 +222,17 @@ struct LoopWords: View {
     }
 }
 
-/// The slim line on a trip, its review and Refine: the five steps, the one this
-/// is at filled in, with the step's own mark (0.77). A tap opens the whole picture.
+/// The slim line on a trip, its review and Refine: the five steps, each with the step's own mark
+/// (0.77). A tap opens the whole picture.
+///
+/// 0.101 — his words (26 Oct 2026): "The upper 'pack pill' should have the same colour shading as
+/// the lower Station: Pack as they are ongoing. The full colour means Done." So the strip reads as
+/// the Stations row does (`StationChip`), one rule for both (`LoopStep.stage(at:)`): a step before
+/// the one the trip is at is DONE — full colour, white words; the one it is at is being worked on —
+/// a light shading of its colour with the stronger 2-point ring, the Stations' "next to do"; a step
+/// after it is AHEAD — the card with its colour's outline. Each step keeps its own colour (Plan and
+/// Refine violet, the rest green). Until 0.101 the step it was at was the full one and the steps
+/// before it looked like those still ahead.
 ///
 /// Five names and their marks do not fit an iPhone's width (On site joined, 3 Oct
 /// 2026), so the strip slims down until it fits: every mark where there is room (the
@@ -252,9 +261,24 @@ struct LoopDoor: View {
         }
         .buttonStyle(.plain).focusEffectDisabled()
         .accessibilityIdentifier(id)
-        .accessibilityLabel("The loop")
+        // What the colours show, said (0.101): "The loop. Done: Plan. You are here: Pack. Ahead: On
+        // site, Review, Refine." — the value stays the step's name, as the tests have always read it.
+        .accessibilityLabel(LoopDoor.said(here))
         .accessibilityValue(here.name)
         .sheet(isPresented: $open) { LoopScreen(here: here) }
+    }
+
+    /// The strip in words, as its colours show it (0.101).
+    static func said(_ here: Library.LoopStep) -> String {
+        let steps = Library.LoopStep.allCases
+        func names(_ stage: Library.LoopStage) -> String {
+            steps.filter { $0.stage(at: here) == stage }.map(\.name).joined(separator: ", ")
+        }
+        var parts = ["The loop"]
+        if !names(.done).isEmpty { parts.append("Done: \(names(.done))") }
+        parts.append("You are here: \(here.name)")
+        if !names(.ahead).isEmpty { parts.append("Ahead: \(names(.ahead))") }
+        return parts.joined(separator: ". ") + "."
     }
 
     private func strip(_ fit: Fit) -> some View {
@@ -268,20 +292,33 @@ struct LoopDoor: View {
                     SVGPath.path("M\(x) 7l5 5-5 5").stroke(style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round))
                         .frame(width: fit.arrow, height: 24).foregroundStyle(Theme.muted)
                 }
-                let on = step == here
+                let stage = step.stage(at: here)
                 HStack(spacing: 4) {
                     // Slimmed down, the step it is at keeps its mark.
-                    if fit.marks || on { StepMark(step: step, size: 13) }
+                    if fit.marks || stage == .here { StepMark(step: step, size: 13) }
                     Text(step.name)
                         .font(.system(fit.size < 14 ? .caption : .footnote, weight: .semibold))
                         .lineLimit(1).fixedSize()
                 }
-                    .foregroundStyle(on ? Color.white : step.words(scheme))
+                    .foregroundStyle(stage == .done ? Color.white : step.words(scheme))
                     .padding(.horizontal, fit.pad).frame(minHeight: 28)
-                    // A solid card under the others, so they stand out on the
-                    // green of an all-packed trip too (night mode, 2026-09-27).
-                    .background(Capsule().fill(on ? step.tint : Theme.card))
-                    .overlay(Capsule().stroke(step.tint.opacity(on ? 0 : 0.7), lineWidth: 1.2))
+                    // The Stations' looks (0.101): done full, here a light shading — over a solid card,
+                    // so it stands out on the green of an all-packed trip too (night mode, 2026-09-27) —
+                    // ahead the card itself.
+                    .background {
+                        switch stage {
+                        case .done: Capsule().fill(step.tint)
+                        case .here: Capsule().fill(Theme.card).overlay(Capsule().fill(step.tint.opacity(0.14)))
+                        case .ahead: Capsule().fill(Theme.card)
+                        }
+                    }
+                    .overlay {
+                        switch stage {
+                        case .done: EmptyView()
+                        case .here: Capsule().stroke(step.tint, lineWidth: 2)
+                        case .ahead: Capsule().stroke(step.tint.opacity(0.7), lineWidth: 1.2)
+                        }
+                    }
             }
             // No "round again" arrow after Refine: it read as a reload button (his
             // screenshot, 2026-09-28). The loop itself is in the picture a tap opens.

@@ -193,4 +193,19 @@ final class LoopTests: XCTestCase {
         XCTAssertTrue(Library.LoopStep.review.mark.path.hasSuffix("M18.4 16.9l2.6 2.6"), "Review's magnifier has no handle")
         XCTAssertTrue(Library.LoopStep.refine.mark.path.hasSuffix("M7.5 20.5h9"), "Refine's sprout has no ground")
     }
+
+    /// 0.101 — his words (26 Oct 2026): "The upper 'pack pill' should have the same colour shading
+    /// as the lower Station: Pack as they are ongoing. The full colour means Done." One rule for the
+    /// strip: before the step a trip stands at, done; at it, here; after it, ahead.
+    func testTheStripSaysDoneHereAndAheadAsTheStationsDo() {
+        let all = Library.LoopStep.allCases
+        XCTAssertEqual(all.map { $0.stage(at: .pack) }, [.done, .here, .ahead, .ahead, .ahead],
+                       "a trip at Pack: Plan is done, Pack is the one being worked on, the rest ahead")
+        XCTAssertEqual(all.map { $0.stage(at: .plan) }, [.here, .ahead, .ahead, .ahead, .ahead], "at Plan nothing is done yet")
+        XCTAssertEqual(all.map { $0.stage(at: .review) }, [.done, .done, .done, .here, .ahead], "at Review, Refine is still ahead")
+        XCTAssertEqual(all.map { $0.stage(at: .refine) }, [.done, .done, .done, .done, .here], "at Refine every step before it is done")
+        for here in all {
+            XCTAssertEqual(all.filter { $0.stage(at: here) == .here }, [here], "more than one step is being worked on at \(here.name)")
+        }
+    }
 }

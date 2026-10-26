@@ -43,9 +43,9 @@ final class TemplateColourTests: XCTestCase {
     /// from every other colour, none of them teal or cyan, and read day and night as the rest do.
     func testMoreColoursStillFillTwoRowsAndTheOldOnesStayAsTheyWere() {
         let palette = TemplateColour.palette
-        XCTAssertEqual(palette.count, 15, "Automatic and fifteen: two rows of eight")
+        XCTAssertEqual(palette.count, 17, "Automatic and seventeen (0.101; fifteen in 0.91): two rows of nine")
         XCTAssertEqual(TemplateColour.pickerRows, 2)
-        XCTAssertEqual(TemplateColour.pickerColumns, 8)
+        XCTAssertEqual(TemplateColour.pickerColumns, 9)
         XCTAssertEqual((palette.count + 1) % TemplateColour.pickerRows, 0, "a short second row")
         XCTAssertEqual(TemplateColour.pickerColumns * TemplateColour.pickerRows, palette.count + 1, "not two full rows")
         // The eleven of 0.90, as a template may have stored them.
@@ -68,6 +68,26 @@ final class TemplateColourTests: XCTestCase {
             let (hue, saturation) = hueAndSaturation(a.hex)
             XCTAssertFalse((160...200).contains(hue) && saturation > 0.2, "\(a.key) is teal or cyan (hue \(Int(hue)))")
         }
+    }
+
+    /// 0.101 — his words (26 Oct 2026): "Add Template Icons Colours: Light blue and Light yellow."
+    /// Both pale, so white does not read on them (day or night: a cover's fill is the same by
+    /// night): their icon is drawn in the app's own ink. Still two rows; the others as they were.
+    func testLightBlueAndLightYellowJoinWithTheAppsInkOnThem() {
+        let palette = TemplateColour.palette
+        for (key, name) in [("lightblue", "Light blue"), ("lightyellow", "Light yellow")] {
+            guard let c = palette.first(where: { $0.key == key }) else { return XCTFail("no \(name) in the palette") }
+            XCTAssertEqual(c.name, name)
+            XCTAssertLessThan(contrastRatio("#ffffff", c.hex), 3, "\(name): white would read on it — then keep white")
+            XCTAssertEqual(c.ink, Library.pillDarkInk, "\(name): its icon is not in the app's ink")
+            XCTAssertGreaterThanOrEqual(contrastRatio(c.ink, c.hex), 7, "\(name): the app's ink does not read on it")
+            XCTAssertEqual(Library.coverInk(newList(name: "Beach", color: c.hex)), c.ink, "\(name): a cover does not take its ink")
+        }
+        // In the order of the wheel: Light blue after Navy, Light yellow before Sand.
+        let keys = palette.map(\.key)
+        XCTAssertEqual(keys.firstIndex(of: "lightblue"), keys.firstIndex(of: "navy").map { $0 + 1 }, "Light blue is not after Navy")
+        XCTAssertEqual(keys.firstIndex(of: "lightyellow"), keys.firstIndex(of: "sand").map { $0 - 1 }, "Light yellow is not before Sand")
+        XCTAssertEqual(TemplateColour.pickerColumns * TemplateColour.pickerRows, palette.count + 1, "not two full rows")
     }
 
     // MARK: - Colour arithmetic for the separation check

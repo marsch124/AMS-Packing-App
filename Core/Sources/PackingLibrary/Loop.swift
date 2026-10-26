@@ -26,6 +26,21 @@ extension Library {
 
         /// Pack, On site and Review are about one trip; Plan and Refine about the lists.
         public var aboutOneTrip: Bool { self == .pack || self == .onSite || self == .review }
+
+        /// How this step looks on the loop strip of a trip, its review and Refine, which stand
+        /// at `here` (0.101 — his words, 26 Oct 2026: "The upper 'pack pill' should have the same
+        /// colour shading as the lower Station: Pack as they are ongoing. The full colour means
+        /// Done."). ONE rule for the strip and the Stations row: a step before `here` is done
+        /// (full colour), `here` is the one being worked on (the light shading with the stronger
+        /// ring of the Stations' next to do), a step after it is ahead (outlined).
+        public func stage(at here: LoopStep) -> LoopStage {
+            rawValue < here.rawValue ? .done : rawValue == here.rawValue ? .here : .ahead
+        }
+    }
+
+    /// A loop step seen from where a trip stands (`LoopStep.stage(at:)`, 0.101).
+    public enum LoopStage: String, Sendable, CaseIterable {
+        case done, here, ahead
     }
 
     /// Where a trip stands in the loop. Reviewed: what it taught now waits in

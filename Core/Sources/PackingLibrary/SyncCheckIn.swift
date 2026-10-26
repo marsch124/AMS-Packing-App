@@ -21,6 +21,33 @@ extension Library {
         guard let at = meta[syncCheckKey(device)]?.objectValue?["at"]?.stringValue, !at.isEmpty else { return nil }
         return at
     }
+
+    // A device checks in BY ITSELF while it syncs (0.101). His Sync details on the Mac, 26 Oct 2026:
+    // "This Mac checked in 10 Oct 19:11" while the same card said "Sent today 11:52 · received today
+    // 11:51". Nothing was lost: until 0.101 a check-in was written ONLY by a press of Sync now, so a
+    // device that synced all day — the Mac, never pressed since 10 Oct — kept its last press, while
+    // the iPhone's line moved because Sync now had been pressed there. Now each device with iCloud on
+    // checks in on its own once its last check-in is `checkInEvery` old, so both lines say when each
+    // device was last there; Sync now still checks in at once.
+
+    /// How old a device's check-in may grow before it checks in again by itself.
+    public static let checkInEvery: TimeInterval = 15 * 60
+
+    /// Is this device's check-in due — never made, `checkInEvery` old or older, or written by a clock
+    /// that was ahead (a check-in from the future would otherwise stand until that time came)?
+    public func checkInDue(device: String, now: Date = PackingEnv.now()) -> Bool {
+        guard let at = lastCheckIn(device: device), let then = isoMoment(at) else { return true }
+        let age = now.timeIntervalSince(then)
+        return age >= Library.checkInEvery || age < -60
+    }
+
+    /// Check in by itself when due (`checkInDue`); true when it did.
+    @discardableResult
+    public mutating func checkInIfDue(device: String, now: Date = PackingEnv.now()) -> Bool {
+        guard checkInDue(device: device, now: now) else { return false }
+        checkIn(device: device, at: jsISOString(now))
+        return true
+    }
 }
 
 extension Library {

@@ -92,4 +92,25 @@ final class ShoppingListTests: XCTestCase {
         XCTAssertEqual(lib.buyList().map(\.text), ["Gas canister"])
         XCTAssertEqual(lib.buyList()[0].itemId, "")
     }
+
+    /// 0.101 — his words (26 Oct 2026): "To-do and to-buy counters on the 'To do' navigation
+    /// pill/button". The tab's badge counts what is still open on both of its sides — the same
+    /// counts its page shows — and says the two apart in words; nothing open, no badge.
+    func testTheToDoTabCountsWhatIsOpenOnBothSides() {
+        var lib = Library()
+        XCTAssertNil(lib.toDoTabCount().badge, "a badge with nothing to do or buy")
+        XCTAssertEqual(lib.toDoTabCount().words, "Nothing open")
+        lib.actions = [newAction(text: "Renew passport"), newAction(text: "Book parking"),
+                       newAction(text: "Water the plants", done: true),
+                       newAction(text: "Sun cream", kind: "shopping"), newAction(text: "Plasters", kind: "shopping", done: true)]
+        let count = lib.toDoTabCount()
+        XCTAssertEqual(count, ToDoTabCount(toDo: 2, toBuy: 1), "the tab does not count what is open: \(count)")
+        XCTAssertEqual(count.toDo, lib.sortedActions(kind: "todo").filter { !$0.done }.count, "not the To do page's own count")
+        XCTAssertEqual(count.toBuy, lib.buyList().filter { !$0.done }.count, "not the To buy page's own count")
+        XCTAssertEqual(count.badge, "3", "the badge is not the two sides together")
+        XCTAssertEqual(count.words, "2 to do \u{00B7} 1 to buy")
+        XCTAssertEqual(ToDoTabCount(toDo: 0, toBuy: 4).words, "4 to buy", "a side with nothing open is said")
+        XCTAssertEqual(ToDoTabCount(toDo: 1, toBuy: 0).words, "1 to do")
+        XCTAssertEqual(ToDoTabCount(toDo: 70, toBuy: 30).badge, "99+", "a badge past 99 is not cut short as Apple's are")
+    }
 }

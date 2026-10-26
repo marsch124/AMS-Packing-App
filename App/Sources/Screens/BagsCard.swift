@@ -166,7 +166,7 @@ struct BagsCard: View {
                     }
                     if !reviewed {
                         if let first = empty.first {
-                            Text("To fill \(first), pick it as Usually packed in on its things\u{2019} pages \u{2014} sorted by Into, the list shows what is in each bag.")
+                            Text("To fill \(first), pick it as Usually packed in on its things\u{2019} pages \u{2014} grouped by Into, the list shows what is in each bag.")
                                 .font(.system(.footnote)).foregroundStyle(Theme.muted)
                                 .fixedSize(horizontal: false, vertical: true)
                                 .accessibilityIdentifier("bags-addbag-hint")

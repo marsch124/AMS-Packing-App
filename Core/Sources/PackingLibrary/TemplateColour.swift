@@ -37,6 +37,12 @@ public struct TemplateColour: Equatable, Sendable, Identifiable {
     /// eleven of 0.90 left a gap (purple-red, dark blue, yellow-green, a pale warm one) — so
     /// Automatic and fifteen fill two rows of eight. A key and its hex never change (a
     /// template stores the hex); a new colour is added, none renamed or taken away.
+    ///
+    /// 0.101 — his words (26 Oct 2026): "Add Template Icons Colours: Light blue and Light
+    /// yellow." Two pale ones: Light blue after Navy, Light yellow before Sand — Automatic and
+    /// seventeen, two rows of nine. White reads on neither (1.8 : 1 on the light blue, 1.2 : 1 on
+    /// the light yellow), so their icon is drawn in the app's own ink (`pillDarkInk`, `Theme.ink`
+    /// by day; the fill is the same by night, and so is the ink): 9 : 1 and 13.7 : 1.
     public static let palette: [TemplateColour] = [
         TemplateColour(key: "blue", name: "Blue", hex: "#0a84ff", ink: "#ffffff"),            // Swim
         TemplateColour(key: "yellow", name: "Yellow", hex: "#ffd60a", ink: "#3d3000"),        // Bike
@@ -49,7 +55,9 @@ public struct TemplateColour: Equatable, Sendable, Identifiable {
         TemplateColour(key: "violet", name: "Violet", hex: "#7c5cd6", ink: "#ffffff"),
         TemplateColour(key: "indigo", name: "Indigo", hex: "#4f46e5", ink: "#ffffff"),
         TemplateColour(key: "navy", name: "Navy", hex: "#2a5194", ink: "#ffffff"),            // 0.91
+        TemplateColour(key: "lightblue", name: "Light blue", hex: "#8cc8ff", ink: "#16232a"), // 0.101
         TemplateColour(key: "olive", name: "Olive", hex: "#6e7b1f", ink: "#ffffff"),          // 0.91
+        TemplateColour(key: "lightyellow", name: "Light yellow", hex: "#ffef8a", ink: "#16232a"), // 0.101
         TemplateColour(key: "sand", name: "Sand", hex: "#d9b98c", ink: "#3d2a10"),            // 0.91
         TemplateColour(key: "brown", name: "Brown", hex: "#8b5e3c", ink: "#ffffff"),
         TemplateColour(key: "slate", name: "Grey", hex: "#64748b", ink: "#ffffff"),
@@ -59,7 +67,7 @@ public struct TemplateColour: Equatable, Sendable, Identifiable {
     /// them on two lines") …
     public static let pickerRows = 2
 
-    /// … so this many swatches to a row: Automatic and fifteen = eight. The palette is kept
+    /// … so this many swatches to a row: Automatic and seventeen = nine (eight until 0.101). The palette is kept
     /// at a size that fills both rows (`TemplateColourTests`).
     public static var pickerColumns: Int { (palette.count + 1 + pickerRows - 1) / pickerRows }
 
