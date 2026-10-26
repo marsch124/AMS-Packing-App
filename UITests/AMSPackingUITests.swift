@@ -15497,10 +15497,11 @@ final class AMSPackingUITests: XCTestCase {
         func litLine() -> Int? { (0..<24).first { self.find(app, "trip-flash-\($0)") != nil } }
         var lit: Int?
         XCTAssertTrue(waitUntil(timeout: 3) { lit = litLine(); return lit != nil }, "Pack showed nothing on the list")
-        let line = app.buttons["trip-line-\(lit ?? -1)"]
-        XCTAssertTrue(line.exists && line.isHittable, "the line lit is not in view")
-        XCTAssertFalse(line.isSelected, "the line lit is packed already")
         shot(app, "stations-pack-lit")
+        // The copy of the line on screen (the Mac's list can keep a stale one out of sight, `shownRow`).
+        let line = shownRow(app, "trip-line-\(lit ?? -1)")
+        XCTAssertNotNil(line, "the line lit is not in view")
+        XCTAssertFalse(line?.isSelected ?? true, "the line lit is packed already")
         XCTAssertTrue(waitUntil(timeout: 6) { litLine() == nil }, "the light did not fade")
         station(app, "pack", opens: false)
         XCTAssertTrue(waitUntil(timeout: 3) { litLine() != nil }, "a second tap on Pack, the list in view, showed nothing")
