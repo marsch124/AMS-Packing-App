@@ -15493,15 +15493,17 @@ final class AMSPackingUITests: XCTestCase {
         station(app, "pack", opens: false)
         XCTAssertTrue(waitUntil { pack.isSelected }, "Pack is not lit after a tap")
         XCTAssertFalse(weigh.isSelected)
-        XCTAssertTrue(appears(app, "trip-flash", timeout: 3), "Pack showed nothing on the list")
-        let lit = find(app, "trip-flash")?.value as? String ?? ""
-        XCTAssertTrue(lit.hasPrefix("trip-line-"), "the light names no line: '\(lit)'")
-        XCTAssertTrue(app.buttons[lit].isHittable, "the line lit is not in view")
-        XCTAssertFalse(app.buttons[lit].isSelected, "the line lit is packed already")
+        // The light is `trip-flash-<n>` on the row of `trip-line-<n>` while it shows.
+        func litLine() -> Int? { (0..<24).first { self.find(app, "trip-flash-\($0)") != nil } }
+        var lit: Int?
+        XCTAssertTrue(waitUntil(timeout: 3) { lit = litLine(); return lit != nil }, "Pack showed nothing on the list")
+        let line = app.buttons["trip-line-\(lit ?? -1)"]
+        XCTAssertTrue(line.exists && line.isHittable, "the line lit is not in view")
+        XCTAssertFalse(line.isSelected, "the line lit is packed already")
         shot(app, "stations-pack-lit")
-        XCTAssertTrue(disappears(app, "trip-flash", timeout: 6), "the light did not fade")
+        XCTAssertTrue(waitUntil(timeout: 6) { litLine() == nil }, "the light did not fade")
         station(app, "pack", opens: false)
-        XCTAssertTrue(appears(app, "trip-flash", timeout: 3), "a second tap on Pack, the list in view, showed nothing")
+        XCTAssertTrue(waitUntil(timeout: 3) { litLine() != nil }, "a second tap on Pack, the list in view, showed nothing")
     }
 
 

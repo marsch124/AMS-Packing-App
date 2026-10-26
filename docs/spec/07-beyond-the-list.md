@@ -2840,7 +2840,7 @@ when the list was in view already.
   with the list in view already, the same. Chosen as the calm Apple way: iOS Settings lights the row a search opens
   the same way; a pulse of a heading says less (which line?). Everything packed, or every open line folded away: the
   top of the list, as before. Reduce Motion: the scroll jumps, the light still fades. The lit row carries an element
-  of its own for the tests (`trip-flash`, value `trip-line-<n>`) while it shows.
+  of its own for the tests (`trip-flash-<n>`, beside `trip-line-<n>`) while it shows.
 
 Tests: model `ThingRemindersAheadTests.testTheStationHeTapsStaysLitUntilHeTapsAnother` (RED with `lit` planted as
 `current`: `("bagsOut") is not equal to ("pack") - Bags out not done, but he is packing`); UI

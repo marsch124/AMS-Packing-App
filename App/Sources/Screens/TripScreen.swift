@@ -521,8 +521,7 @@ struct TripScreen: View {
                                             .padding(.horizontal, -6)
                                             .accessibilityElement()
                                             .accessibilityLabel("Next to pack")
-                                            .accessibilityValue("trip-line-\(n)")
-                                            .accessibilityIdentifier("trip-flash")
+                                            .accessibilityIdentifier("trip-flash-\(n)")
                                     }
                                 }
                                 .animation(.easeOut(duration: 0.6), value: flash == line.id)
