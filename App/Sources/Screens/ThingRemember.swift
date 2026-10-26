@@ -64,7 +64,14 @@ struct ThingRememberPart: View {
     @State private var query = ""
 
     private var tint: Color { AppSection.care.color }
-    private var thing: String { let n = jsTrim(name); return n.isEmpty ? "this thing" : "the \(n.lowercased())" }
+    /// "the camera" — a name's capital lowered only where it starts an ordinary word ("the USB-C cable", "the iPhone").
+    private var thing: String {
+        let n = jsTrim(name)
+        guard let first = n.first else { return "this thing" }
+        let second = n.dropFirst().first
+        let plain = first.isUppercase && (second.map { $0.isLowercase } ?? true)
+        return "the " + (plain ? first.lowercased() + n.dropFirst() : n)
+    }
 
     var body: some View {
         if draft.none {

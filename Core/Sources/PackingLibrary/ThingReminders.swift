@@ -181,7 +181,8 @@ extension Library {
               let trip = trips.first(where: { $0.id == tripId }), !Library.isReviewed(trip) else { return [:] }
         var byId: [String: Item] = [:]
         for i in items where byId[i.id] == nil { byId[i.id] = i }
-        let names = thingNames(), index = kitIndex()
+        // His things by name are asked only for a line he typed (asked on every draw of the trip).
+        let names = trip.entries.contains(where: \.custom) ? thingNames() : [:], index = kitIndex()
         var out: [String: [ThingReminderOnTrip]] = [:]
         var placed = Set<String>()
         for line in trip.entries where !isSetAside(line) && !Library.isReminder(line) {
