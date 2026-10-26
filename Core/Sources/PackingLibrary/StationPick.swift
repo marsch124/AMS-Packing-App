@@ -32,10 +32,11 @@ public enum StationPicks {
 
 extension PackingDay {
     /// The station lit on the row and shown as "here": the one he tapped last on this trip while
-    /// it can be done (a station asking about bags needs bags) — done or not, it stays his until he
-    /// taps another; with none tapped, the first not done (`current`).
+    /// it can be done (a station asking about bags needs bags) and is not done yet — once it is
+    /// done, the lit one moves on to the first not done (`current`), as after finishing Bags out
+    /// Pack lights (0.101, merged with the strip's rule); with none tapped, the first not done.
     public func lit(picked: PackingDayStation?) -> PackingDayStation {
-        guard let picked, usable(picked) else { return current }
+        guard let picked, usable(picked), !done(picked) else { return current }
         return picked
     }
 }

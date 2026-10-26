@@ -422,7 +422,8 @@ final class ThingRemindersAheadTests: XCTestCase {
         XCTAssertEqual(day.lit(picked: nil), .bagsOut, "none tapped: the first not done")
         XCTAssertEqual(day.lit(picked: .pack), .pack, "Bags out not done, but he is packing")
         let done = PackingDay(bags: [PackingDay.Bag(name: "Carry-on", things: 3, out: true)], packed: 3, total: 3)
-        XCTAssertEqual(done.lit(picked: .bagsOut), .bagsOut, "done, it stays his until he taps another")
+        XCTAssertEqual(done.lit(picked: .bagsOut), done.current, "done, the lit one moves on to the first not done")
+        XCTAssertNotEqual(done.lit(picked: .bagsOut), .bagsOut, "a station done stays lit")
         let none = PackingDay(bags: [], packed: 0, total: 3)
         XCTAssertEqual(none.lit(picked: .weigh), .pack, "a station that cannot be done falls back to the first not done")
         // Kept per trip, the newest last, and never more than `kept` trips.
