@@ -44,7 +44,9 @@ extension Library {
     }
 
     /// A thing's fields that are lists each device adds to (0.95): its photos and what it holds as a kit.
-    static let thingLists: Set<String> = ["photos", KIT_CONTENTS_KEY, KIT_OUT_KEY]
+    static let thingLists: Set<String> = ["photos", KIT_CONTENTS_KEY, KIT_OUT_KEY, THING_REMINDERS_KEY, GOES_WITH_KEY]
+    /// A trip line's fields that are lists (0.101): the thing reminders ticked, what brought it along.
+    static let lineLists: Set<String> = [REMINDERS_DONE_KEY, WITH_THINGS_KEY]
 
     // A trip, its head and each of its lines on their own (0.93, the outside review of 0.92 — his
     // "fix 1, 2 and 6"). A page never edits a trip itself, but what it does reaches the trips ahead:
@@ -95,7 +97,7 @@ extension Library {
             guard let was = before[x.id] else { out.append(x); continue }
             guard let now = after[x.id] else { continue }
             if was == now { out.append(x); continue }
-            let merged = Library.fieldsPut(was.json, now.json, into: x.json, except: [])
+            let merged = Library.fieldsPut(was.json, now.json, into: x.json, except: [], lists: Library.lineLists)
             out.append(merged.map { Item(json: $0) } ?? x)
         }
         for x in to where before[x.id] == nil && !placed.contains(x.id) {

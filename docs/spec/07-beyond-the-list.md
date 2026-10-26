@@ -34,6 +34,7 @@ this chapter holds the parts that span several screens and the decisions behind 
 | 18. Lost luggage — C. The Lost bag page (and his details for the desk) | 0.80 | built (branch work/lostbag080) |
 | 19. Before you start — what to buy and get ready, in one place | 0.82 | built (branch work/beforestart082) |
 | 20. Progress you can see — green groups and what's left | 0.82 | built (branch work/progress082) |
+| 21. Reminders on things — Remember with it, Goes with | 0.101 | built (branch work/remind101) |
 
 Parts 1–6 are specified in their screens' chapters by the version that builds them; their summaries here point
 there. Parts 7–10 are specified in full below (part 8 from the code since 0.70).
@@ -3796,6 +3797,149 @@ left is not under the count"). Green again without them, day and night.
 
 ---
 
+## 21. Reminders on things — Remember with it, Goes with
+
+His yes to the picture, 26 Oct 2026 ("build it"): three phone drawings — a thing's page (Camera), a trip while
+packing, To do a week before the trip — with **A · Remember with it** ("short notes on a thing, each with a time …
+Only on trips where that thing is packed") and **B · Goes with** ("other things that belong to it. They join the trip
+as their own lines, marked "with Camera". Take the camera off the trip and they go too, unless something else needs
+them"). Built from the code of 0.101; where the picture left a choice open, the build decided and says so below.
+
+### What he sees
+
+- **On a thing's page**, right under Photos (the picture's place: under Notes, above the rest), two blocks
+  (`ThingRememberPart`, App/Sources/Screens/ThingRemember.swift; neither on a bag or a template's reminder):
+  - **Remember with it** (`thing-remember`; heading `thing-heading-remember`). Each reminder a line (`thing-remind-<n>`,
+    value = its When's label): its words, on the right its When in the step's own colour; with two or more a grip ≡ at
+    its left (`thing-remind-<n>-grip`, hold and drag, as a template's reminders). A press opens it in place: its words
+    (`thing-remind-name`; "A reminder needs words." / "This thing has that reminder already." under it,
+    `thing-remind-name-needs`), **When** (`thing-remind-when`, his steps), ↑ ↓ on the Mac (`thing-remind-up` / `-down`),
+    **Done** (`thing-remind-done`, the page's orange, never grey) and **Remove reminder** (`thing-remind-remove`) —
+    at once, without a question: everything here waits for the page's Save, so Cancel brings it back. The foot:
+    **Add a reminder** (`thing-remind-add-name`) and **Add** (`thing-remind-add`; "Type the reminder first." /
+    "This thing has that reminder already.", `thing-remind-add-needs`), then **When** (`thing-remind-add-when`; a new
+    reminder starts at the last one's When, else the step one day ahead, else the step a new thing gets — as on a
+    template). Under it, muted: "Shows on trips where the camera is packed — in To do at its time, and under its line
+    when you tick it."
+  - **Goes with** (`thing-with`; heading `thing-heading-with`): a chip per thing (its name `thing-with-<n>`, its ✕
+    `thing-with-<n>-remove` beside it, never inside a button); **Add a thing** (`thing-with-add`, "Close the list"
+    while open) opens Find a thing (`thing-with-search`) and his things A–Z, eight at a time (`thing-with-pick-<n>`;
+    not itself, not a bag, not a template's reminder, not one chosen already). Under it, muted: "When the camera goes on
+    a trip, these come along as their own lines, each in its own bag and place."
+  - Both are the page's like every field: nothing is stored before **Save**; **Cancel** keeps nothing (0.98's Apple
+    way); a change makes a swipe down ask first (`thingChanged` counts them). Not in the Mac's keys' walk (Tab) — reached
+    by the mouse, like the photos.
+- **On a trip** (TripScreen; `PackLine`):
+  - a line whose thing has reminders not ticked on this trip says so after its name: **"2 left"** — small, orange on a
+    soft orange patch (`RemindLeftMark`, id `trip-line-<n>-left`, read "2 to remember"), also while the line is
+    ticked; not on a line set aside;
+  - ticked, the line shows its thing's open reminders right **under it** (`ThingRemindersUnder`, container
+    `trip-line-<n>-remind`): each a row `trip-line-<n>-remind-<k>` — a small orange tick circle, **"Before it goes:"**
+    in orange and the words. A press ticks it: it stays a moment struck through and ticked (1.6 s), then goes; the
+    "N left" counts down. Pressed again within that moment it is unticked. The rows sit OUTSIDE the line's B1 box
+    (spec 03, 0.96) so the struck-through moment survives the line's face being renewed;
+  - a line that came along with another thing says **"with Camera"** under its name — small, violet on a soft violet
+    patch (`WithMark`, id `trip-line-<n>-with`; two bringers "with Camera, Toothbrush"). Under the name, not beside it
+    (the picture had it at the right): beside the name it cut "USB-C cable" to "USB-C ca…" on an iPhone;
+  - **Before you go → To do** (spec 03; `trip-beforego-part-todo`): a thing's reminders whose step has come, after the
+    template reminders, each `trip-check-remind-<n>`: a tick circle, **"Camera: "** (muted) + the words (ink), the step
+    under it; label "Camera: Empty the SD card, to do. Tick it". A press ticks it — the same tick as under the line —
+    and it leaves the card. The card's count counts them.
+- **Home's countdown**: the green "To do: …" line names them too ("Camera: Empty the SD card"), and its "<n> to do".
+
+"To do" in the picture is this: the template reminders live in Before you go's To do on the trip and in Home's
+countdown (part 12 — the To do TAB is not used for them, decided 7 Oct 2026), so a thing's reminders stand there with
+them. The To do tab is unchanged.
+
+### The rules (decided by the build, 26 Oct 2026)
+
+- **Only on trips where the thing is on the list.** A thing is on a trip by a line built from it (`sourceItemId`), by a
+  line he TYPED on the trip with its name (any capitals), or — inside a kit — by its kit's line (not when taken out of
+  the kit). Its reminders are carried by the first such line not set aside, in the trip's order (a kit's content: the
+  kit's line, in the content's own name: "Camera: …"). Set aside (⊘) = not on the trip. None on a reviewed trip.
+- **Due** as a template reminder is (`dueReminders`): the step's day — the trip's start less its lead days — is today
+  or past; in the timeline's order, then the trip's. A trip without a start date: never due, still under the line. A
+  When this device does not know: never due.
+- **One tick per trip**, kept on the carrying line (`remindDone`): under the line and in Before you go it is the same.
+  Unticking the thing does not untick its reminders. Not counted in the trip's x/y, "All packed" or the review — they
+  are not lines.
+- **Goes with — one level.** When a trip is built (Create trip, Trip settings' Save — `builtLines`, so a rebuild too),
+  each thing on it brings what goes with it, as its own line made the way a template's is (`entryFromItem` of the thing
+  resolved alone): its own bag, When, place, weight; its section the one its first template that gives it one names;
+  marked `withThings: [the bringers]`. What goes with a thing that came along is NOT followed — no chains, so no loops.
+  A thing already on the trip (a template's line, one he typed, one set aside, one another thing brought) is not added
+  again; one brought by two things is one line naming both. A thing inside a kit comes as its kit (a thing in a kit is
+  never a line of its own); a kit's contents bring theirs. A bag, a template's reminder, a thing Not in use: never.
+- **"Add a thing" on the trip** with the name of one of his things brings what goes with it too (`bringCompanions`,
+  after `addCustomLine`; Bought on site and the weather's + do not).
+- **Taking it off** — Trip settings' Save without its template: the lines that came only with it go (the rebuild does
+  not make them); a template, another thing still on the trip, or a line he typed keeps it — the "with" mark then
+  names only what still brings it, none when a template has it. A companion already ticked stays, its mark gone
+  (the rebuild's own rule: a ticked line nothing covers is kept).
+- **⊘ "not this time"** on a line sets aside every line that came along ONLY with what it carries, unless packed
+  (`followAside`); ↻ takes back each line set aside that names it. A line with no "with" mark is never touched.
+- **A change on the thing's page reaches trips** as a template's change does: its reminders at once (they are read
+  from the thing, never copied onto the trip), what goes with it at the trip's next rebuild (Trip settings → Save) or
+  "Add a thing" — as a thing added to a template does not reach trips already made.
+- **Start again** drops the ticks (a clean list), keeps the "with" marks (the lines are the same). **A shared trip**
+  drops both (his things, not theirs).
+
+### Where it is kept (the web model sees nothing new)
+
+The thing's own record (`extra`, spec 01 §1.12): `remindWith` = `[{"id","text","when"}]` and `goesWith` = `[item id]`,
+his order, absent when empty. The trip's lines (each its own record): `remindDone` = `[reminder id]` on the carrying
+line, `withThings` = `[item id]` on a line that came along. No new CloudKit field, no new table. The web app's model
+keeps the keys unread (`coerceItem`); `tools/parity/run.sh --invented` stays 211 of 211 (PackingCore unchanged but
+`entryFromItem` made public). **Both devices:** a thing's page Save puts its two lists onto the thing AS IT IS NOW by
+0.95's list rule (`saveThingRemembers` → `mergeList`): a reminder or a companion added on each device both stay, what
+the page removed goes, a reminder both kept takes what the page changed (its words, its When). A template's page that
+touched the thing merges them as lists too (`thingLists`), and a line's `remindDone` / `withThings` as lists
+(`lineLists`). Two saves that CROSS before either device has the other's (0.97's case) still end with the last one sent
+— as for a kit's contents (spec 01 Open questions 32). Backup, restore and export carry them inside the thing and the
+lines (no code needed; pinned by the test).
+
+### Model (PackingLibrary/ThingReminders.swift)
+
+`THING_REMINDERS_KEY`, `GOES_WITH_KEY`, `REMINDERS_DONE_KEY`, `WITH_THINGS_KEY`; `ThingReminder` (`id`, `text`,
+`when`); `ThingReminderOnTrip` (`lineId`, `thingId`, `thingName`, `reminder`, `done`; `name` "Camera: …");
+`Library.thingReminders(_:)`, `setThingReminders`, `goesWith(_:)`, `setGoesWith`, `thingReminderProblem`,
+`whenForNewThingReminder`, `goesWithCandidates(thingId:chosen:)`, `companions(of:)`, `saveThingRemembers`;
+`thingReminders(tripId:)` (by carrying line), `dueThingReminders(tripId:today:)`, `setThingReminderDone`;
+`withCompanions(_:typed:)` (called by `builtLines`), `withNames(_:)`, `bringCompanions(tripId:)`, `followAside` (called
+by `setAside`); `regenerated` renews a matched line's mark from the fresh one and drops it from a kept leftover;
+`BeforeYouGo.thingDue` (in `left`, `isEmpty`; `hasToDo`); `NextTrip.due` gains the names.
+
+### Tests
+
+Model `ThingRemindersTests` (8): kept in the thing's own record (read leniently; web model keeps the keys); words
+refused and the new When; store and backup (both kinds of file) with a tick and the marks; the page's Save and a
+template page's merge keep the other device's reminder, companion and tick; only on trips where the thing is (typed
+by name, inside a kit, set aside, reviewed); due by step, one tick, undated, Start again and sharing; what goes with
+it comes as its own lines (own bag, When, section; once; two bringers; one level; a kit); taken off unless something
+else needs it (another thing, a template, typed by him, packed), back again, Add a thing, ⊘ and ↻. Seen RED with
+faults planted: `thingLists` / `lineLists` without the keys → "a reminder added on each device both stay"
+(`["Empty both SD cards", "Lens cloth in the bag"]`), "a tick on each device both stay" (`[true, false]`); `builtLines`
+without the companions → `("["Camera"]") is not equal to ("["Camera", "USB-C cable", "Charger", "Spare battery"]")`,
+"the toothbrush still needs it"; `followAside` doing nothing → "only the camera needed it"; the page's Save writing
+its list whole → "a companion added on each device both stay".
+
+UI (iPhone, day and night; `-uiTestingThingReminders`, `SampleLibrary.thingReminders()`: a Camera on Hiking with two
+reminders, going with a USB-C cable and a Spare battery on no template, the trip three days ahead):
+`testAThingKeepsItsRemindersAndWhatGoesWithItUntilSave` (RED on 0.100's screens: "the thing's page has no Remember
+with it"), `testAThingsRemindersShowOnTheTripAndInToDo` (RED on 0.100's screens: "Before you go has no To do"),
+`testWhatCameWithAThingIsSetAsideWithIt` (RED with `followAside` planted out: "the battery stayed when the camera was
+set aside"). Pictures `remind-thing-page`, `remind-thing-page-changed`, `remind-todo`, `remind-trip-line`,
+`remind-trip-line-open`, `remind-trip-line-ticked`.
+
+### Open questions
+
+- Before you start (part 19) lists template reminders under To prepare; a thing's reminders are not there yet, nor in
+  the packing notifications' step words ("1 to do"). Say if they should be.
+- The picture drew "with Camera" at the right of the line; it sits under the name (room for the name on an iPhone).
+- A change of Goes with reaches a trip already made at its next Trip settings → Save (or Add a thing), not at once.
+
+---
+
 ## 11. Decision log
 
 | Date | Decision | His words / reason |
@@ -3897,6 +4041,7 @@ left is not under the count"). Green again without them, day and night.
 | 21 Oct 2026 | **0.98, the Apple way for Cancel/Done — his decision:** a page with Cancel and Done keeps nothing but by Done. Switching to another app and back finds the page still open with everything changed on it; the app swiped away, ended by the system or the Mac app quit keeps nothing of it; Cancel throws away everything since the page opened. A template's page and Your choices no longer hand their copy over as the app goes to the background (0.94's `PageAway`/`keepAway` gone); a bag's page no longer writes its ledger there (0.94's `DraftAway` + `savedHere`), and its pockets — written as they changed since 0.69, put back by Cancel since 0.92 — are held on the page's ledger too, so nothing of a bag's page reaches the store, the other device or a backup before Done; typing stays as quick as 0.91 made it. Your bags (Done and no Cancel) still writes its typed rows when the app goes away. The "Discard changes?" question, Escape = Cancel and ⌘S = Done unchanged. Prepared on 21 Oct; shipped after his trip | His words, 21 Oct 2026: "Yes, go with the Apple way for Cancel/Done: remove the keep-on-close from the template page, your lists and the bag page, and ship it after the trip." On his check sheet he had found a template's new name NOT kept after swiping the app away (0.94 meant to keep the page) and asked "Why should you keep a name that isn't confirmed with Done? What is the Apple standard?" — Calendar's, Contacts' and Reminders' edit sheets: kept over a switch to another app, thrown away when the app is swiped away. Spec 06 §20a and §20b, spec 05 (a bag's page, Your bags), spec 04, the How it works lines. UI tests `testABagsPageKeepsNothingButByDone` and `testATemplatesPageAndYourChoicesKeepNothingButByDone` (`-uiTestingKept`: a store file that outlives the app) seen RED on 0.97: "the app put away kept the max, and Cancel could not take it back: Your bags says '31'", "the app put away kept the pocket, and Cancel could not take it back: 2 pockets" and `("32") is not equal to ("23") - the max typed and never confirmed with Done was kept when the app ended`; `("Hill walk") is not equal to ("Hiking") - the app put away kept the name, and Cancel could not take it back`, `("7") is not equal to ("e.g. 2, or 2 pairs") - the app put away kept the row's How many, and Cancel could not take it back` (the empty field reads as its prompt), the ended app's move kept (`("Swim") is not equal to ("Hiking") - the name never confirmed with Done was kept when the app ended` — Hiking had left GA, so the first row was Swim; the test now first checks GA and OE directly) and "the place never confirmed with Done was kept when the app ended"; they replace 0.94's two tests that asserted the keep-on-close. |
 | 21 Oct 2026 | **⌘Q with a page open (Mac, after 0.98):** ⌘Q did nothing — no quit, no question — while a template's page, Your choices or a bag's page (any sheet) was open: the Mac itself refuses to quit while a sheet is open, before it asks the app. Now every sheet lets the app quit; ⌘Q quits at once when no open page holds a change, and asks once when one does — "Discard changes?" (the iPhone's swipe-down words), **Keep editing** (Escape) stays with everything, **Discard** (red) quits and keeps nothing of the page. The Dock's Quit and a log-out quit at once. Chosen over quitting at once always: ⌘Q sits beside ⌘W, and one slip should not lose a page of typing without a word | Found by the 0.98 helper (the Mac tests had to end the app by force); fits his 0.98 decision — the app ended keeps nothing a Done did not confirm — and his Cancel-everywhere rule (Escape = Cancel on the Mac). Spec 06 §20a. |
 | 24 Oct 2026 | **0.100, two Mac crashes:** (A) on 0.99 his Mac shut at a click on a button at 09:12 — the cause came six minutes earlier: iCloud brought a change in, a photo's file was not there as the store was read, and SwiftData threw an exception Swift cannot catch, inside a Swift Task; the Mac swallowed it with Swift's own bookkeeping broken, and the click found it. Now the photo's bytes are read through a catch, that photo is left out of that read (nothing can write it) and the store is read again shortly, and a change from iCloud is read outside a Task. (B) two crash reports of 18 Oct (0.87, still in 0.99): ↑ on another row of an open drop-down moved the keys' light from the first row to −1 — Index out of range. The light now stays on its row and inside the list. Each seen RED first (spec 06 §20b and §21) | The crash reports from his Mac (24 Oct; 18 Oct). |
+| 26 Oct 2026 | **0.101, reminders on things — his yes to the picture.** A · **Remember with it** on a thing's page: short reminders, each with a When (add, change the words or the When, move, remove — held until Save, Cancel keeps nothing). Only on trips where the thing is on the list (built from it, typed with its name, or inside its kit there); the line says "N left" in orange while any is open; once the thing is ticked they show right under its line ("Before it goes: …"), each with its own tick, a ticked one struck through a moment and gone; at its When it is in Before you go's To do with the template reminders as "Camera: Empty the SD card", and on Home's countdown — one tick per trip, kept on the thing's line. B · **Goes with**: chips of his things (Add a thing, ✕), held until Save; on a trip each is its own line in its own bag, place, When and section, marked "with Camera" under its name; a trip built, rebuilt or "Add a thing" brings them; taken off the trip they go, unless a template, another thing or he himself has them there (one packed stays); ⊘ on the thing sets them aside, ↻ brings them back. One level (no chains, no loops); a thing in a kit comes as its kit, a kit's contents bring theirs. Stored inside the thing's own record and the trip's lines (no new CloudKit field); both devices' additions merged as lists. Spec 07 part 21, spec 05, spec 01 §1.12 | His yes to the picture, 26 Oct 2026 ("build it"). Decided by the build: "To do" = where template reminders already stand (Before you go's To do, Home) — the To do tab unchanged; "with Camera" under the name (beside it the name was cut); ⊘ follows; a kit's content counts as on the trip; a reminder removed on the page at once (Cancel undoes); Goes with reaches trips already made at their next rebuild. |
 
 ## Open questions
 

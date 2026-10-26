@@ -135,6 +135,8 @@ extension Library {
               let e = trips[t].entries.firstIndex(where: { $0.id == entryId }) else { return false }
         trips[t].entries[e].skipped = aside
         if aside { trips[t].entries[e].checked = false }
+        // What came along with it goes (or comes back) with it (0.101, ThingReminders).
+        followAside(aside, trip: t, entry: e)
         return true
     }
 

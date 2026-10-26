@@ -58,7 +58,7 @@ public func sectionName(_ list: PackList?, _ sectionId: String?) -> String {
 /// `coerceItem`'s answer for a missing field (no photos, no care record, zero stats,
 /// no descriptive metadata), exactly as the JS builds it.
 /// (Not exported by the JS module, so not public here either.)
-func entryFromItem(_ item: Item, _ list: PackList?) -> Item {
+public func entryFromItem(_ item: Item, _ list: PackList?) -> Item {
     coerceItem(Item(
         id: PackingEnv.makeId(),
         name: item.name,

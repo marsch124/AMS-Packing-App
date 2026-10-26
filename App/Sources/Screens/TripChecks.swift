@@ -36,12 +36,12 @@ struct BeforeYouGoCard: View {
                     if !card.cabin.isEmpty || !card.dates.isEmpty {
                         flags(card)
                     }
-                    if !card.due.isEmpty {
+                    if card.hasToDo {
                         if !card.cabin.isEmpty || !card.dates.isEmpty { rule }
-                        toDo(card.due)
+                        toDo(card.due, things: card.thingDue)
                     }
                     if !card.charge.isEmpty {
-                        if !card.cabin.isEmpty || !card.dates.isEmpty || !card.due.isEmpty { rule }
+                        if !card.cabin.isEmpty || !card.dates.isEmpty || card.hasToDo { rule }
                         ToChargePart(tripId: tripId, rows: card.charge).environmentObject(model)
                             // Where a tapped "Charge tonight" brings the trip (0.87).
                             .id(TripScreen.chargeAnchor)
@@ -155,14 +155,18 @@ struct BeforeYouGoCard: View {
 
     // MARK: - To do
 
-    private func toDo(_ due: [Item]) -> some View {
+    private func toDo(_ due: [Item], things: [ThingReminderOnTrip]) -> some View {
         // Where each comes from (0.75, his yes of 13 Oct 2026): the templates' icons, as on
         // the trip's lines — the same answer (`lineTemplates`), asked only when one is due.
-        let from = model.library.lineTemplates(tripId: tripId)
+        let from = due.isEmpty ? [:] : model.library.lineTemplates(tripId: tripId)
         return VStack(alignment: .leading, spacing: 2) {
             BeforeYouGoCard.partTitle("To do")
             ForEach(Array(due.enumerated()), id: \.element.id) { n, line in
                 reminder(line, n: n, from: from[line.id] ?? [])
+            }
+            // A reminder on one of his things (0.101): "Camera: Empty the SD card", after his templates'.
+            ForEach(Array(things.enumerated()), id: \.element.id) { n, r in
+                thingReminder(r, n: n)
             }
         }
         .accessibilityElement(children: .contain)
@@ -203,6 +207,33 @@ struct BeforeYouGoCard: View {
                 TemplateMarks(from: from, id: "trip-check-todo-\(n)-from")
             }
         }
+    }
+}
+
+extension BeforeYouGoCard {
+    /// A reminder on a thing, due (0.101): its tick, "Camera: Empty the SD card", its step. A press
+    /// ticks it — the same tick as under the thing's line — and it leaves the card.
+    func thingReminder(_ r: ThingReminderOnTrip, n: Int) -> some View {
+        let tint = AppSection.events.color
+        return Button {
+            model.change { _ = $0.setThingReminderDone(true, tripId: tripId, lineId: r.lineId, reminderId: r.reminder.id) }
+        } label: {
+            HStack(spacing: 10) {
+                TickCircle(on: false, tint: tint).frame(width: 22, height: 22)
+                VStack(alignment: .leading, spacing: 1) {
+                    (Text("\(r.thingName): ").foregroundStyle(Theme.muted) + Text(r.reminder.text).foregroundStyle(Theme.ink))
+                        .font(.system(.callout, weight: .semibold))
+                    Text(phaseOrFallback(r.reminder.when).label)
+                        .font(.system(.subheadline)).foregroundStyle(tint)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 6)
+            }
+            .frame(minHeight: Metrics.tap).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .accessibilityLabel("\(r.name), to do. Tick it")
+        .accessibilityIdentifier("trip-check-remind-\(n)")
     }
 }
 

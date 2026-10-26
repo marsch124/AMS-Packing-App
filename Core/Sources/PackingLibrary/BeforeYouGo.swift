@@ -20,22 +20,28 @@ public struct BeforeYouGo: Equatable, Sendable {
     public var dates: [DateFlag]
     /// The reminders due and not ticked.
     public var due: [Item]
+    /// The reminders on his THINGS due and not ticked (0.101, "Camera: Empty the SD card") — in To do with them.
+    public var thingDue: [ThingReminderOnTrip]
     /// The things to charge (charged or not) — [] outside its days.
     public var charge: [ChargeRow]
 
-    public init(cabin: [CabinFlag] = [], dates: [DateFlag] = [], due: [Item] = [], charge: [ChargeRow] = []) {
-        self.cabin = cabin; self.dates = dates; self.due = due; self.charge = charge
+    public init(cabin: [CabinFlag] = [], dates: [DateFlag] = [], due: [Item] = [], charge: [ChargeRow] = [],
+                thingDue: [ThingReminderOnTrip] = []) {
+        self.cabin = cabin; self.dates = dates; self.due = due; self.charge = charge; self.thingDue = thingDue
     }
 
     /// How the card's colour reads: red will stop him, orange is still to do, green is all set.
     public enum Tone: String, Sendable { case red, orange, green }
 
     /// Nothing in any part: the card is not there.
-    public var isEmpty: Bool { cabin.isEmpty && dates.isEmpty && due.isEmpty && charge.isEmpty }
+    public var isEmpty: Bool { cabin.isEmpty && dates.isEmpty && due.isEmpty && thingDue.isEmpty && charge.isEmpty }
+
+    /// Anything in To do: a reminder due — a template's, the trip's own or a thing's.
+    public var hasToDo: Bool { !due.isEmpty || !thingDue.isEmpty }
 
     /// Everything left: every flag (each stays until it is put right), every reminder due
     /// (a ticked one leaves the card), every thing not charged yet.
-    public var left: Int { cabin.count + dates.count + due.count + charge.filter { !$0.charged }.count }
+    public var left: Int { cabin.count + dates.count + due.count + thingDue.count + charge.filter { !$0.charged }.count }
 
     /// Shown, and nothing left — only possible when every thing on To charge is charged.
     public var allSet: Bool { !isEmpty && left == 0 }
@@ -69,6 +75,7 @@ extension Library {
         BeforeYouGo(cabin: cabinCheck(tripId: tripId),
                     dates: dateCheck(tripId: tripId, todayISO: today),
                     due: dueReminders(tripId: tripId, today: today),
-                    charge: chargeCard(tripId: tripId, today: today))
+                    charge: chargeCard(tripId: tripId, today: today),
+                    thingDue: dueThingReminders(tripId: tripId, today: today))
     }
 }

@@ -88,7 +88,8 @@ extension Library {
         let left = t.entries.filter { !$0.checked && !isSetAside($0) && !Library.isReminder($0) }.count
         return NextTrip(id: t.id, name: t.name, startDate: t.startDate, days: days, left: left,
                         step: packingSteps(tripId: t.id).first,
-                        due: dueReminders(tripId: t.id, today: today).map(\.name),
+                        due: dueReminders(tripId: t.id, today: today).map(\.name)
+                            + dueThingReminders(tripId: t.id, today: today).map(\.name),   // "Camera: Empty the SD card" (0.101)
                         beforeStart: beforeYouStart(tripId: t.id, today: today, time: time).homeWords)
     }
 

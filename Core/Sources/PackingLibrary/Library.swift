@@ -213,13 +213,23 @@ public struct Library: Equatable, Sendable {
         let sentKeys = Set(prev.filter(sent).map(key))
         var out: [Item] = []
         for f in fresh {
-            if let old = match(f) { out.append(old) } else if !sentKeys.contains(key(f)) { out.append(f) }
+            if var old = match(f) {
+                // What brought it along now (0.101, "with Camera"): the fresh line says — none
+                // when a template or he himself has it on the trip now.
+                if old.extra[WITH_THINGS_KEY] != f.extra[WITH_THINGS_KEY] { old.extra[WITH_THINGS_KEY] = f.extra[WITH_THINGS_KEY] }
+                out.append(old)
+            } else if !sentKeys.contains(key(f)) { out.append(f) }
         }
         let matched = Set(out.compactMap { $0.sourceItemId }.filter { !$0.isEmpty })
         for (i, e) in prev.enumerated() where !taken.contains(i) {
             if e.custom { out.append(e); continue }
-            // Ticked or edited, and nothing fresh covers it: kept, as in the web app.
-            if let sid = e.sourceItemId, !sid.isEmpty, !matched.contains(sid), e.checked || e.edited { out.append(e); continue }
+            // Ticked or edited, and nothing fresh covers it: kept, as in the web app — a thing that
+            // came along with another (0.101) too, its "with" mark gone: nothing brings it now.
+            if let sid = e.sourceItemId, !sid.isEmpty, !matched.contains(sid), e.checked || e.edited {
+                var kept = e
+                kept.extra[WITH_THINGS_KEY] = nil
+                out.append(kept); continue
+            }
             // Its template is gone: nothing to regenerate it from, so it stays.
             if let source = e.sourceListId, !source.isEmpty, !known.contains(source) { out.append(e); continue }
             // Sent to him: nothing to regenerate it from either.

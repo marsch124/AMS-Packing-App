@@ -375,6 +375,8 @@ struct ThingEditor: View {
     @State private var newTemplates: [PackList] = []
     /// What it holds, or the kit it is in (0.70, ThingKitPart.swift) — kept until Save.
     @State private var kit = KitDraft()
+    /// Remember with it and Goes with (0.101, ThingRemember.swift) — kept until Save.
+    @State private var remember = RememberDraft()
     /// Its own "Only on some trips" (0.73, spec 07 part 14): every template it is on follows
     /// it unless that template's row sets its own — kept until Save.
     @State private var limits = TripLimits()
@@ -433,6 +435,9 @@ struct ThingEditor: View {
                     if let id = shown {
                         labelled("Photos") { ThingPhotos(thingId: id).environmentObject(model).id(id) }
                     }
+                    // Remember with it and Goes with (0.101, his yes to the picture of 26 Oct 2026).
+                    ThingRememberPart(thingId: current, name: draft.name, draft: $remember,
+                                      steps: drop("phases", chosen: draft.phase, words: "your \u{201C}When\u{201D} steps").options)
                     // The order is his (6 Oct 2026): what it is and whose, the templates it is on,
                     // where it lives and goes and when, the details, and last what a flight and a
                     // date ask of it.
@@ -670,6 +675,7 @@ struct ThingEditor: View {
         choiceLists = [:]
         newTemplates = []
         kit = KitDraft(model.library, thingId: id)     // what it holds, or its kit (0.70)
+        remember = RememberDraft(model.library, thingId: id)   // its reminders and what goes with it (0.101)
         limits = model.library.items.first { $0.id == id }.map(Library.thingLimits) ?? TripLimits()
         limitAt = [:]
         problem = ""
@@ -682,6 +688,7 @@ struct ThingEditor: View {
             atLoad = ThingKept(draft: it, onLists: Set(model.library.memberships.filter { $0.itemId == id }.map(\.templateId)), weightText: amountText(it.weight),
                                careEvery: it.maintenance?.intervalDays ?? 0, careNotes: it.maintenance?.notes ?? "",
                                sections: now, kit: KitDraft(model.library, thingId: id),
+                               remember: RememberDraft(model.library, thingId: id),
                                limits: Library.thingLimits(it))
         }
     }
@@ -695,6 +702,7 @@ struct ThingEditor: View {
         var careNotes: String
         var sections: [String: String]
         var kit: KitDraft
+        var remember: RememberDraft
         var limits: TripLimits
     }
 
@@ -702,7 +710,7 @@ struct ThingEditor: View {
     private var thingChanged: Bool {
         guard let atLoad else { return false }
         let now = ThingKept(draft: draft, onLists: onLists, weightText: weightText, careEvery: careEvery,
-                            careNotes: careNotes, sections: sections, kit: kit, limits: limits)
+                            careNotes: careNotes, sections: sections, kit: kit, remember: remember, limits: limits)
         return now != atLoad || !newSections.isEmpty || !newTemplates.isEmpty
             || sectionEdits.values.contains { !$0.isEmpty } || choiceLists.values.contains { !$0.isEmpty }
     }
@@ -1250,6 +1258,7 @@ struct ThingEditor: View {
         let every = careEvery, notes = jsTrim(careNotes)
         let chosen = sections, atOpen = sectionsAtOpen, typed = newSections, edited = sectionEdits
         let kitSays = kit
+        let rememberSays = remember
         let only = limits
         let weightUntouched = weightText == opened?.weightText
         let held = choiceLists
@@ -1301,6 +1310,7 @@ struct ThingEditor: View {
                 was = w
             }
             kitSays.save(&lib, thingId: itemId)      // what it holds, or taken out of its kit (0.70)
+            rememberSays.save(&lib, thingId: itemId) // its reminders and what goes with it (0.101)
             // Its own "Only on some trips" (0.73); `updateThing` below brings trips ahead along.
             if opened.map({ only != $0.limits }) ?? true { lib.setThingLimits(id: itemId, only, follow: false) }
             let careChanged = opened.map { every != $0.careEvery || notes != jsTrim($0.careNotes) } ?? true
@@ -1731,6 +1741,7 @@ extension ThingEditor {
         sectionEdits = [:]
         choiceLists = [:]
         kit = KitDraft()
+        remember = RememberDraft()
         limits = TripLimits()
         limitAt = [:]
         problem = ""

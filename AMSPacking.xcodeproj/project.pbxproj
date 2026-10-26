@@ -20,6 +20,7 @@
 		192F5DC225468F6FC0E7E870 /* ThingKitPart.swift in Sources */ = {isa = PBXBuildFile; fileRef = A807991F4D3D37B8ECD7F29C /* ThingKitPart.swift */; };
 		1A3A1067D5D9FB7754573E80 /* VoicePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50CD73DFBC2243DAE7B30588 /* VoicePanel.swift */; };
 		1A611EFAD56B0A1A1AF93E20 /* BagCabin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95CE795CC801DFFE3FD39642 /* BagCabin.swift */; };
+		1D1B84FF75B3FC8EC5DC52A0 /* ThingRemember.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08FEE110A8EA9F08E8D2E90A /* ThingRemember.swift */; };
 		1F41F6F92A8B0D398E72CD7C /* ThingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED9B041225333263C7547689 /* ThingsScreen.swift */; };
 		21419C900E931B9CBE73B314 /* BuyList.swift in Sources */ = {isa = PBXBuildFile; fileRef = C63D25C9AA00E03651D86114 /* BuyList.swift */; };
 		23460B987C576F673AE6DA2A /* GrabScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E01A9E0DEC947610C0F642D /* GrabScreen.swift */; };
@@ -132,6 +133,7 @@
 		0096D418FB0463E578A19AD2 /* AreasScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreasScreen.swift; sourceTree = "<group>"; };
 		01F66AF282FB2C3C22DC9F76 /* PickThings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickThings.swift; sourceTree = "<group>"; };
 		029AD64D1791D9D681EA7DDF /* ShopReminders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShopReminders.swift; sourceTree = "<group>"; };
+		08FEE110A8EA9F08E8D2E90A /* ThingRemember.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThingRemember.swift; sourceTree = "<group>"; };
 		09CEA44FC29BD0EB0658E8C9 /* Forecast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Forecast.swift; sourceTree = "<group>"; };
 		0AC47170406600EB5ADFCE37 /* TemplatesScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplatesScreen.swift; sourceTree = "<group>"; };
 		0B8389C70A03647A3E98F6DB /* ToCharge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToCharge.swift; sourceTree = "<group>"; };
@@ -436,6 +438,7 @@
 				D9E2F7EBD889FD3F4345F9E8 /* ThingDetailLine.swift */,
 				A1A727717D19724FB903E1AA /* ThingKeys.swift */,
 				A807991F4D3D37B8ECD7F29C /* ThingKitPart.swift */,
+				08FEE110A8EA9F08E8D2E90A /* ThingRemember.swift */,
 				ED9B041225333263C7547689 /* ThingsScreen.swift */,
 				7B24F2617CC7D137784F66F2 /* ThingsTable.swift */,
 				7B024F8A00820DD9D55E10D0 /* TickAll.swift */,
@@ -645,6 +648,7 @@
 				CB329E4EC8E63D1388187F82 /* ThingDetailLine.swift in Sources */,
 				993DD5931C9E6CDCDB4605AF /* ThingKeys.swift in Sources */,
 				192F5DC225468F6FC0E7E870 /* ThingKitPart.swift in Sources */,
+				1D1B84FF75B3FC8EC5DC52A0 /* ThingRemember.swift in Sources */,
 				1F41F6F92A8B0D398E72CD7C /* ThingsScreen.swift in Sources */,
 				09A4001328DA54940464A34D /* ThingsTable.swift in Sources */,
 				ED1AD4573764AA2A6FA0350D /* TickAll.swift in Sources */,

@@ -173,6 +173,8 @@ struct TripScreen: View {
         // Where each line comes from (0.74): its templates' icons, before its bag — not when
         // sorted by Template, whose headings say it.
         let from = view == "template" ? [:] : model.library.lineTemplates(tripId: tripId)
+        // Reminders on things (0.101): each line's, read once for all the lines.
+        let remind = model.library.thingReminders(tripId: tripId)
         // Where the trip stands in the loop, on the screen's clock — the strip, Take a break and the
         // Packing day read the same answer.
         let step = model.library.loopStep(tripId: tripId, today: Today.iso(clock), time: Today.time(of: clock))
@@ -439,7 +441,9 @@ struct TripScreen: View {
                                         PackLine(line: line, nights: qtyNights(trip), tint: Color(hexString: readableHex(phaseColor(line.phase), dark: scheme == .dark, graphic: true)),
                                                  showBag: view != "container", washed: washes(trip),
                                                  kitWords: kits[line.id]?.insideWords ?? "",
-                                                 from: from[line.id] ?? [], fromId: "trip-line-\(n)-from")
+                                                 from: from[line.id] ?? [], fromId: "trip-line-\(n)-from",
+                                                 remindLeft: (remind[line.id] ?? []).filter { !$0.done }.count,
+                                                 with: model.library.withNames(line), markId: "trip-line-\(n)")
                                     }
                                     .buttonStyle(.plain)
                                     .accessibilityIdentifier("trip-line-\(n)")
@@ -500,7 +504,12 @@ struct TripScreen: View {
                                 // tick or its set-aside changes, so it cannot be left showing an old state
                                 // — and when its place panel opens or closes, its pocket pills come or
                                 // go, or the nights change.
-                                .id("\(line.checked)|\(aside)|\(placing == line.id)|\(qtyNights(trip))|\(pocketing == "\(g)|\(line.id)")|\(Library.pocket(line))")
+                                .id("\(line.checked)|\(aside)|\(placing == line.id)|\(qtyNights(trip))|\(pocketing == "\(g)|\(line.id)")|\(Library.pocket(line))|\((remind[line.id] ?? []).filter { !$0.done }.count)")
+                                // Ticked: its thing's reminders still open, right under it (0.101) —
+                                // outside the box above, so one ticked here can stay a moment, struck through.
+                                if line.checked, let rows = remind[line.id] {
+                                    ThingRemindersUnder(tripId: tripId, rows: rows, n: n).environmentObject(model)
+                                }
                                 }
                                 // The row ITSELF is a new row only when it MOVES — to another section, or up
                                 // or down in its own: a lazy row that moved kept its old face ("Set place"
@@ -905,7 +914,8 @@ struct TripScreen: View {
     private func add() {
         let name = newName
         guard !jsTrim(name).isEmpty else { return }
-        model.change { _ = $0.addCustomLine(tripId: tripId, name: name) }
+        // A thing of his typed here brings what goes with it (0.101).
+        model.change { lib in _ = lib.addCustomLine(tripId: tripId, name: name); lib.bringCompanions(tripId: tripId) }
         newName = ""
     }
 
@@ -961,6 +971,12 @@ struct PackLine: View {
     /// The templates it comes from (0.74): their icons, before the bag. Empty = nothing.
     var from: [PackList] = []
     var fromId = ""
+    /// Its thing's reminders not ticked yet on this trip (0.101): "1 left", orange.
+    var remindLeft = 0
+    /// What brought it along (0.101): "with Camera", violet.
+    var with: [String] = []
+    /// The line's id, for the marks' own ("<id>-left", "<id>-with").
+    var markId = ""
 
     /// "×4 · laundry", "×7", or nothing — what the line says about how many.
     static func count(_ line: Item, _ nights: Int, washed: Bool) -> String {
@@ -980,11 +996,17 @@ struct PackLine: View {
         HStack(spacing: 8) {
             TickCircle(on: line.checked && !aside, tint: tint, ring: aside ? Theme.line : nil)
             VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 6) {
                 (Text(line.name) + (kitWords.isEmpty ? Text("") : Text(" \u{00B7} \(kitWords)").foregroundStyle(Theme.muted)))
                     .font(.system(.body))
                     .foregroundStyle(aside ? Theme.muted : (line.checked ? Theme.muted : Theme.ink))
                     .strikethrough(aside, pattern: .solid, color: Theme.muted)
                     .lineLimit(2)
+                    // Reminders on things (0.101): what is still to remember with it.
+                    if remindLeft > 0 && !aside { RemindLeftMark(left: remindLeft, id: "\(markId)-left") }
+                }
+                // What it came along with (0.101) — under the name, so the name keeps its width.
+                if !with.isEmpty { WithMark(names: with, id: "\(markId)-with") }
                 if Library.isBoughtOnSite(line) {
                     Text("Bought on site").font(.system(.footnote, weight: .semibold)).foregroundStyle(AppSection.events.color)
                 }

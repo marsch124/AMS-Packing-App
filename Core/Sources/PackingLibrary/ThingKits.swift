@@ -401,15 +401,19 @@ extension Library {
 
     /// A trip's lines as a new trip (or a rebuild) makes them: the web app's
     /// `buildTotalEntries` over `templatesForTrips`, and each kit once.
+    /// Then (0.101) what goes with each thing on it (`withCompanions`; the trip's own typed lines
+    /// count as on it, and bring theirs).
     public func builtLines(_ trip: TripEvent) -> [Item] {
-        let lines = buildTotalEntries(trip, templatesForTrips())
+        var lines = buildTotalEntries(trip, templatesForTrips())
         let kits = Set(kitIndex().contents.keys)
-        guard !kits.isEmpty else { return lines }
-        var seen = Set<String>()
-        return lines.filter { line in
-            guard let sid = line.sourceItemId, kits.contains(sid) else { return true }
-            return seen.insert(sid).inserted
+        if !kits.isEmpty {
+            var seen = Set<String>()
+            lines = lines.filter { line in
+                guard let sid = line.sourceItemId, kits.contains(sid) else { return true }
+                return seen.insert(sid).inserted
+            }
         }
+        return withCompanions(lines, typed: trip.entries.filter(\.custom))
     }
 
     // MARK: - On a trip

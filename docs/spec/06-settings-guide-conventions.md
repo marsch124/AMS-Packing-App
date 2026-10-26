@@ -1012,12 +1012,17 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
    thing until 20 are measured); Before you go
    (0.77: one card, one count of what is left, red / orange / green All set — folded to one line, its arrow opens it;
    its parts: the checks — cabin red/orange, a battery in a checked bag red (0.76), expiry six months ahead for
-   passports/IDs; To do — the reminders due, each with its template's icon, a tap ticks; To charge from the day before
+   passports/IDs; To do — the reminders due, each with its template's icon, a tap ticks — and (0.101, spec 07 part 21) a
+   thing's own reminders due, as "Camera: Empty the SD card", the same tick as under its line; To charge from the day before
    the trip, with "1 of 2", a charge tick apart from packing — and (0.87) "Charge tonight" on the iPhone at 20:00 the
    evening before, the names not charged yet, four then how many more, only while something is left, a tap opens
    the trip at To charge); the pen opens Trip settings (every field it holds, Plane or RV and Pack weather gear anyway included, nothing folded, new dates leaving the season as it is — 0.76;
    Save rebuilds, own ticks/additions/what was sent stay; a swipe down closes it only when nothing is changed — 0.62); Start a new trip from this one, and last Clear every tick (asks first; 0.79 — Tick everything gone); the round button's Undo for 6 seconds above the add bar (0.79); Save as
-   Excel and Share side by side; folding sections (remembered per trip); ⊘ not this time (any tick goes — 0.62), ↻ back unticked; Sorting When /
+   Excel and Share side by side; folding sections (remembered per trip); ⊘ not this time (any tick goes — 0.62), ↻ back unticked; (0.101, spec 07 part 21) two lines after the reminder's: a thing's
+   own reminders — "2 left" in orange on its line, under it once ticked "Before it goes: …" each with its own tick, in
+   Before you go's To do at their step as "Camera: …", one tick wherever ticked — and a line "with Camera" that came along
+   with another thing (its own bag and place; goes when the camera goes unless a template, another thing or he himself
+   put it there, a packed one stays; ⊘ on the camera sets it aside too, ↻ brings it back); Sorting When /
    Into / From where / Category; Weather line with + and Add all; tap a bag for Goes in the cabin; Bags fill
    colours and the scale reading, Clear, up to three photos, "Tap to weigh" on a bag with nothing weighed (0.62); (0.83) + Add a bag at its foot, as in Bags out, "nothing in it yet" and its ✕ for a bag added empty; Set place under "No place set"; (0.69) opened from a place's label, only what is kept there — the place's name
    under Sorting shows every line again; typing a thing adds it
@@ -1064,7 +1069,9 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
    its foot; a template moved out of WET loses its own Context (0.89; a door beside Delete since 0.62); Delete template asks first; Arrange — drag headings and things, rename or remove a heading (0.63); Share at the top (a grab
    list's at its bottom right, round, under Ready to go — 0.84); Refine (violet card) after two or more reviews — Keep / Drop. (17 lines since 0.89, counted from the code.)
 7. **Care** (Care mark): Your things (changes reach trips ahead on unticked lines; a name he has is not added
-   again — 0.62); Just added at the top until you
+   again — 0.62); (0.101, spec 07 part 21) a thing's page order now Name, Notes, Photos, Remember with it, Goes with,
+   Kind of thing…, and a line of its own on the two: reminders with a When (Add, tap to change words or When or remove,
+   the grip ≡ / the Mac's arrows), Goes with's Add a thing and ✕, nothing changed until Save; Just added at the top until you
    leave; ✕ in search; (0.69) the search finds words in a thing's notes and its templates' notes, the matching line
    under the thing; On a plane and Valid until (+1 month … +10 years, red once run out); the rest of a thing's page — its templates'
    notes under Notes, places to tap under Kept at home, No bag, Care how often and what to do (0.62); Bags with max weight,

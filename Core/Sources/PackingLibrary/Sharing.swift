@@ -102,6 +102,8 @@ extension Library {
             l.extra[KIT_THEN_KEY] = nil          // what was inside it at his review (ThingKits, 0.73)
             for key in Library.chargeKeys { l.extra[key] = nil }   // charged for his trip (Batteries, 0.75)
             l.extra[TRIP_TODO_KEY] = nil         // a To do he wrote on the trip goes as a plain reminder (Packing Stations, 0.81)
+            l.extra[REMINDERS_DONE_KEY] = nil    // his thing reminders ticked, and what brought a line along (0.101):
+            l.extra[WITH_THINGS_KEY] = nil       // his things, not theirs
             l.skipped = false
             l.edited = false
             for key in [HOME_KEY, USED_UP_KEY, HOME_NOTE_KEY, BOUGHT_ON_SITE_KEY, "packedAt", POCKET_KEY, HOME_POCKET_KEY] { l.extra[key] = nil }
