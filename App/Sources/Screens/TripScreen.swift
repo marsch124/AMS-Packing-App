@@ -582,6 +582,16 @@ struct TripScreen: View {
                                         RoundedRectangle(cornerRadius: 8)
                                             .fill(AppSection.events.color.opacity(scheme == .dark ? 0.30 : 0.18))
                                             .padding(.horizontal, -6)
+                                            .accessibilityHidden(true)
+                                    }
+                                }
+                                // What the fill says, as an element of its own — a few points at the row's edge,
+                                // never over the line: the fill as an element covered the line's own centre,
+                                // and on the Mac the line then answered "not hittable" while it was lit
+                                // (GitHub's Mac, 27 Oct 2026, probe).
+                                .overlay(alignment: .leading) {
+                                    if flash == line.id {
+                                        Color.clear.frame(width: 4, height: 4)
                                             .accessibilityElement()
                                             .accessibilityLabel("Next to pack")
                                             .accessibilityIdentifier("trip-flash-\(n)")

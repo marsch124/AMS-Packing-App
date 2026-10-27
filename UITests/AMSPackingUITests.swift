@@ -15971,14 +15971,18 @@ final class AMSPackingUITests: XCTestCase {
     /// Where a line's copies are, for a failure's words: each one's frame and whether it can be tapped,
     /// and the window's.
     private func lineDiagnostics(_ app: XCUIApplication, _ n: Int) -> String {
-        let copies = app.buttons.matching(identifier: "trip-line-\(n)").allElementsBoundByIndex
-            .map { $0.exists ? "frame \($0.frame) hittable \($0.isHittable) selected \($0.isSelected)" : "gone" }
+        // The line and the two after it: a neighbour tappable while this one is not says it is covered.
+        func state(_ id: String) -> [String] {
+            app.buttons.matching(identifier: id).allElementsBoundByIndex
+                .map { $0.exists ? "frame \($0.frame) hittable \($0.isHittable) selected \($0.isSelected)" : "gone" }
+        }
+        let copies = state("trip-line-\(n)") + ["next:"] + state("trip-line-\(n + 1)") + state("trip-line-\(n + 2)")
         #if os(macOS)
         let window = app.windows.firstMatch.frame
         #else
         let window = app.frame
         #endif
-        return "window \(window); \(copies.count) copies of trip-line-\(n): \(copies)"
+        return "window \(window); trip-line-\(n) and the next: \(copies)"
     }
 
     /// Tick everything on the trip by its headings' own ticks (`trip-group-<g>-all`), each one
