@@ -52,7 +52,14 @@ final class LibraryModel: ObservableObject {
     /// The frame switches to it and clears it.
     @Published var tabToOpen: AppSection?
     /// Help ▸ Keyboard Shortcuts (0.103, Mac): Settings opens How it works at its Keyboard shortcuts topic and clears it.
+    /// Help ▸ Keyboard Shortcuts (0.103) opens How it works at that topic. In debug builds the launch
+    /// argument `-openKeysTopic` asks the same, so a UI test reaches the guide's last topic without
+    /// scrolling the whole guide (0.103's release run: the scroll outlasted 5 minutes on a busy Mac).
+    #if DEBUG
+    @Published var keysToOpen = ProcessInfo.processInfo.arguments.contains("-openKeysTopic")
+    #else
     @Published var keysToOpen = false
+    #endif
     /// A thing whose result was tapped in Spotlight (0.92, Store/Spotlight.swift): Home opens its
     /// page and clears it.
     @Published var thingToOpen: String?

@@ -17319,16 +17319,16 @@ final class AMSPackingUITests: XCTestCase {
         // Night on the Mac for a picture: `TEST_RUNNER_NIGHT=1` asks this app (not the machine) for dark. On the
         // iPhone the simulator's own appearance rules (`xcrun simctl ui <device> appearance dark`).
         let night = ProcessInfo.processInfo.environment["NIGHT"] == "1" ? ["-AppleInterfaceStyle", "Dark"] : []
-        let app = launch("-uiTesting", night)
+        // Opened at the topic (`-openKeysTopic`, as Help ▸ Keyboard Shortcuts does on the Mac): scrolling
+        // the whole guide to its last topic outlasted 5 minutes on a busy Mac (0.103's release run).
+        let app = launch("-uiTesting", ["-openKeysTopic"] + night)
         tab(app, "settings")
-        tap(app, id: "settings-howitworks")
-        XCTAssertTrue(appears(app, "guide-howitworks", timeout: 5), "How it works did not open")
+        XCTAssertTrue(appears(app, "guide-howitworks", timeout: 10), "How it works did not open at Keyboard shortcuts")
         let title = guidePart(app, "guide-keys-title")
         XCTAssertTrue(waitUntil { title.exists }, "How it works has no Keyboard shortcuts topic")
         XCTAssertEqual(words(title), "Keyboard shortcuts")
         let top = guidePart(app, "guide-keys")
         XCTAssertTrue(top.exists, "no card for the line at the top")
-        flingToTheEnd(app, title)
         toTopThird(app, title)
         shot(app, "keys-0-top")
         // Seven cards, each row read as words.
