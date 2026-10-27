@@ -235,8 +235,8 @@ struct HomeScreen: View {
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain).focusEffectDisabled()
-                    // ⌘S = Create trip (0.103) — not while a page is open over Home.
-                    .commandS { if !PageWatch.openNow { create(flat) } }
+                    // ⌘S = Create trip (0.103, Mac): a page open over Home is a window of its own, which has the keys.
+                    .commandS { create(flat) }
                     .accessibilityIdentifier("trip-create")
                     if !stillNeeded.isEmpty {
                         Text(stillNeeded)

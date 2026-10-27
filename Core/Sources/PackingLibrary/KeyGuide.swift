@@ -108,13 +108,13 @@ public enum KeyGuide {
     public static let cards: [Card] = [
         Card(id: "any", title: "On any page", reach: .withKeyboard, line: nil, rows: [
             Row("Save, or Done", [cmd("s")],
-                note: "On a page that only shows something \u{2014} a trip, How it works, Search \u{2014} it closes the page."),
+                note: "On the Mac also on a page that only shows something \u{2014} a trip, How it works, Search \u{2014} where it closes the page."),
             Row("Cancel, or close the page", [chord(.escape), chord(.command, .period)],
                 note: "Esc never saves anything. \u{2318}. is Esc on an iPhone."),
             Row("Add what you typed in an Add field", [chord(.return)]),
         ]),
-        Card(id: "go", title: "Go to", reach: .withKeyboard,
-              line: "Also the Mac\u{2019}s Go menu. Switched off while a page is open: finish it with \u{2318}S or Esc first.",
+        Card(id: "go", title: "Go to", reach: .macOnly,
+              line: "The Mac\u{2019}s Go menu. Switched off while a page is open: finish it with \u{2318}S or Esc first.",
               rows: [
             Row("Home", [cmd("1")]),
             Row("Trips", [cmd("2")]),

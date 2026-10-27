@@ -1321,8 +1321,8 @@ chord being `Key`s pressed together; a `Key` has its cap ("⌘", "S", "Esc", "A�
 
 | # | Card (id) | Reach | Rows (keys) |
 |---|---|---|---|
-| 0 | On any page (`any`) | Mac + keyboard | Save, or Done (⌘S) · Cancel, or close the page (Esc or ⌘.; "Esc never saves anything. ⌘. is Esc on an iPhone.") · Add what you typed in an Add field (Return) |
-| 1 | Go to (`go`) | Mac + keyboard | Home ⌘1 · Trips ⌘2 · Templates ⌘3 · Care ⌘4 · To do ⌘5 · Settings ⌘6 or ⌘, — "Also the Mac’s Go menu. Switched off while a page is open: finish it with ⌘S or Esc first." |
+| 0 | On any page (`any`) | Mac + keyboard | Save, or Done (⌘S; "On the Mac also on a page that only shows something — a trip, How it works, Search — where it closes the page.") · Cancel, or close the page (Esc or ⌘.; "Esc never saves anything. ⌘. is Esc on an iPhone.") · Add what you typed in an Add field (Return) |
+| 1 | Go to (`go`) | Mac | Home ⌘1 · Trips ⌘2 · Templates ⌘3 · Care ⌘4 · To do ⌘5 · Settings ⌘6 or ⌘, — "The Mac’s Go menu. Switched off while a page is open: finish it with ⌘S or Esc first." |
 | 2 | Search (`search`) | Mac | Search How it works (⌘F) · Find an icon, on a template’s icon page (⌘F) · Empty the search (Esc; "A second Esc closes the page.") |
 | 3 | Editing a list or a page (`edit`) | Mac + keyboard | Save a grab list, a template, your lists or an activity area (⌘S) · Throw away what you changed (Esc; a grab list stays open, a template being arranged ends Arrange first) |
 | 4 | A thing’s page (`thing`) | Mac | Save the thing ⌘S · Save, and start the next thing with the same choices ⌘N · Next thing in the list the page came from ⌘↓ · Previous thing ⌘↑ · Jump to a field by its name ⌘J · Next field Tab · Previous field ⇧Tab · Save from any field but Notes Return — "Also the Thing menu. Tab walks every field, top to bottom." |
@@ -2115,13 +2115,15 @@ open — the Mac beeped. Fixed by the rule below, not by a one-off: `View.comman
 (zero opacity, no hit testing, hidden from VoiceOver — as How it works' ⌘F, 0.90) behind the Done, with ⌘S and the same
 action, so the Done keeps Escape and gains ⌘S.
 
-**The rule** (all pages, Mac and an iPhone or iPad with a keyboard): **⌘S = Done or Save or Add or Make or Create** — the
-page's one confirming button; on a page whose Done only closes it, ⌘S closes it. **Escape (and ⌘.) = Cancel, or Close where
+**The rule** (the Mac; an iPhone or iPad with a keyboard has ⌘S on the pages with a real Save button — 0.92's — and Esc / ⌘.
+everywhere): **⌘S = Done or Save or Add or Make or Create** — the page's one confirming button; on a page whose Done only
+closes it, ⌘S closes it. **Escape (and ⌘.) = Cancel, or Close where
 there is no Cancel.** **⌘Q** quits (asks first while a page holds a change, 0.99). **Never on a destructive or replacing
 button:** Restore's *Replace everything on this device*, Delete, Take it off, Discard keep no ⌘S (and Return stays with the
-fields). A page with nothing to save (the icon picker, Restore, Which one steps back?) swallows ⌘S (`swallowsCommandS`): on
-an iPhone with a keyboard a presented page's responder chain continues into the page that presented it, and that page's ⌘S
-would close it from underneath.
+fields). **Mac only, deliberately:** the hidden button behind a Done (`commandS`) is left out on an iPhone or iPad — there
+it stayed in the accessibility tree whatever `accessibilityHidden(true)` said (the iPhone run of 27 Oct 2026 found a second
+`guide-done` button, labelled Save, beside every Done, so every tap by id was ambiguous; a duplicate "Save" for VoiceOver
+besides). The Mac hands a sheet its own window, so a page's hidden ⌘S can never be reached from the page over it.
 
 **The table.**
 
@@ -2130,8 +2132,8 @@ would close it from underneath.
 | ⌘S | Save / Done / Make / Add / Create trip | every page below; Thing menu ▸ Save on a thing's page |
 | Esc, ⌘. | Cancel, or close | every sheet's Cancel or Done (`.cancelAction`); a template being arranged: Arrange first |
 | Return | adds what is typed in an Add field; saves a thing's page from any field but Notes (Mac) | `onSubmit`; `ThingEditor.key` |
-| ⌘1 … ⌘6 | Home, Trips, Templates, Care, To do, Settings | Go menu (`GoCommands`, Mac); hidden buttons in `RootView` (`TabKeys`, iPhone/iPad keyboard) |
-| ⌘, | the Settings tab | app menu ▸ Settings… (`SettingsAndHelpCommands`, Mac); `TabKeys` |
+| ⌘1 … ⌘6 | Home, Trips, Templates, Care, To do, Settings | Go menu (`GoCommands`, Mac only) |
+| ⌘, | the Settings tab | app menu ▸ Settings… (`SettingsAndHelpCommands`, Mac only) |
 | — | Help ▸ Keyboard Shortcuts: How it works at its topic | `SettingsAndHelpCommands`, `LibraryModel.keysToOpen` |
 | ⌘F | search How it works; find an icon | `GuideScreen`, `TemplatesScreen` icon picker (Mac) |
 | Esc in those fields | empties the search, then closes the page | `onExitCommand` (Mac) |
@@ -2144,10 +2146,10 @@ would close it from underneath.
 **The Go menu** (`GoCommands`, `CommandMenu("Go")`, before the Thing menu): the six tabs in the tab bar's order, ⌘1 to ⌘6 —
 Apple's own convention — the tab showing ticked. It acts on the window in front (`RootView` gives its scene a
 `SectionSwitch` through `focusedSceneValue`) and is **off (greyed) while a page is open** — the Apple modal rule: tabs do
-not change underneath a page whose changes are not confirmed yet. "A page is open" on the Mac = a sheet is attached to
-one of the app's windows (`PageWatch`: `NSWindow` will-begin / did-end sheet, did-become / did-resign key, will-close, then
-`sheetParent`/`attachedSheet`); an iPhone's hidden `TabKeys` ask as the key is pressed (`PageWatch.openNow`: a presented
-page, or a popover). The menu's items carry ids for the tests (`go-home`, `go-events`, `go-templates`, `go-care`,
+not change underneath a page whose changes are not confirmed yet. "A page is open" = a sheet is attached to one of the
+app's windows (`PageWatch`: `NSWindow` will-begin / did-end sheet, did-become / did-resign key, will-close, then
+`sheetParent`/`attachedSheet`). The tab keys are the Mac's alone: an iPhone or iPad keyboard has no tab shortcuts (the hidden
+buttons they would need cannot be kept out of the accessibility tree, above). The menu's items carry ids for the tests (`go-home`, `go-events`, `go-templates`, `go-care`,
 `go-actions`, `go-settings`, `go-settings-comma`, `help-keys`), given by `ThingKeys.nameGoMenuItems` as the Thing menu's are.
 
 **The audit (0.103) — every page with a Done, a Save or an Add, and its ⌘S.** Real Save/Done, since 0.92: Trip settings
@@ -2161,8 +2163,8 @@ new, Your first real trip (`guide-done`); Sync details; Filter, Sort, Columns, t
 (`share-done`); Open a shared link (`shared-done`); a bag's photos (`bag-photo-done`); Pack by voice (`voice-done` — which had
 no Escape either until 0.103). Confirming buttons that add or make: Choose from your things (`pick-add`), New template
 (`newlist-make`), A small core (`smallcore-make`), Change several things' "Set to …" (`bulk-apply`), **Create trip** on Home
-(`trip-create`; not while a page is open over Home). Swallowing ⌘S: the icon picker (`icon-cancel`), Restore, Which one steps
-back? (`swap-cancel`). Not bound, on purpose: Restore's Replace, every Delete / Take it off / Discard, the
+(`trip-create`). Not bound, on purpose (they have nothing to save, or replace): the icon picker, Restore (whose Replace is
+never ⌘S), Which one steps back?, and: Restore's Replace, every Delete / Take it off / Discard, the
 small cards inside a page (Close on a place card, OK on a news card, the calendar's OK — Trip settings' own ⌘S takes them).
 Escape was missing on one page only: Pack by voice.
 

@@ -86,5 +86,8 @@ final class KeyGuideTests: XCTestCase {
         XCTAssertEqual(KeyGuide.cards.map(\.id), ["any", "go", "search", "edit", "thing", "lists", "mac"])
         XCTAssertEqual(KeyGuide.cards.first?.reach.words, "Mac, and iPhone or iPad with a keyboard")
         XCTAssertEqual(KeyGuide.cards.first { $0.id == "thing" }?.reach.words, "Mac only")
+        // The tab keys are the Mac's Go menu; an iPhone or iPad keeps ⌘S only where a page has a real Save.
+        XCTAssertEqual(KeyGuide.cards.first { $0.id == "go" }?.reach.words, "Mac only")
+        XCTAssertEqual(KeyGuide.cards.first { $0.id == "edit" }?.reach.words, "Mac, and iPhone or iPad with a keyboard")
     }
 }

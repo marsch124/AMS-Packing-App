@@ -46,9 +46,6 @@ struct RootView: View {
         .background(Theme.bg.ignoresSafeArea())
         // The Go menu acts on the window in front (0.103, Keys.swift): which tab it shows and how to change it.
         .focusedSceneValue(\.sectionSwitch, SectionSwitch(current: section, go: { section = $0 }))
-        #if os(iOS)
-        .background { TabKeys(section: $section) }      // ⌘1 … ⌘6 on a keyboard attached to the iPhone or iPad
-        #endif
         // Packing reminders (his idea 7): a tapped one opens its trip on Home; and
         // whenever the library settles after a change, the waiting ones are put right.
         .onAppear {
