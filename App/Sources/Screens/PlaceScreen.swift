@@ -38,6 +38,7 @@ struct PlaceScreen: View {
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: tint, filled: true)).focusEffectDisabled()
                     .keyboardShortcut(.cancelAction)            // Escape closes it, as Done does
+                    .commandS { dismiss() }                         // ⌘S = Done (0.103)
                     .accessibilityIdentifier("place-done")
             }
             .padding(16)
@@ -140,6 +141,7 @@ struct PlaceCodeSheet: View {
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.settings.color, filled: true)).focusEffectDisabled()
                     .keyboardShortcut(.cancelAction)
+                    .commandS { dismiss() }                         // ⌘S = Done (0.103)
                     .accessibilityIdentifier("place-code-done")
             }
             .padding(16)

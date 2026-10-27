@@ -341,6 +341,7 @@ struct LoopScreen: View {
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.events.color, filled: true)).focusEffectDisabled()
                     .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.events.color)
                     .keyboardShortcut(.cancelAction)            // Escape closes it (the spec pass, 5 Oct 2026)
+                    .commandS { dismiss() }                         // ⌘S = Done (0.103)
                     .accessibilityIdentifier("loop-done")
             }
             .padding(16)

@@ -501,6 +501,7 @@ struct ColumnPicker: View {
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.care.color, filled: true)).focusEffectDisabled()
                     .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.care.color)
                     .keyboardShortcut(.cancelAction)            // Escape closes it, as Done does (Escape everywhere, 5 Oct 2026)
+                    .commandS { dismiss() }                         // ⌘S = Done (0.103)
                     .accessibilityIdentifier("columns-done")
             }
             .padding(16)

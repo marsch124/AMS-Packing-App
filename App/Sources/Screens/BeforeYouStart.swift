@@ -100,6 +100,7 @@ struct BeforeYouStartSheet: View {
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.events.color, filled: true)).focusEffectDisabled()
                     .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.events.color)
                     .keyboardShortcut(.cancelAction)
+                    .commandS { dismiss() }                         // ⌘S = Done (0.103)
                     .accessibilityIdentifier("beforestart-done")
             }
             .padding(16)

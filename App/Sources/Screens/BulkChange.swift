@@ -143,6 +143,11 @@ struct BulkChange: View {
     }
 
     private func value(_ text: String, id: String, _ go: @escaping () -> Void) -> some View {
+        // The "Set to …" button of a box is the page's one confirm: ⌘S presses it (0.103).
+        valueButton(text, id: id, go).commandS(when: id == "bulk-apply", go)
+    }
+
+    private func valueButton(_ text: String, id: String, _ go: @escaping () -> Void) -> some View {
         Button(action: go) {
             HStack(spacing: 8) {
                 Text("→").font(.system(.footnote, weight: .semibold)).foregroundStyle(AppSection.care.color)

@@ -133,6 +133,7 @@ struct SmallCoreSheet: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain).focusEffectDisabled()
+            .commandS { make() }                         // ⌘S = Done (0.103)
             .accessibilityIdentifier("smallcore-make")
             .needsLine($needs, typed: "\(name)|\(ticked.count)|\(plan?.kits.count ?? 0)", id: "smallcore-needs")
             .padding(.horizontal, 16).padding(.vertical, 10)

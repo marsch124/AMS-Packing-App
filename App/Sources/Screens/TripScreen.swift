@@ -292,6 +292,7 @@ struct TripScreen: View {
                         // Escape closes it, as Done does (the spec pass, 5 Oct 2026 — on the Mac,
                         // and on an iPhone with a keyboard).
                         .keyboardShortcut(.cancelAction)
+                        .commandS { dismiss() }                         // ⌘S = Done (0.103)
                         .accessibilityIdentifier("trip-done")
                 }
                 HStack(alignment: .center, spacing: 8) {

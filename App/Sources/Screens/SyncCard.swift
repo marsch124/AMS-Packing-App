@@ -421,6 +421,7 @@ struct SyncDetailsSheet: View {
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.settings.color, filled: true)).focusEffectDisabled()
                     .keyboardShortcut(.cancelAction)            // Escape closes it, as Done does
+                    .commandS { dismiss() }                         // ⌘S = Done (0.103)
                     .accessibilityIdentifier("sync-details-done")
             }
             .padding(16)

@@ -35,8 +35,12 @@ struct AMSPackingApp: App {
         // A thing's page from the keyboard (0.68): the Thing menu lists its keys, and is
         // on only while a thing's page is open (ThingKeys.swift). Quit (⌘Q) asks first while a
         // page holds a change, and quits with a page open (`QuitGuard`, EditDraft.swift).
+        // The Go menu (0.103, ⌘1 … ⌘6 for the six tabs, Keys.swift) comes first, then the Thing menu; ⌘, opens
+        // Settings, Help ▸ Keyboard Shortcuts opens that topic of How it works.
         .commands {
+            GoCommands()
             ThingCommands()
+            SettingsAndHelpCommands()
             QuitCommand()
         }
         .handlesExternalEvents(matching: ["*"])

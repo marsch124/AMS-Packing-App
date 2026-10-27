@@ -787,7 +787,7 @@ One `.sheet(item: page)` (`Page` = `whatsNew | howItWorks | firstTrip`) shows th
 
 **The sheet header** (`GuideHeader`, shared by all three): the title (22 heavy, Settings slate, id `guide-title`),
 Spacer, **Done** (filled `HeaderButtonStyle`, slate, id `guide-done`, calls `dismiss()`; Escape too, ⌘. on an iPhone
-keyboard — 0.62), padding 16. Each page then
+keyboard — 0.62; ⌘S too since 0.103, `commandS`, §20a), padding 16. Each page then
 scrolls in a `KeyboardAwayScroll` padded 16 / 24 on `Theme.bg`. Mac only: `.frame(minWidth: 520, minHeight: 620)`.
 
 ---
@@ -945,6 +945,8 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
 4. Twelve topic cards (eleven until 0.71) (padding 14, card, radius 12, line border, container id `guide-topic-<n>`): a header row —
    the topic's section mark (`SectionMark`, 24 pt, line 1.9, in the section's colour) and the title (19 heavy ink)
    — then each line as a 6-pt dot in the section colour + text (16 ink, wraps).
+5. (0.103) **Keyboard shortcuts** (`KeysGuide`, `Guide/KeysGuide.swift`) — last, after the twelve topics: a heading card
+   and a card for each kind of key (§7b).
 4a. (0.80) A topic of its own, **If a bag goes missing** (the trips' section), right after *On site* (so the topics after
    it are numbered one more): where the Lost bag page is (Lost bag? in Bags, the Packing Stations' Photos and Ready), what it
    holds, "not filled in" and where a tap fills it in, the bag-tag number typed on the page, the AirTag's Find My hint,
@@ -1179,15 +1181,19 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
     what the other device changed." (0.95 to 0.97: "Cancel on a bag takes back only what you changed there.") — (0.93) "If a change cannot be
     saved, a small note says “Couldn't save that — try again.” The screen then shows what is kept; just do it again"
     — (0.94) "— a bag, a template or Your choices stays open with what you changed, so Done again saves it." (§20b); on the Mac Escape closes a window as its Cancel or Done does, never saving
-    (0.62). (5 lines.)
+    (0.62); (0.103) the last line now also says "⌘S is Save (or Done) on every page, even one that only shows
+    something, like a trip. ⌘1 to ⌘6 change tabs. The All your things window closes with Done or ⌘W. Every key is on
+    its own card under Keyboard shortcuts, the last part of this guide." (5 lines.)
+12. **Keyboard shortcuts** (0.103; not one of the `topics` — a part of its own, `KeysGuide`, §7b): every key the app
+    answers, as cards of key caps.
 
 **Tests.** `testWhatsNewStartsWithThisVersion` (topics 0 and 1 exist), `testTheLoopShowsWhereATripStands` (loop
 card, first-trip card, Words), (0.79) `testHowItWorksExplainsThePackingDayStations` (the Packing day part is there;
 its six stations in order, "1 · " … "6 · ", each wearing its own mark — the label of `guide-day-<key>-mark` is his
 pick's — the first five saying what turns them green, Weigh that it opens by itself, Tags the bag's Has an AirTag;
 pictures `day-howitworks-1`/`-2`, day and night; seen red with the card left out: "How it works has no Packing day
-part"); (0.90) `testHowItWorksSearchShowsOnlyWhatSaysTheWords` (§7a). **Not covered:** the number of topics, their
-order, their text.
+part"); (0.90) `testHowItWorksSearchShowsOnlyWhatSaysTheWords` (§7a); (0.103) `testHowItWorksHasAKeyboardShortcutsTopic`
+and model `KeyGuideTests` (§7b). **Not covered:** the number of topics, their order, their text.
 
 ### 7a. Search in How it works (0.90; `HowItWorksScreen`, `GuideSearchResults`, `GuideHitCard`, `GuideMarks` in `Guide/GuideScreen.swift`; the matching in `Core/Sources/PackingLibrary/GuideSearch.swift`)
 
@@ -1223,6 +1229,11 @@ list):
    after `Packing a trip` (`HowItWorksScreen.stationsAfter`), `stations` — "Packing Stations"
    (`PackingDayGuideCard.title`): its first paragraph (`.intro`), the six stations "<n> · <name> — <words>"
    (`PackingDayGuideCard.says`; not the drawn marks' descriptions), its four closing lines (`.more`).
+
+5. (0.103) `keys` — "Keyboard shortcuts" (`KeyGuide.title`), the last part: the line at the top, each card's heading
+   with where its keys work (and its line), and each row "<action> — <keys in words> (<keys as symbols>). <note>
+   <card>." (`KeyGuide.paragraphs`, in the model): "Save, or Done — Command S (⌘S). On any page." — so the key names, the
+   symbols he sees in a menu and the action words all find it.
 
 `Loop.swift` and `PackingDay.swift` gave up their inline sentences for these statics in 0.90 (the cards draw the same
 words); `Words.swift` gained `WordsCard.title`, `FirstTripCard` its `title`.
@@ -1293,6 +1304,65 @@ it shows`; the guide built again after the search (`if !searching`) — `XCTAsse
 it was`; no nothing line — `XCTAssertTrue failed - nothing found, and nothing says so`; the guide left in VoiceOver's
 reach under the search — `XCTAssertNil failed: ""guide-topic-1" Other" - the whole guide still shows under the
 search`.
+
+### 7b. Keyboard shortcuts in How it works (0.103; `KeysGuide`/`KeyCap` in `Guide/KeysGuide.swift`; the words in `Core/Sources/PackingLibrary/KeyGuide.swift`)
+
+**Origin.** His ask of 27 Oct 2026, with the shortcuts themselves ("103 - make the list visually pleasing and easy to
+read for a human"): a topic **Keyboard shortcuts** in Settings → How it works, written from the code — every
+`keyboardShortcut`, the thing page's key walk (`ThingKeys`), the drop-downs' keys (`DropDown`), How it works' and the icon
+picker's ⌘F, the grab-list and Arrange keys, ⌘Q, the new Go menu. On the Mac it is also Help ▸ Keyboard Shortcuts (§20a).
+
+**What the model says** (`KeyGuide`, tested by `KeyGuideTests`): `intro` — "These are the Mac’s keys, most of them also
+in its menu bar. On an iPhone or iPad with a keyboard attached, the same keys work where a card says so." — and
+`cards`, each `Card(id, title, reach, line, rows)`; `reach` is `.withKeyboard` ("Mac, and iPhone or iPad with a
+keyboard") or `.macOnly` ("Mac only"); a `Row(action, chords, note)` has one chord or several ways ("Space or ↓"), a
+chord being `Key`s pressed together; a `Key` has its cap ("⌘", "S", "Esc", "A–Z") and its spoken name ("Command", "S",
+"Escape", "letters"). The seven cards, in order, with their rows:
+
+| # | Card (id) | Reach | Rows (keys) |
+|---|---|---|---|
+| 0 | On any page (`any`) | Mac + keyboard | Save, or Done (⌘S) · Cancel, or close the page (Esc or ⌘.; "Esc never saves anything. ⌘. is Esc on an iPhone.") · Add what you typed in an Add field (Return) |
+| 1 | Go to (`go`) | Mac + keyboard | Home ⌘1 · Trips ⌘2 · Templates ⌘3 · Care ⌘4 · To do ⌘5 · Settings ⌘6 or ⌘, — "Also the Mac’s Go menu. Switched off while a page is open: finish it with ⌘S or Esc first." |
+| 2 | Search (`search`) | Mac | Search How it works (⌘F) · Find an icon, on a template’s icon page (⌘F) · Empty the search (Esc; "A second Esc closes the page.") |
+| 3 | Editing a list or a page (`edit`) | Mac + keyboard | Save a grab list, a template, your lists or an activity area (⌘S) · Throw away what you changed (Esc; a grab list stays open, a template being arranged ends Arrange first) |
+| 4 | A thing’s page (`thing`) | Mac | Save the thing ⌘S · Save, and start the next thing with the same choices ⌘N · Next thing in the list the page came from ⌘↓ · Previous thing ⌘↑ · Jump to a field by its name ⌘J · Next field Tab · Previous field ⇧Tab · Save from any field but Notes Return — "Also the Thing menu. Tab walks every field, top to bottom." |
+| 5 | Lists and drop-downs (`lists`) | Mac | Open a drop-down (Space or ↓) · Move through its choices (↑ ↓) · Jump to a choice by typing (A–Z) · Choose the lit one (Return) · Close the list, and stay on the page (Esc) · Move along a row of pills (← →) · Switch the lit pill, or a switch (Space) — "On a thing’s page, with the field lit." |
+| 6 | The Mac’s windows (`mac`) | Mac | Quit ⌘Q ("Asks first when a page holds a change you have not confirmed.") · New window ⌘N ("Not while a thing’s page is open: there ⌘N is Save and New.") · Close the All your things window ⌘W |
+
+**On screen.** Last in the guide's `VStack(spacing: 12)`, after the twelve topics; every card padding 14, `Theme.card`,
+radius 12, 1-pt `Theme.line`. First a **heading card** (id `guide-keys`): the `command` symbol (SF Symbol, 24, slate)
+and "Keyboard shortcuts" (Body semibold, id `guide-keys-title`), the intro under it (Callout ink). Then one **card per
+kind of key** (id `guide-keys-card-<n>`): its title (Body semibold, a heading for VoiceOver), under it where its keys work
+(Footnote muted), its line if it has one (Footnote muted), then the rows with a 1-pt hairline between.
+A **row** (id `guide-keys-<card>-<row>`): the action (Callout ink) with its note under it (Footnote muted) on the left, the
+keys on the right as **key caps** (`KeyCap`): the key's name (Callout semibold ink — Apple's text styles, no small type), a
+face in `Theme.bg` with a 1-pt `Theme.faint` ring at 55 % and a firmer edge 2 points under it, corner radius 7, at least
+`Metrics.compact` (32 iPhone / 24 Mac) square, 7 points in from the name; several chords are separated by a muted "or";
+a chord's caps are 3 points apart. The row keeps its action and its caps on one line and lets the action wrap; at the
+accessibility text sizes the caps go under the action. Day and night are the app's tokens, nothing drawn in a fixed colour.
+**VoiceOver** reads a row as one thing: label = the action, value = the keys in words ("Command S", "Escape, or Command
+period", "Command 6, or Command comma", "Shift Tab"), hint = the note; the caps themselves are not read, and the symbols
+never are. A card's title is a heading.
+
+**Search.** `HowItWorksScreen.parts` ends with `keys` (kind `.keys`, slate dot, the `command` symbol before the heading in a
+hit card); its paragraphs are `KeyGuide.paragraphs`, so the search finds the topic by a key's name (`command s`, `escape`,
+`shift tab`, `down arrow`), by the symbol (`⌘s`, `⌘1`), by the action (`quit`, `jump`) and by the cards’ own words (`go menu`,
+`keyboard attached`). Hits show as the search's text cards ("Save, or Done — Command S (⌘S). On any page."), marked as everywhere.
+
+**From the Mac's Help menu.** Help ▸ Keyboard Shortcuts (`LibraryModel.keysToOpen`): the Settings tab, How it works open,
+scrolled to the topic (`KeysGuide.scrollId`). Off while a page is open, like the Go menu.
+
+**Tests.** Model `KeyGuideTests` (5): every key the app answers is in the topic with the right keys (a list written from the
+code: the missing or wrong ones are named in one message); the Go card is the six tabs in the tab bar's order, ⌘1 to ⌘6;
+VoiceOver's words ("Command S", "Shift Tab", "Command Down arrow", "Space, or Down arrow", "Escape, or Command period")
+and no symbol in any; the search finds the keys by name, symbol and action and the line at the top; the line says the Mac
+first and then the iPhone and iPad, the seven cards in order. Seen red with faults planted (the Go card without Care; ⌘'s
+spoken name the symbol): `("["go: no row for Care"]") is not equal to ("[]") - keys the app answers that the topic leaves
+out or gets wrong`, `("Optional("⌘ S")") is not equal to ("Optional("Command S")")`. UI `testHowItWorksHasAKeyboardShortcutsTopic`
+(iPhone and Mac): the topic is there, the heading card and seven cards, the rows read as "Save, or Done" / "Command S", the Go
+card's six rows `Command 1` … `Command 6, or Command comma`, "Shift Tab"; each card brought to the top for a picture
+(`keys-0-top`, `keys-1-card` … `keys-7-card`, `keys-8-search`; day and night, iPhone and Mac); the search finds it for
+`command s`, `quit`, `shift tab`.
 
 ---
 
@@ -1859,7 +1929,8 @@ button, right?" — and "the cancel function should be existing throughout the w
 `thing-cancel`) and **Save** — or a **Done** that saves — top right (filled, full colour, never grey, §20). Cancel
 throws away every change made on that page since it opened; Save/Done keeps them. **Escape = Cancel** on the Mac (⌘.
 on an iPhone keyboard), never Save (§20); **⌘S = Save/Done** (`.keyboardShortcut("s", modifiers: .command)`; the
-thing page's ⌘S is the Mac's Thing menu, the button's own on the iPhone). **A swipe down (iPhone) never saves and
+thing page's ⌘S is the Mac's Thing menu, the button's own on the iPhone; since 0.103 on EVERY page that has a Done or a
+Save — see "Keyboard shortcuts — the one table" below). **A swipe down (iPhone) never saves and
 never throws a change away without a word** — the coordinator's decision for the whole app, 19 Oct 2026, per his "the
 cancel function should be existing throughout the whole app": with nothing changed the page closes; with something
 changed it holds still (`interactiveDismissDisabled`) and asks, as Notes and Calendar do — **"Discard changes?"** /
@@ -2026,6 +2097,79 @@ walk, the app put away and back: still open, named Hill walk, Cancel → Hiking 
 Hill trek and moved to OE, the app ended → Hiking in GA at the next launch; moved to OE and Done/⌘S, ended → under OE;
 a place added in Your choices, ended → not there). Seen RED on 0.97 (iPhone, 0.97 with only the `-uiTestingKept` hook added): "the app put away kept the max, and Cancel could not take it back: Your bags says '31'", "the app put away kept the pocket, and Cancel could not take it back: 2 pockets" and `("32") is not equal to ("23") - the max typed and never confirmed with Done was kept when the app ended`; `("Hill walk") is not equal to ("Hiking") - the app put away kept the name, and Cancel could not take it back`, `("7") is not equal to ("e.g. 2, or 2 pairs") - the app put away kept the row's How many, and Cancel could not take it back` (the empty field reads as its prompt), the ended app's move kept (`("Swim") is not equal to ("Hiking") - the name never confirmed with Done was kept when the app ended` — Hiking had left GA, so the first row was Swim; the test now first checks GA and OE directly) and "the place never confirmed with Done was kept when the app ended".
 ⌘Q with a page open (Mac, 21 Oct 2026): `testQuitWithAPageOpenQuitsOrAsksFirst` (Mac only; `-uiTestingKept`) — Hiking's page and Your choices untouched → ⌘Q ends the app; the Wheeled duffel's max 23 typed as 32 → ⌘Q asks (`discard-yes`, `discard-keep`), the app still running → Keep editing: the bag's page still open with 32 → ⌘Q → Discard: the app ends; Hiking moved to OE → ⌘Q → Discard: ends; at the next launch Hiking under GA and the max 23. Seen RED on 0.98 on GitHub's Mac (Mac probe run 39660205132: "⌘Q did nothing with a template's page open"); green with the fix (run 39660205411, first time, with `testABagsPageKeepsNothingButByDone`, `testATemplatesPageAndYourChoicesKeepNothingButByDone`, both Escape tests and `testTheThingMenuIsOnOnlyWhileAPageIsOpen`).
+
+### Keyboard shortcuts — the one table (0.103; `Screens/Keys.swift`, `Core/Sources/PackingLibrary/KeyGuide.swift`)
+
+**His words** (27 Oct 2026, with a picture of a trip open over the Trips tab on the Mac, Done at its top right):
+"Regarding keyboard shortcuts, when I am in a trip and want to press Command-S, it does not work." — and "I would also like
+keyboard shortcuts to change tabs. Home, Trips, Templates, Care, To do and Settings." — and, for the guide, "make the list
+visually pleasing and easy to read for a human" (§7b).
+
+**Why ⌘S did nothing on a trip.** A SwiftUI button carries ONE keyboard shortcut, and a trip's Done (like every Done of a page
+that only shows something — How it works, Search, Your things, the Stations …) carries Escape, `.cancelAction`. 0.92's audit
+gave ⌘S to the pages that CHANGE something (a Save or a Done that saves), and only to those. On the trip nothing else
+held ⌘S, so it fell through to the Thing menu's Save (⌘S, `ThingCommands`), which is switched off unless a thing's page is
+open — the Mac beeped. Fixed by the rule below, not by a one-off: `View.commandS { … }` (`Keys.swift`) puts a hidden button
+(zero opacity, no hit testing, hidden from VoiceOver — as How it works' ⌘F, 0.90) behind the Done, with ⌘S and the same
+action, so the Done keeps Escape and gains ⌘S.
+
+**The rule** (all pages, Mac and an iPhone or iPad with a keyboard): **⌘S = Done or Save or Add or Make or Create** — the
+page's one confirming button; on a page whose Done only closes it, ⌘S closes it. **Escape (and ⌘.) = Cancel, or Close where
+there is no Cancel.** **⌘Q** quits (asks first while a page holds a change, 0.99). **Never on a destructive or replacing
+button:** Restore's *Replace everything on this device*, Delete, Take it off, Discard keep no ⌘S (and Return stays with the
+fields). A page with nothing to save (the icon picker, Restore, Which one steps back?) swallows ⌘S (`swallowsCommandS`): on
+an iPhone with a keyboard a presented page's responder chain continues into the page that presented it, and that page's ⌘S
+would close it from underneath.
+
+**The table.**
+
+| Keys | What | Where it lives |
+|---|---|---|
+| ⌘S | Save / Done / Make / Add / Create trip | every page below; Thing menu ▸ Save on a thing's page |
+| Esc, ⌘. | Cancel, or close | every sheet's Cancel or Done (`.cancelAction`); a template being arranged: Arrange first |
+| Return | adds what is typed in an Add field; saves a thing's page from any field but Notes (Mac) | `onSubmit`; `ThingEditor.key` |
+| ⌘1 … ⌘6 | Home, Trips, Templates, Care, To do, Settings | Go menu (`GoCommands`, Mac); hidden buttons in `RootView` (`TabKeys`, iPhone/iPad keyboard) |
+| ⌘, | the Settings tab | app menu ▸ Settings… (`SettingsAndHelpCommands`, Mac); `TabKeys` |
+| — | Help ▸ Keyboard Shortcuts: How it works at its topic | `SettingsAndHelpCommands`, `LibraryModel.keysToOpen` |
+| ⌘F | search How it works; find an icon | `GuideScreen`, `TemplatesScreen` icon picker (Mac) |
+| Esc in those fields | empties the search, then closes the page | `onExitCommand` (Mac) |
+| ⌘N | New Window (File menu) — Save and New while a thing's page is open | `ThingCommands` |
+| ⌘↓ ⌘↑ ⌘J | next / previous thing, jump to a field | Thing menu (`ThingKeys`, Mac) |
+| Tab ⇧Tab Space ↑ ↓ ← → Return, letters | the thing page's key walk and its drop-downs | `ThingEditor.key`, `DropDown.answer` (Mac) |
+| ⌘Q | quit | `QuitCommand` |
+| ⌘W | closes the All your things window | the system |
+
+**The Go menu** (`GoCommands`, `CommandMenu("Go")`, before the Thing menu): the six tabs in the tab bar's order, ⌘1 to ⌘6 —
+Apple's own convention — the tab showing ticked. It acts on the window in front (`RootView` gives its scene a
+`SectionSwitch` through `focusedSceneValue`) and is **off (greyed) while a page is open** — the Apple modal rule: tabs do
+not change underneath a page whose changes are not confirmed yet. "A page is open" on the Mac = a sheet is attached to
+one of the app's windows (`PageWatch`: `NSWindow` will-begin / did-end sheet, did-become / did-resign key, will-close, then
+`sheetParent`/`attachedSheet`); an iPhone's hidden `TabKeys` ask as the key is pressed (`PageWatch.openNow`: a presented
+page, or a popover). The menu's items carry ids for the tests (`go-home`, `go-events`, `go-templates`, `go-care`,
+`go-actions`, `go-settings`, `go-settings-comma`, `help-keys`), given by `ThingKeys.nameGoMenuItems` as the Thing menu's are.
+
+**The audit (0.103) — every page with a Done, a Save or an Add, and its ⌘S.** Real Save/Done, since 0.92: Trip settings
+(`tripset-save-top`, `tripset-save`), the trip review, Your choices (`lists-done`), Activity areas, a template's page
+(`template-detail-done`) and a row on it, a thing's page, the bag page, the lost-luggage desk, a grab list being edited.
+Done that only closes, ⌘S added in 0.103 (`.commandS { dismiss() }` unless said): the trip (`trip-done`); How it works, What's
+new, Your first real trip (`guide-done`); Sync details; Filter, Sort, Columns, the things table (sheet and window,
+`table-done`); the Packing Stations sheet (`day-done`); Take a break; Before you start; On site; Way home; Lost bag
+(`lost-done`); Search; Refine; a place (`place-done`) and its label (`place-code-done`); a grab list not being edited
+(`grab-done`); Your grab lists; Which grab list? (`grab-menu-close`); Your things; Your bags; Where you have been; The loop; Share
+(`share-done`); Open a shared link (`shared-done`); a bag's photos (`bag-photo-done`); Pack by voice (`voice-done` — which had
+no Escape either until 0.103). Confirming buttons that add or make: Choose from your things (`pick-add`), New template
+(`newlist-make`), A small core (`smallcore-make`), Change several things' "Set to …" (`bulk-apply`), **Create trip** on Home
+(`trip-create`; not while a page is open over Home). Swallowing ⌘S: the icon picker (`icon-cancel`), Restore, Which one steps
+back? (`swap-cancel`). Not bound, on purpose: Restore's Replace, every Delete / Take it off / Discard, the
+small cards inside a page (Close on a place card, OK on a news card, the calendar's OK — Trip settings' own ⌘S takes them).
+Escape was missing on one page only: Pack by voice.
+
+**Tests** (Mac; `launch`ed on GitHub's Mac probe, not on this Mac's screen): `testCommandSIsDoneOnATripsPage` (the picture: a
+trip open over Trips, ⌘S → gone, the tab still there), `testCommandSIsDoneOnEveryPageWithADone` (What's new, How it works,
+First trip, Your things, Search, the trip's loop and Share — each opened, ⌘S, gone; every failure listed in one message),
+`testCommandSMakesANewTemplate`, `testCommandNumbersChangeTabs` (the Go menu has six items, all on; ⌘6 … ⌘1 each open their
+tab; ⌘, opens Settings), `testTheTabKeysAreOffWhileAPageIsOpen` (a trip open: all six items off, ⌘3 changes nothing and
+closes nothing; Done: on again, ⌘3 opens Templates), `testHelpOpensTheKeyboardShortcutsTopic`. Model and guide: §7b.
 
 ## 20b. A save that fails — a note, never a dead app (0.93; `SaveNote` in `RootView.swift`, `LibraryModel.couldNotSave`, `CloudStore.apply`)
 

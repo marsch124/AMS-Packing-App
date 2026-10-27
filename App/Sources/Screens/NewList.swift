@@ -96,6 +96,7 @@ struct NewList: View {
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain).focusEffectDisabled()
+                    .commandS { make() }                         // ⌘S = Done (0.103)
                     .accessibilityIdentifier("newlist-make")
                     // What a press was missing — gone as soon as the name changes, as
                     // under every other field (the spec pass, 5 Oct 2026).

@@ -127,6 +127,8 @@ struct VoicePanel: View {
             if !running {
                 Button("Done") { close() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.events.color, filled: true)).focusEffectDisabled()
+                    .keyboardShortcut(.cancelAction)            // Escape closes it, as Done does (0.103: it had no key)
+                    .commandS { close() }                       // ⌘S = Done (0.103)
                     .accessibilityIdentifier("voice-done")
             }
         }

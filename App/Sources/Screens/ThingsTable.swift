@@ -436,6 +436,7 @@ struct ThingsTable: View {
                     // not the Mac's own "All your things" window: a window closes with ⌘W, and
                     // Escape pressed in its search field would close the whole table.
                     .keyboardShortcut(inWindow ? nil : .cancelAction)
+                    .commandS { close() }                         // ⌘S = Done (0.103)
                     .accessibilityIdentifier("table-done")
             }
 

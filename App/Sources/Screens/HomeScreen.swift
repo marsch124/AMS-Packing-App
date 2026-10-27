@@ -235,6 +235,8 @@ struct HomeScreen: View {
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain).focusEffectDisabled()
+                    // ⌘S = Create trip (0.103) — not while a page is open over Home.
+                    .commandS { if !PageWatch.openNow { create(flat) } }
                     .accessibilityIdentifier("trip-create")
                     if !stillNeeded.isEmpty {
                         Text(stillNeeded)

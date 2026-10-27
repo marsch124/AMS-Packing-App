@@ -11,6 +11,9 @@ import PackingLibrary
 struct GuideDoors: View {
     enum Page: String, Identifiable { case whatsNew, howItWorks, firstTrip; var id: String { rawValue } }
     @State private var page: Page?
+    /// Help ▸ Keyboard Shortcuts (Mac, 0.103): How it works opens scrolled to that topic.
+    @EnvironmentObject private var model: LibraryModel
+    @State private var showKeys = false
 
     var body: some View {
         // Rows of one card in Settings, a hairline between them (0.67; until then each
@@ -22,12 +25,18 @@ struct GuideDoors: View {
             CardHairline()
             door("Your first real trip", "In 6 steps, from a backup to the review", "settings-firsttrip") { page = .firstTrip }
         }
-        .sheet(item: $page) { p in
+        .sheet(item: $page, onDismiss: { showKeys = false }) { p in
             switch p {
             case .whatsNew: WhatsNewScreen()
-            case .howItWorks: HowItWorksScreen()
+            case .howItWorks: HowItWorksScreen(showKeys: showKeys)
             case .firstTrip: FirstTripScreen()
             }
+        }
+        .onChange(of: model.keysToOpen, initial: true) { _, asked in
+            guard asked else { return }
+            model.keysToOpen = false
+            showKeys = true
+            page = .howItWorks
         }
     }
 
@@ -53,6 +62,7 @@ private struct GuideHeader: View {
                 .buttonStyle(HeaderButtonStyle(tint: AppSection.settings.color, filled: true)).focusEffectDisabled()
                 .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.settings.color)
                 .keyboardShortcut(.cancelAction)            // Escape closes it, as Done does (Escape everywhere, 5 Oct 2026)
+                .commandS { dismiss() }                         // ⌘S = Done (0.103)
                 .accessibilityIdentifier("guide-done")
         }
         .padding(16)
@@ -299,9 +309,11 @@ struct HowItWorksScreen: View {
             "The magnifier at the top of most screens searches everything at once \u{2014} a thing\u{2019}s notes too.",
             "Every page where you change something has Cancel at the top left and Save (or Done) at the top right \u{2014} a thing, a bag, a template and its rows, Trip settings, Your choices, Activity areas, a grab list while you edit it, For the lost-luggage desk. Cancel puts back everything you changed on that page since you opened it; Save or Done keeps it. A swipe down on the iPhone closes a page you changed nothing on; with something changed it asks first \u{2014} Discard changes? \u{2014} Discard puts everything back, Keep editing stays. What one tap does on a list \u{2014} a tick, Done today \u{2014} is done at once. Switch to another app and back with a page open and it is still open, with what you changed; close the app (swipe it away) or quit it and what you did not confirm with Save or Done is not kept \u{2014} as in Calendar or Contacts.",
             "Save keeps only what you changed on that page \u{2014} a change made on the other device while it was open stays, and so does what it added to the same list (a section, a kind of thing, a grab list\u{2019}s things); Cancel never touches what the other device changed. If a change cannot be saved, a small note says \u{201C}Couldn't save that \u{2014} try again.\u{201D} The screen then shows what is kept; just do it again \u{2014} a bag, a template or Your choices stays open with what you changed, so Done again saves it.",
-            "On the Mac, Escape closes the window you are in, as its Cancel (or Done) does \u{2014} it never saves; \u{2318}S is Save (or Done). The All your things window closes with Done or \u{2318}W."]),
+            "On the Mac, Escape closes the window you are in, as its Cancel (or Done) does \u{2014} it never saves; \u{2318}S is Save (or Done) on every page, even one that only shows something, like a trip. \u{2318}1 to \u{2318}6 change tabs. The All your things window closes with Done or \u{2318}W. Every key is on its own card under Keyboard shortcuts, the last part of this guide."]),
     ]
 
+    /// Opened from Help ▸ Keyboard Shortcuts (Mac, 0.103): scrolled to the Keyboard shortcuts topic.
+    var showKeys = false
     /// What is typed in the search field at the top (0.90).
     @State private var query = ""
     @FocusState private var writing: Bool
@@ -336,7 +348,7 @@ struct HowItWorksScreen: View {
             ZStack(alignment: .top) {
                 // The whole guide stays built under a search, only out of sight: emptied, the
                 // field gives it back exactly as it was — scrolled to where it was.
-                HowItWorksGuide()
+                HowItWorksGuide(showKeys: showKeys)
                     .opacity(searching ? 0 : 1)
                     .allowsHitTesting(!searching)
                     .accessibilityHidden(searching)
@@ -355,7 +367,10 @@ struct HowItWorksScreen: View {
 /// How it works itself, every card — a view of its own with nothing to watch, so a key
 /// pressed in the search field never builds it again.
 private struct HowItWorksGuide: View {
+    var showKeys = false
+
     var body: some View {
+        ScrollViewReader { proxy in
         KeyboardAwayScroll {
             VStack(alignment: .leading, spacing: 12) {
                 FirstTripCard()
@@ -385,8 +400,15 @@ private struct HowItWorksGuide: View {
                     // 2026: "write about the Packing-Day-Stations in the How-this-works").
                     if t.title == HowItWorksScreen.stationsAfter { PackingDayGuideCard() }
                 }
+                // Keyboard shortcuts (0.103): the last part, a card for each kind of key.
+                KeysGuide()
             }
             .padding(.horizontal, 16).padding(.bottom, 24)
+        }
+        .onAppear {
+            // From Help ▸ Keyboard Shortcuts: once the guide is laid out, to the topic.
+            if showKeys { DispatchQueue.main.async { proxy.scrollTo(KeysGuide.scrollId, anchor: .top) } }
+        }
         }
     }
 }
@@ -405,7 +427,7 @@ struct GuideParagraph {
 /// One part of How it works — a card — as its search reads it: the heading the card shows, and
 /// everything it says, in order.
 struct GuidePart {
-    enum Kind { case quickstart, loop, words, stations, topic(AppSection) }
+    enum Kind { case quickstart, loop, words, stations, keys, topic(AppSection) }
     /// The ids' part: "quickstart", "loop", "words", "stations", "topic-<n>" (the topic's
     /// `guide-topic-<n>`).
     let key: String
@@ -418,7 +440,7 @@ struct GuidePart {
         switch kind {
         case .quickstart: return AppSection.home.color
         case .loop: return AppSection.templates.color
-        case .words: return AppSection.settings.color
+        case .words, .keys: return AppSection.settings.color
         case .stations: return Library.LoopStep.pack.tint
         case .topic(let s): return s.color
         }
@@ -460,6 +482,9 @@ extension HowItWorksScreen {
                                         + PackingDayGuideCard.more.map { GuideParagraph(lead: nil, text: $0) }))
             }
         }
+        // Keyboard shortcuts (0.103): the last part; the model (`KeyGuide.paragraphs`) says every word of it.
+        out.append(GuidePart(key: "keys", kind: .keys, title: KeyGuide.title,
+                             paragraphs: KeyGuide.paragraphs.map { GuideParagraph(lead: $0.lead, text: $0.text) }))
         return out
     }()
 
@@ -556,6 +581,10 @@ private struct GuideHitCard: View {
                 .accessibilityHidden(true)
         case .stations:
             StationMark(mark: PackingDayStation.dayMark, size: 24).foregroundStyle(Library.LoopStep.pack.words(scheme))
+        case .keys:
+            Image(systemName: "command").font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.settings.color)
+                .frame(width: 24, height: 24)
+                .accessibilityHidden(true)
         case .quickstart, .loop:
             EmptyView()
         }

@@ -63,6 +63,7 @@ struct PickThingsScreen: View {
                 // ticked it says so under the title instead of doing nothing silently.
                 Button(picked.isEmpty ? "Add" : "Add \(picked.count)") { putOn() }
                     .buttonStyle(HeaderButtonStyle(tint: violet, filled: true)).focusEffectDisabled()
+                    .commandS { putOn() }                         // ⌘S = Done (0.103)
                     .accessibilityIdentifier("pick-add")
             }
             .needsLine($addNeeds, typed: picked, id: "pick-add-needs")

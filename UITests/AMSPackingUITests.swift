@@ -16919,4 +16919,214 @@ final class AMSPackingUITests: XCTestCase {
             || app.staticTexts["If a bag goes missing"].exists
         XCTAssertTrue(found, "How it works says nothing about a lost bag")
     }
+
+    // MARK: - Keyboard shortcuts (0.103, his asks of 27 Oct 2026; spec 06 §20a)
+
+    // "Regarding keyboard shortcuts, when I am in a trip and want to press Command-S, it does not work."
+    // A trip's Done carried Escape and nothing else; ⌘S went to the Thing menu's Save, which is off unless a
+    // thing's page is open. Now ⌘S is Done on every page that has a Done or a Save. And "I would also like
+    // keyboard shortcuts to change tabs": ⌘1 … ⌘6, the Mac's Go menu, off while a page is open.
+
+    /// ⌘S in the window in front — a beat after it opened, which takes the keys a moment later.
+    private func pressCommandS(_ app: XCUIApplication) {
+        sleep(1)
+        app.typeKey("s", modifierFlags: .command)
+    }
+
+    /// ⌘S is Done on a trip's page (the picture he sent: a trip open over the Trips tab, Done at its top right).
+    func testCommandSIsDoneOnATripsPage() throws {
+        #if os(iOS)
+        throw XCTSkip("⌘S on a page is checked on the Mac")
+        #else
+        let app = launch()
+        tab(app, "events")
+        XCTAssertTrue(appears(app, "screen-events"))
+        app.buttons["trip-row-0"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        pressCommandS(app)
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5), "⌘S did nothing on a trip's page")
+        XCTAssertNotNil(find(app, "screen-events"), "⌘S closed more than the trip")
+        #endif
+    }
+
+    /// ⌘S is Done on the other pages that only show something — each one opened, ⌘S pressed, and gone; all
+    /// the failures are listed in one message. (The pages that change something had ⌘S since 0.92.)
+    func testCommandSIsDoneOnEveryPageWithADone() throws {
+        #if os(iOS)
+        throw XCTSkip("⌘S on a page is checked on the Mac")
+        #else
+        let app = launch()
+        var failed: [String] = []
+        func check(_ name: String, open: () -> Bool, page: String) {
+            guard open(), appears(app, page, timeout: 5) else { failed.append("\(name): did not open"); return }
+            pressCommandS(app)
+            if !disappears(app, page, timeout: 5) {
+                failed.append("\(name): ⌘S left it open")
+                app.typeKey(.escape, modifierFlags: [])
+                _ = disappears(app, page, timeout: 5)
+            }
+        }
+        tab(app, "settings")
+        for (door, page) in [("settings-whatsnew", "guide-whatsnew"), ("settings-howitworks", "guide-howitworks"),
+                             ("settings-firsttrip", "guide-firsttrip")] {
+            check(door, open: { self.tap(app, id: door); return true }, page: page)
+        }
+        tab(app, "care")
+        check("Your things", open: { self.tap(app, id: "care-things"); return true }, page: "things-detail")
+        check("Search", open: { self.tap(app, id: "search-open"); return true }, page: "search-detail")
+        tab(app, "events")
+        app.buttons["trip-row-0"].tap()
+        if appears(app, "trip-detail", timeout: 5) {
+            check("The loop", open: { self.tap(app, id: "trip-loop"); return true }, page: "loop-screen")
+            check("Share", open: { self.tapVisible(app, app.buttons["trip-share"]); return true }, page: "share-screen")
+        } else {
+            failed.append("the trip did not open")
+        }
+        XCTAssertEqual(failed, [], "⌘S is not Done on these pages")
+        #endif
+    }
+
+    /// ⌘S is the Add of a page that adds: the new template's Make (Escape is its Cancel, never Make).
+    func testCommandSMakesANewTemplate() throws {
+        #if os(iOS)
+        throw XCTSkip("⌘S on a page is checked on the Mac")
+        #else
+        let app = launch()
+        tab(app, "templates")
+        tap(app, id: "templates-new")
+        XCTAssertTrue(appears(app, "newlist-detail", timeout: 5))
+        type("Picnic", into: app.textFields["newlist-name"])
+        tap(app, id: "newlist-area-none")
+        pressCommandS(app)
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5), "⌘S did not make the template")
+        XCTAssertTrue(disappears(app, "newlist-detail", timeout: 5), "the New template page stayed open")
+        #endif
+    }
+
+    /// ⌘1 … ⌘6 change tabs, in the tab bar's order, from the Go menu; ⌘, opens Settings.
+    func testCommandNumbersChangeTabs() throws {
+        #if os(iOS)
+        throw XCTSkip("The Go menu is the Mac's")
+        #else
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        let menu = app.menuItems["go-home"]
+        XCTAssertTrue(menu.waitForExistence(timeout: 5), "no Go menu:\n" + String(app.menuBars.firstMatch.debugDescription.prefix(3000)))
+        let names = ["home", "events", "templates", "care", "actions", "settings"]
+        for name in names {
+            XCTAssertTrue(app.menuItems["go-\(name)"].exists, "the Go menu has no item for \(name)")
+            XCTAssertTrue(waitUntil { app.menuItems["go-\(name)"].isEnabled }, "the Go menu's \(name) is off with no page open")
+        }
+        // From the last tab back to the first, so every key really changes the tab.
+        for n in (0..<6).reversed() {
+            app.typeKey(String(n + 1), modifierFlags: .command)
+            XCTAssertTrue(appears(app, "screen-\(names[n])", timeout: 5), "⌘\(n + 1) did not open \(names[n])")
+        }
+        app.typeKey(",", modifierFlags: .command)
+        XCTAssertTrue(appears(app, "screen-settings", timeout: 5), "⌘, did not open Settings")
+        #endif
+    }
+
+    /// While a page is open the tab keys are off (the Apple modal rule): greyed in the menu, and ⌘3 changes
+    /// nothing; back when the page is closed.
+    func testTheTabKeysAreOffWhileAPageIsOpen() throws {
+        #if os(iOS)
+        throw XCTSkip("The Go menu is the Mac's")
+        #else
+        let app = launch()
+        tab(app, "events")
+        XCTAssertTrue(appears(app, "screen-events"))
+        let items = ["home", "events", "templates", "care", "actions", "settings"].map { app.menuItems["go-\($0)"] }
+        XCTAssertTrue(items[0].waitForExistence(timeout: 5), "no Go menu")
+        XCTAssertTrue(waitUntil { items.allSatisfy { $0.isEnabled } }, "the Go menu is off with no page open")
+        app.buttons["trip-row-0"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertTrue(waitUntil(timeout: 8) { items.allSatisfy { !$0.isEnabled } },
+                      "the Go menu stayed on under an open trip: \(items.map(\.isEnabled))")
+        sleep(1)
+        app.typeKey("3", modifierFlags: .command)
+        sleep(1)
+        XCTAssertNotNil(find(app, "trip-detail"), "⌘3 closed the trip")
+        XCTAssertNil(find(app, "screen-templates"), "⌘3 changed the tab under an open trip")
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+        XCTAssertTrue(waitUntil(timeout: 8) { items.allSatisfy { $0.isEnabled } }, "the Go menu stayed off after the trip closed")
+        app.typeKey("3", modifierFlags: .command)
+        XCTAssertTrue(appears(app, "screen-templates", timeout: 5), "⌘3 did not open Templates once the trip was closed")
+        #endif
+    }
+
+    /// Help ▸ Keyboard Shortcuts opens How it works at the topic.
+    func testHelpOpensTheKeyboardShortcutsTopic() throws {
+        #if os(iOS)
+        throw XCTSkip("The Help menu is the Mac's")
+        #else
+        let app = launch()
+        let item = app.menuItems["help-keys"]
+        XCTAssertTrue(item.waitForExistence(timeout: 5), "Help has no Keyboard Shortcuts:\n" + String(app.menuBars.firstMatch.debugDescription.prefix(3000)))
+        XCTAssertTrue(waitUntil { item.isEnabled })
+        item.click()
+        XCTAssertTrue(appears(app, "guide-howitworks", timeout: 8), "Help ▸ Keyboard Shortcuts did not open How it works")
+        XCTAssertTrue(guidePart(app, "guide-keys-title").waitForExistence(timeout: 5), "How it works has no Keyboard shortcuts topic")
+        XCTAssertTrue(waitUntil { self.guidePart(app, "guide-keys-title").isHittable }, "it did not scroll to the topic")
+        #endif
+    }
+
+    // MARK: Keyboard shortcuts in How it works
+
+    /// The topic Keyboard shortcuts (his ask: "make the list visually pleasing and easy to read for a human"):
+    /// the line at the top, a card for each kind of key, each row the action with its keys read as words
+    /// ("Command S", never the symbols); found by How it works' search by key names and action words.
+    /// iPhone and Mac; pictures `keys-<n>-…`, day and night.
+    func testHowItWorksHasAKeyboardShortcutsTopic() {
+        let app = launch()
+        tab(app, "settings")
+        tap(app, id: "settings-howitworks")
+        XCTAssertTrue(appears(app, "guide-howitworks", timeout: 5), "How it works did not open")
+        let title = guidePart(app, "guide-keys-title")
+        XCTAssertTrue(waitUntil { title.exists }, "How it works has no Keyboard shortcuts topic")
+        XCTAssertEqual(words(title), "Keyboard shortcuts")
+        let top = guidePart(app, "guide-keys")
+        XCTAssertTrue(top.exists, "no card for the line at the top")
+        toTopThird(app, title)
+        shot(app, "keys-0-top")
+        // Seven cards, each row read as words.
+        for n in 0..<7 { XCTAssertTrue(guidePart(app, "guide-keys-card-\(n)").exists, "no card \(n)") }
+        XCTAssertFalse(guidePart(app, "guide-keys-card-7").exists, "an eighth card")
+        func row(_ id: String) -> (said: String, keys: String) {
+            let e = guidePart(app, id)
+            return (e.exists ? e.label : "", e.exists ? (e.value as? String ?? "") : "")
+        }
+        let save = row("guide-keys-0-0")
+        XCTAssertEqual(save.said, "Save, or Done")
+        XCTAssertEqual(save.keys, "Command S", "VoiceOver would not say Command S")
+        XCTAssertEqual(row("guide-keys-0-1").keys, "Escape, or Command period")
+        for (m, name) in ["Home", "Trips", "Templates", "Care", "To do", "Settings"].enumerated() {
+            XCTAssertEqual(row("guide-keys-1-\(m)").said, name, "the Go card's row \(m)")
+            XCTAssertTrue(row("guide-keys-1-\(m)").keys.hasPrefix("Command \(m + 1)"), "⌘\(m + 1): '\(row("guide-keys-1-\(m)").keys)'")
+        }
+        XCTAssertEqual(row("guide-keys-1-5").keys, "Command 6, or Command comma")
+        XCTAssertEqual(row("guide-keys-4-6").keys, "Shift Tab")
+        for n in 0..<7 {
+            let card = guidePart(app, "guide-keys-card-\(n)")
+            toTopThird(app, card)
+            shot(app, "keys-\(n + 1)-card")
+        }
+
+        // Found by its words: a key's name, and an action.
+        let field = app.textFields["guide-search"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        type("command s", into: field)
+        XCTAssertTrue(appears(app, "guide-search-results", timeout: 5), "typing 'command s' showed no search")
+        XCTAssertTrue(waitUntil { self.guidePart(app, "guide-hit-keys").exists }, "the search does not find Command S in Keyboard shortcuts")
+        let hit = guideHit(app, "guide-hit-keys-title")
+        XCTAssertEqual(hit.said, "Keyboard shortcuts")
+        shot(app, "keys-8-search")
+        replace("quit", in: field)
+        XCTAssertTrue(waitUntil { self.guidePart(app, "guide-hit-keys").exists }, "the search does not find the Quit key")
+        replace("shift tab", in: field)
+        XCTAssertTrue(waitUntil { self.guidePart(app, "guide-hit-keys").exists }, "the search does not find Shift Tab")
+        tap(app, id: "guide-done")
+        XCTAssertTrue(disappears(app, "guide-howitworks", timeout: 5))
+    }
 }

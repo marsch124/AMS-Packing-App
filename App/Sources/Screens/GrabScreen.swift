@@ -257,6 +257,7 @@ struct GrabScreen: View {
                         .buttonStyle(HeaderButtonStyle(tint: tint, filled: true)).focusEffectDisabled()
                         .font(.system(.body, weight: .semibold)).foregroundStyle(tint)
                         .keyboardShortcut(.cancelAction)            // Escape closes it, as Done does (Escape everywhere, 5 Oct 2026)
+                        .commandS { dismiss() }                         // ⌘S = Done (0.103)
                         .accessibilityIdentifier("grab-done")
                 }
             }

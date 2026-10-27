@@ -51,6 +51,8 @@ final class LibraryModel: ObservableObject {
     /// A tab asked for from inside a window — a to-do found by Search lives on To do.
     /// The frame switches to it and clears it.
     @Published var tabToOpen: AppSection?
+    /// Help ▸ Keyboard Shortcuts (0.103, Mac): Settings opens How it works at its Keyboard shortcuts topic and clears it.
+    @Published var keysToOpen = false
     /// A thing whose result was tapped in Spotlight (0.92, Store/Spotlight.swift): Home opens its
     /// page and clears it.
     @Published var thingToOpen: String?

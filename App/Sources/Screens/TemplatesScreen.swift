@@ -331,6 +331,7 @@ struct IconPickerScreen: View {
                 Button("Cancel") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
                     .keyboardShortcut(.cancelAction)            // Escape = Cancel, never Save (Escape everywhere, 5 Oct 2026)
+                    .swallowsCommandS()                      // nothing to save here, and not the page under (0.103)
                     .accessibilityIdentifier("icon-cancel")
             }
             .padding(16)

@@ -257,6 +257,7 @@ struct PackingDaySheet: View {
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: tint, filled: true)).focusEffectDisabled()
                     .keyboardShortcut(.cancelAction)            // Escape closes it, as Done does
+                    .commandS { dismiss() }                         // ⌘S = Done (0.103)
                     .accessibilityIdentifier("day-done")
             }
             .padding(16)
