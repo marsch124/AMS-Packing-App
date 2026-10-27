@@ -116,12 +116,13 @@ extension Library {
     // MARK: - Groups as the trip shows them
 
     /// The lines in groups as the trip screen shows them under `sorting` — "when",
-    /// "container" (Into), "stored" (From where), "category", "section" or "template":
-    /// Template is the library's own grouping (`linesByTemplate`); the others the web app's
-    /// `groupBy`, where sorted by Into a reminder goes in no bag — it stands under "To do"
-    /// (spec 07, part 12).
+    /// "container" (Into), "stored" (From where), "category", "section", "template" or "whose":
+    /// Template and Whose (0.103) are the library's own groupings (`linesByTemplate`,
+    /// `linesByWhose`); the others the web app's `groupBy`, where sorted by Into a reminder goes
+    /// in no bag — it stands under "To do" (spec 07, part 12).
     public func linesGrouped(tripId: String, sorting: String, lines: [Item]) -> [EntryGroup] {
         if sorting == "template" { return linesByTemplate(tripId: tripId, lines: lines) }
+        if sorting == "whose" { return linesByWhose(lines: lines) }
         guard sorting == "container" else { return groupBy(sorting, lines) }
         return groupBy(sorting, lines.map { line in
             guard Library.isReminder(line) else { return line }

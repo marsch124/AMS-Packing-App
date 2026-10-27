@@ -363,6 +363,9 @@ extension LibraryModel {
     ///                           and one with no date (Worth a look)
     ///  -uiTestingTwoLibraries → memory, every template of the sample twice (Worth a look)
     ///  -uiTestingSections     → memory, the sample with Hiking under two headings (Arrange)
+    ///  -uiTestingWhose        → memory, the sample with owners Anna and Ben on Your choices, a
+    ///                           thing of Cleo's (on no list), three things of no one (Group by
+    ///                           Whose it is, 0.103)
     ///  -uiTestingWorkouts     → memory, the sample + a Run workout and things for one
     ///                           context only (Context per workout, 0.67)
     ///  -uiTestingPlaces <when> → memory, the sample with the Garage's code G4R and its
@@ -548,6 +551,9 @@ extension LibraryModel {
         }
         if args.contains("-uiTestingSections") {
             return LibraryModel(store: MemoryStore(SampleLibrary.sectioned().records()), usesICloud: false, sky: sky)
+        }
+        if args.contains("-uiTestingWhose") {
+            return LibraryModel(store: MemoryStore(SampleLibrary.whose().records()), usesICloud: false, sky: sky)
         }
         if args.contains("-uiTestingBeforeStart") {
             return LibraryModel(store: MemoryStore(SampleLibrary.beforeStart().records()), usesICloud: false, sky: sky)

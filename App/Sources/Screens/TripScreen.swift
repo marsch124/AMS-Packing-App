@@ -93,9 +93,12 @@ struct TripScreen: View {
     // come, "Everything else" last (`groupBySection`).
     // Template since 0.74 (his ask, 12 Oct 2026): "pack focused on e.g. Bike, Run or Golf" — the lines
     // under the templates they come from, a line on two templates under both (`linesByTemplate`).
+    // Whose it is since 0.103 (his idea, 27 Oct 2026: "pack everything that we share on my own, so that when
+    // she comes home, I have already packed a lot"): the lines under the owner of each thing, "Both have one"
+    // last (`linesByWhose`). The property's own name on a thing's page.
     static let views: [(id: String, label: String)] = [("when", "When"), ("container", "Into"), ("stored", "From where"),
                                                        ("category", "Category"), ("section", "Section"),
-                                                       ("template", "Template")]
+                                                       ("template", "Template"), ("whose", "Whose it is")]
 
     /// The middle of a text's FIRST line: its height less the distance between its first
     /// and last baselines is one line's height. A one-line name is centred as before.
@@ -185,7 +188,7 @@ struct TripScreen: View {
     /// pills do not fit an iPhone's line, and he asked for drop-downs everywhere (6 Oct 2026). The
     /// ids stay `trip-view…`. The words stay to the left of its
     /// field, on the same line (his marks, 2026-09-25). Its rows keep the pills' ids,
-    /// `trip-view-0…4`; the field is `trip-view`, the word `trip-view-label`.
+    /// `trip-view-0…6`; the field is `trip-view`, the word `trip-view-label`.
     /// The groups the lines stand in under the chosen sorting: Template is the library's
     /// (it reads the templates); every other sorting is the web app's `groupBy` — sorted by
     /// Into, a reminder goes in no bag, it stands under "To do" (spec 07, part 12). One rule
