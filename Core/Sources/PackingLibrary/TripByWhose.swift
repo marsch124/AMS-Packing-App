@@ -14,7 +14,7 @@ extension Library {
     /// - **Whose a line is** is read from its thing as it is NOW (`thingNow`): a line carries no
     ///   owner of its own (`entryFromItem`), so a change on the thing reaches an open trip at once.
     ///   A line typed on the trip has no thing and so no owner.
-    /// - **Headings:** the owners of Your choices in their order (A–Z), then every owner the lines
+    /// - **Headings:** the owner "Shared" first (0.103, his words), then the owners of Your choices in their order (A–Z), then every owner the lines
     ///   name that the list does not hold (a name removed from Your choices, or never on it), A–Z,
     ///   then "Both have one" (`OWNER_BOTH`) — the words the app already has for no owner — last.
     /// - Names are matched as everywhere (`normName`: case and spaces do not split a heading);
@@ -44,6 +44,9 @@ extension Library {
             under[key, default: []].append(line)
         }
         order += strays.stableSorted(compare: { a, b in jsLocaleCompare(names[a] ?? a, names[b] ?? b) })
+        // "Shared" first (his words, 27 Oct 2026: "Yes, Shared at the top"): what the two of them
+        // share is what he packs on his own — wherever the list or the A–Z order puts it.
+        if let shared = order.firstIndex(of: normName("Shared")), shared > 0 { order.insert(order.remove(at: shared), at: 0) }
         var out: [EntryGroup] = []
         for key in order {
             guard let entries = under[key], !entries.isEmpty else { continue }

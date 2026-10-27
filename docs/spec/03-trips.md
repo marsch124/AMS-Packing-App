@@ -1480,10 +1480,10 @@ name on a thing's page; id `whose`, row `trip-view-6`. What it reads:
   never from the line — a line does not carry the owner (`entryFromItem`, "Not carried: … owner"), so a change on the
   thing's page reaches an open trip at once, with no rebuild. A line typed on the trip, or whose thing is gone, has no
   owner (its own `ownedBy`, which is blank).
-- **The headings:** the owners of Your choices in the list's order (`Library.owners()`, A–Z — with no list of his own, the
+- **The headings:** the owner **Shared** FIRST (his words of 27 Oct 2026, "Yes, Shared at the top": what the two of them share is what he packs on his own; matched by `normName("Shared")`, whether the list holds it or only a line names it), then the owners of Your choices in the list's order (`Library.owners()`, A–Z — with no list of his own, the
   owners his things name); then every owner the shown lines name that the list does not hold — a name taken out of Your
   choices, or never on it — A–Z (`jsLocaleCompare`), so no line is ever left out of a heading; then **Both have one**
-  (`OWNER_BOTH`, the words the app already uses for a thing with no owner: the thing's drop-down, the table's Owner filter)
+  (`OWNER_BOTH`, the words the app already uses for a thing that has no single owner — each of the two has his or her own, e.g. a toothbrush: the thing's drop-down, the table's Owner filter)
   last. A heading with no line is left out, as under Template. Names are compared by `normName` — case and spaces do not split
   a heading — and the heading is the list's spelling (else the first spelling met); an owner typed as "Both have one" counts
   as no owner. A line stands under ONE heading.

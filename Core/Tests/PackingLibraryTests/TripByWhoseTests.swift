@@ -49,6 +49,27 @@ final class TripByWhoseTests: XCTestCase {
         XCTAssertEqual(groups.flatMap(\.entries).count, 7, "a line is under no heading, or two")
     }
 
+    /// His words of 27 Oct 2026, "Yes, Shared at the top": what the two of them share is what he
+    /// packs on his own, so the owner "Shared" is the FIRST heading — before the names, whatever
+    /// the order of the list — and "Both have one" (each has his or her own) stays last.
+    func testSharedIsTheFirstHeadingWhereverItStandsInTheList() {
+        var (lib, id) = library(owners: ["Ben", "Anna", "Shared"])
+        let map = lib.items.firstIndex { $0.name == "Map" }!
+        lib.items[map].ownedBy = "Shared"
+        XCTAssertEqual(headings(whose(lib, id)), ["Shared", "Anna", "Ben", "Cleo", "Zed", OWNER_BOTH],
+                       "Shared is not at the top")
+        XCTAssertEqual(names(whose(lib, id)[0]), ["Map"])
+        // Spelling and spaces do not matter, and a Shared that no list holds is first too.
+        (lib, id) = library(owners: ["Ben", "Anna"])
+        let hat = lib.items.firstIndex { $0.name == "Sun hat" }!
+        lib.items[hat].ownedBy = " shared "
+        XCTAssertEqual(headings(whose(lib, id)), ["shared", "Anna", "Ben", "Cleo", OWNER_BOTH],
+                       "a Shared the list does not hold is not at the top")
+        // No Shared at all: the order is as before.
+        let (plain, plainId) = library()
+        XCTAssertEqual(headings(whose(plain, plainId)), ["Anna", "Ben", "Cleo", "Zed", OWNER_BOTH])
+    }
+
     func testAThingWhoseOwnerIsNoLongerOnTheListStillHasItsHeading() {
         var (lib, id) = library()
         // Ben leaves Your choices; the Passport still says Ben.
