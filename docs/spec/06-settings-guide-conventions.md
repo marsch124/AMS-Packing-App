@@ -1340,9 +1340,11 @@ face in `Theme.bg` with a 1-pt `Theme.faint` ring at 55 % and a firmer edge 2 po
 `Metrics.compact` (32 iPhone / 24 Mac) square, 7 points in from the name; several chords are separated by a muted "or";
 a chord's caps are 3 points apart. The row keeps its action and its caps on one line and lets the action wrap; at the
 accessibility text sizes the caps go under the action. Day and night are the app's tokens, nothing drawn in a fixed colour.
-**VoiceOver** reads a row as one thing: label = the action, value = the keys in words ("Command S", "Escape, or Command
-period", "Command 6, or Command comma", "Shift Tab"), hint = the note; the caps themselves are not read, and the symbols
-never are. A card's title is a heading.
+**VoiceOver** reads a row as one thing, one label (`KeyGuide.Row.voiceOver`): the action, then the keys in words — "Save, or
+Done, Command S", "Cancel, or close the page, Escape, or Command period", "Settings, Command 6, or Command comma", "Previous
+field, Shift Tab" — and the note as its hint; the caps themselves are not read, and the symbols never are. (First built as a
+label and a separate value; the Mac's probe showed the value does not reach the Mac's accessibility tree, so the keys moved
+into the label.) A card's title is a heading.
 
 **Search.** `HowItWorksScreen.parts` ends with `keys` (kind `.keys`, slate dot, the `command` symbol before the heading in a
 hit card); its paragraphs are `KeyGuide.paragraphs`, so the search finds the topic by a key's name (`command s`, `escape`,
@@ -1354,15 +1356,15 @@ scrolled to the topic (`KeysGuide.scrollId`). Off while a page is open, like the
 
 **Tests.** Model `KeyGuideTests` (5): every key the app answers is in the topic with the right keys (a list written from the
 code: the missing or wrong ones are named in one message); the Go card is the six tabs in the tab bar's order, ⌘1 to ⌘6;
-VoiceOver's words ("Command S", "Shift Tab", "Command Down arrow", "Space, or Down arrow", "Escape, or Command period")
-and no symbol in any; the search finds the keys by name, symbol and action and the line at the top; the line says the Mac
+VoiceOver's words ("Command S", "Shift Tab", "Command Down arrow", "Space, or Down arrow", "Escape, or Command period",
+the row's one label "Save, or Done, Command S") and no symbol in any; the search finds the keys by name, symbol and action and the line at the top; the line says the Mac
 first and then the iPhone and iPad, the seven cards in order. Seen red with faults planted (the Go card without Care; ⌘'s
 spoken name the symbol): `("["go: no row for Care"]") is not equal to ("[]") - keys the app answers that the topic leaves
 out or gets wrong`, `("Optional("⌘ S")") is not equal to ("Optional("Command S")")`. UI `testHowItWorksHasAKeyboardShortcutsTopic`
-(iPhone and Mac): the topic is there, the heading card and seven cards, the rows read as "Save, or Done" / "Command S", the Go
-card's six rows `Command 1` … `Command 6, or Command comma`, "Shift Tab"; each card brought to the top for a picture
+(iPhone and Mac): the topic is there, the heading card and seven cards, the rows' labels "Save, or Done, Command S", the Go
+card's six rows `Home, Command 1` … `Settings, Command 6, or Command comma`, `Previous field, Shift Tab`; each card brought to the top for a picture
 (`keys-0-top`, `keys-1-card` … `keys-7-card`, `keys-8-search`; day and night, iPhone and Mac); the search finds it for
-`command s`, `quit`, `shift tab`.
+`command s`, `jump to a field`, `shift tab` ("quit" is said in other parts too, and the lazy results would not have built the last card).
 
 ---
 
