@@ -18,6 +18,11 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.103", date: "27 Oct 2026", title: "Keys, and Whose it is",
+                new: ["Group by has a new choice, Whose it is: the trip\u{2019}s lines under each person\u{2019}s name, and \u{201C}Both have one\u{201D} last \u{2014} so you can pack everything you share on your own.",
+                      "Keyboard shortcuts on the Mac: \u{2318}1 to \u{2318}6 change tab (Home, Trips, Templates, Care, To do, Settings) from a new Go menu; \u{2318}, opens Settings.",
+                      "Settings \u{2192} How it works has a Keyboard shortcuts topic, also under Help, with every key drawn as a key cap."],
+                changed: ["On the Mac, \u{2318}S is Done or Save on every page that has one \u{2014} a trip included \u{2014} and Escape is Cancel."]),
         Release(version: "0.102", date: "27 Oct 2026", title: "Two devices, one list",
                 new: ["When you press Done or Save on a grab list, a template, Your choices or a kit and your other device changed the same thing meanwhile, the app now asks: Keep both or Keep mine.",
                       "If your other device\u{2019}s later save writes over yours, a quiet note tells you which list to check."],
