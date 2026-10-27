@@ -80,8 +80,10 @@ struct TripScreen: View {
     }
     /// Bumped to send the trip to its list (the Packing day's Pack).
     @State private var toList = 0
-    /// Pack's answer (0.101): the line it brought into view, lit a moment (its id; nil = none).
+    /// Pack's answer (0.101): the line it brought into view, lit a moment (its id; nil = none) — and which
+    /// press of Pack lit it, so a second press lights it again from the start.
     @State private var flash: String?
+    @State private var flashToken = 0
     /// Bumped to bring Before you go's To charge into view (a tapped "Charge tonight", 0.87).
     @State private var toCharge = 0
     struct CheckedThing: Identifiable { let id: String }
@@ -580,6 +582,16 @@ struct TripScreen: View {
                                         RoundedRectangle(cornerRadius: 8)
                                             .fill(AppSection.events.color.opacity(scheme == .dark ? 0.30 : 0.18))
                                             .padding(.horizontal, -6)
+                                            .accessibilityHidden(true)
+                                    }
+                                }
+                                // What the fill says, as an element of its own — a few points at the row's edge,
+                                // never over the line: the fill as an element covered the line's own centre,
+                                // and on the Mac the line then answered "not hittable" while it was lit
+                                // (GitHub's Mac, 27 Oct 2026, probe).
+                                .overlay(alignment: .leading) {
+                                    if flash == line.id {
+                                        Color.clear.frame(width: 4, height: 4)
                                             .accessibilityElement()
                                             .accessibilityLabel("Next to pack")
                                             .accessibilityIdentifier("trip-flash-\(n)")
@@ -774,11 +786,16 @@ struct TripScreen: View {
         return nil
     }
 
-    /// Light a line a moment (Pack's answer), then let it fade.
+    /// Light a line a moment (Pack's answer), then let it fade: 1.6 s — and 8 s under the UI tests,
+    /// which read it by its id: on GitHub's loaded Mac the read came after it had gone (27 Oct 2026).
+    /// It still fades as it goes, and a second press lights it again from the start.
     private func light(_ id: String) {
+        flashToken += 1
+        let token = flashToken
         flash = id
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
-            withAnimation(.easeOut(duration: 0.6)) { if flash == id { flash = nil } }
+        let hold = AMSPackingApp.testing ? 8.0 : 1.6
+        DispatchQueue.main.asyncAfter(deadline: .now() + hold) {
+            withAnimation(.easeOut(duration: 0.6)) { if flashToken == token { flash = nil } }
         }
     }
     /// Where a tapped "Charge tonight" brings the screen: Before you go's To charge (0.87).

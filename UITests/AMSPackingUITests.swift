@@ -15951,18 +15951,21 @@ final class AMSPackingUITests: XCTestCase {
         station(app, "pack", opens: false)
         XCTAssertTrue(waitUntil { pack.isSelected }, "Pack is not lit after a tap")
         XCTAssertFalse(weigh.isSelected)
-        // The light is `trip-flash-<n>` on the row of `trip-line-<n>` while it shows.
-        func litLine() -> Int? { (0..<24).first { self.find(app, "trip-flash-\($0)") != nil } }
+        // The light is `trip-flash-<n>` on the row of `trip-line-<n>` while it shows — held 8 s under the
+        // tests (not 1.6): on GitHub's loaded Mac the reads below came after it had gone (27 Oct 2026).
         var lit: Int?
-        XCTAssertTrue(waitUntil(timeout: 3) { lit = litLine(); return lit != nil }, "Pack showed nothing on the list")
+        XCTAssertTrue(waitUntil(timeout: 5) { lit = self.packLight(app); return lit != nil }, "Pack showed nothing on the list")
         shot(app, "stations-pack-lit")
-        // The copy of the line on screen (the Mac's list can keep a stale one out of sight, `shownRow`).
-        let line = shownRow(app, "trip-line-\(lit ?? -1)")
-        XCTAssertNotNil(line, "the line lit is not in view")
+        let n = lit ?? -1
+        // The line lit is on the screen — read for as long as it takes the list to settle, and through
+        // the copy on screen (the Mac's list can keep a stale one out of sight, `shownRow`) — and not packed.
+        var line: XCUIElement?
+        XCTAssertTrue(waitUntil(timeout: 5) { line = self.shownRow(app, "trip-line-\(n)"); return line != nil },
+                      "the line lit is not in view: \(lineDiagnostics(app, n))")
         XCTAssertFalse(line?.isSelected ?? true, "the line lit is packed already")
-        XCTAssertTrue(waitUntil(timeout: 6) { litLine() == nil }, "the light did not fade")
+        XCTAssertTrue(waitUntil(timeout: 14) { self.packLight(app) == nil }, "the light did not fade")
         station(app, "pack", opens: false)
-        XCTAssertTrue(waitUntil(timeout: 3) { litLine() != nil }, "a second tap on Pack, the list in view, showed nothing")
+        XCTAssertTrue(waitUntil(timeout: 5) { self.packLight(app) != nil }, "a second tap on Pack, the list in view, showed nothing")
     }
 
 
@@ -16081,6 +16084,34 @@ final class AMSPackingUITests: XCTestCase {
     }
 
     private func value(_ e: XCUIElement) -> String { e.exists ? (e.value as? String ?? "") : "" }
+
+    /// The line Pack has lit (0.101): the number in `trip-flash-<n>`, nil when none shows. One query
+    /// for any n — not one per line, which on a loaded runner took longer than the light stays.
+    private func packLight(_ app: XCUIApplication) -> Int? {
+        let flash = NSPredicate(format: "identifier BEGINSWITH 'trip-flash-'")
+        for query in [app.otherElements, app.groups] {
+            let e = query.matching(flash).firstMatch
+            if e.exists, let n = Int(e.identifier.dropFirst("trip-flash-".count)) { return n }
+        }
+        return nil
+    }
+
+    /// Where a line's copies are, for a failure's words: each one's frame and whether it can be tapped,
+    /// and the window's.
+    private func lineDiagnostics(_ app: XCUIApplication, _ n: Int) -> String {
+        // The line and the two after it: a neighbour tappable while this one is not says it is covered.
+        func state(_ id: String) -> [String] {
+            app.buttons.matching(identifier: id).allElementsBoundByIndex
+                .map { $0.exists ? "frame \($0.frame) hittable \($0.isHittable) selected \($0.isSelected)" : "gone" }
+        }
+        let copies = state("trip-line-\(n)") + ["next:"] + state("trip-line-\(n + 1)") + state("trip-line-\(n + 2)")
+        #if os(macOS)
+        let window = app.windows.firstMatch.frame
+        #else
+        let window = app.frame
+        #endif
+        return "window \(window); trip-line-\(n) and the next: \(copies)"
+    }
 
     /// Tick everything on the trip by its headings' own ticks (`trip-group-<g>-all`), each one
     /// not yet all ticked — not by Tick everything, which 0.79 takes off the trip screen.
