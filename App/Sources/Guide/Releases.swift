@@ -18,6 +18,10 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.102", date: "27 Oct 2026", title: "Two devices, one list",
+                new: ["When you press Done or Save on a grab list, a template, Your choices or a kit and your other device changed the same thing meanwhile, the app now asks: Keep both or Keep mine.",
+                      "If your other device\u{2019}s later save writes over yours, a quiet note tells you which list to check."],
+                fixed: ["Pack\u{2019}s light on a trip is found reliably on the Mac."]),
         Release(version: "0.101", date: "26 Oct 2026", title: "Reminders on things, and your list",
                 new: ["Remember with it, on a thing\u{2019}s page: short reminders with a time \u{2014} on every trip the thing is on, in To prepare, Before you go and under its line once you tick it (\u{201C}Before it goes: Empty the SD card\u{201D}).",
                       "Goes with, on a thing\u{2019}s page: the cable, charger or spare battery that belong to it come along on every trip as their own lines, marked \u{201C}with Camera\u{201D}.",

@@ -816,11 +816,12 @@ line border, container id `guide-release-<n>`, n = position, 0 = newest). Each c
   blue), **FIXED** (Care orange), **REMOVED** (muted). The part name is upper-cased, 15 heavy (12 until 0.62), letter-spaced 0.6,
   in its colour; each line is a 6-pt dot in that colour and the text (16 ink, wraps).
 
-**The version history** (101 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
+**The version history** (102 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
 against `Releases.swift`):
 
 | Version | Date | Title | Lines | Gist |
 |---|---|---|---|---|
+| 0.102 | 27 Oct 2026 | Two devices, one list | N2 F1 | his choice B of 26 Oct (spec 01 OQ 32 closed): Done/Save asks Keep both / Keep mine when the other device changed the same block meanwhile (grab list + 1-in-10 marks, template name/cover/colour/sections/area, Your choices, kit contents; SavesThatCross.swift, three-way compare), plus a quiet note when the other device's later save overwrote ours (kept 10 min in memory, id save-crossed); Pack's light readable on the Mac (accessibility element trip-flash-n, fill hidden) |
 | 0.101 | 26 Oct 2026 | Reminders on things, and your list | N6 C5 F1 | his list of 26 Oct + reminders on things (his yes to the picture): look101 (loop strip = Stations rule, sync dot, check-in by itself every 15 min, Group by, To do tab badge, Light blue/Light yellow), lists101 (Before you go folds, Fold all + Option-click, To do page Priority/Others/Done + Undo after a tick, To buy Bought), remind101 (Remember with it, Goes with, tapped station stays lit + Pack lights the next line, thing reminders in To prepare and notifications) |
 | 0.100 | 24 Oct 2026 | Two Mac crashes | F2 | his Mac crash of 24 Oct (0.99): an Objective-C exception from SwiftData reading a photo whose external file was missing (iCloud mid-delivery) inside a Task left Swift's executor bookkeeping broken → next click EXC_BAD_ACCESS; Record.read() through AMSCatchException (ObjCExceptions.h/.m, bridging header), photo left out and re-read after 5 s (≤3), iCloud reload no longer in a Task; DropDown keyRows[-1] (18 Oct, 0.87) clamped (clampedLit); tests testAPhotoWhoseFileIsMissingNeitherStopsTheSyncNorShutsTheApp (-uiTestingPhotoGone), testAnArrowOnAnotherRowOfAnOpenListDoesNotShutTheApp, red on 0.99 on GitHub |
 | 0.99 | 21 Oct 2026 | ⌘Q on the Mac | F1 | macOS refuses to quit while a sheet is open, silently: ⌘Q with a template page, Your choices or a bag page open now quits, and asks Discard changes? first when the page holds a change (EditDraft.swift, AMSPackingApp.swift, QuickActions.swift; work/macquit 4b925bc); Mac UI test red on 0.98 |
