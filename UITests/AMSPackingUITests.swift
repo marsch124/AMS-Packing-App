@@ -17079,7 +17079,10 @@ final class AMSPackingUITests: XCTestCase {
     /// ("Command S", never the symbols); found by How it works' search by key names and action words.
     /// iPhone and Mac; pictures `keys-<n>-…`, day and night.
     func testHowItWorksHasAKeyboardShortcutsTopic() {
-        let app = launch()
+        // Night on the Mac for a picture: `TEST_RUNNER_NIGHT=1` asks this app (not the machine) for dark. On the
+        // iPhone the simulator's own appearance rules (`xcrun simctl ui <device> appearance dark`).
+        let night = ProcessInfo.processInfo.environment["NIGHT"] == "1" ? ["-AppleInterfaceStyle", "Dark"] : []
+        let app = launch("-uiTesting", night)
         tab(app, "settings")
         tap(app, id: "settings-howitworks")
         XCTAssertTrue(appears(app, "guide-howitworks", timeout: 5), "How it works did not open")
