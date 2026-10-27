@@ -46,6 +46,7 @@ final class KeyGuideTests: XCTestCase {
     func testVoiceOverSaysCommandSAndNeverASymbol() {
         let save = rows.first { $0.card == "any" && $0.row.action == "Save, or Done" }?.row
         XCTAssertEqual(save?.spoken, "Command S")
+        XCTAssertEqual(save?.voiceOver, "Save, or Done, Command S", "one label for the whole row")
         XCTAssertEqual(rows.first { $0.row.action == "Previous field" }?.row.spoken, "Shift Tab")
         XCTAssertEqual(rows.first { $0.row.action == "Next thing in the list the page came from" }?.row.spoken, "Command Down arrow")
         XCTAssertEqual(rows.first { $0.row.action == "Open a drop-down" }?.row.spoken, "Space, or Down arrow")

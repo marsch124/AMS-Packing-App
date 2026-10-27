@@ -16723,6 +16723,22 @@ final class AMSPackingUITests: XCTestCase {
         }
     }
 
+    /// The Keyboard shortcuts part is the guide's last, tens of thousands of points down: fling the list
+    /// toward its end until `e` is on screen (or has gone past), for `toTopThird` to take over.
+    private func flingToTheEnd(_ app: XCUIApplication, _ e: XCUIElement) {
+        guard e.exists, let list = listHolding(app, e), list.exists else { return }
+        let window = app.windows.firstMatch.frame
+        for _ in 0..<60 {
+            if e.frame.minY < window.maxY - 100 { return }
+            #if os(macOS)
+            list.scroll(byDeltaX: 0, deltaY: -2500)
+            #else
+            list.swipeUp(velocity: .fast)
+            #endif
+            usleep(500_000)
+        }
+    }
+
     /// A part of a guide card: a text, a container or a drawn mark — whatever the machine calls it.
     private func guidePart(_ app: XCUIApplication, _ id: String) -> XCUIElement {
         for query in [app.otherElements, app.staticTexts, app.groups, app.images] where query[id].exists { return query[id] }
@@ -17091,25 +17107,24 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertEqual(words(title), "Keyboard shortcuts")
         let top = guidePart(app, "guide-keys")
         XCTAssertTrue(top.exists, "no card for the line at the top")
+        flingToTheEnd(app, title)
         toTopThird(app, title)
         shot(app, "keys-0-top")
         // Seven cards, each row read as words.
         for n in 0..<7 { XCTAssertTrue(guidePart(app, "guide-keys-card-\(n)").exists, "no card \(n)") }
         XCTAssertFalse(guidePart(app, "guide-keys-card-7").exists, "an eighth card")
-        func row(_ id: String) -> (said: String, keys: String) {
+        // One label for a whole row: the action, then the keys read as words.
+        func row(_ id: String) -> String {
             let e = guidePart(app, id)
-            return (e.exists ? e.label : "", e.exists ? (e.value as? String ?? "") : "")
+            return e.exists ? e.label : ""
         }
-        let save = row("guide-keys-0-0")
-        XCTAssertEqual(save.said, "Save, or Done")
-        XCTAssertEqual(save.keys, "Command S", "VoiceOver would not say Command S")
-        XCTAssertEqual(row("guide-keys-0-1").keys, "Escape, or Command period")
+        XCTAssertEqual(row("guide-keys-0-0"), "Save, or Done, Command S", "VoiceOver would not say Command S")
+        XCTAssertEqual(row("guide-keys-0-1"), "Cancel, or close the page, Escape, or Command period")
         for (m, name) in ["Home", "Trips", "Templates", "Care", "To do", "Settings"].enumerated() {
-            XCTAssertEqual(row("guide-keys-1-\(m)").said, name, "the Go card's row \(m)")
-            XCTAssertTrue(row("guide-keys-1-\(m)").keys.hasPrefix("Command \(m + 1)"), "⌘\(m + 1): '\(row("guide-keys-1-\(m)").keys)'")
+            XCTAssertTrue(row("guide-keys-1-\(m)").hasPrefix("\(name), Command \(m + 1)"), "⌘\(m + 1): '\(row("guide-keys-1-\(m)"))'")
         }
-        XCTAssertEqual(row("guide-keys-1-5").keys, "Command 6, or Command comma")
-        XCTAssertEqual(row("guide-keys-4-6").keys, "Shift Tab")
+        XCTAssertEqual(row("guide-keys-1-5"), "Settings, Command 6, or Command comma")
+        XCTAssertEqual(row("guide-keys-4-6"), "Previous field, Shift Tab")
         for n in 0..<7 {
             let card = guidePart(app, "guide-keys-card-\(n)")
             toTopThird(app, card)
@@ -17125,8 +17140,8 @@ final class AMSPackingUITests: XCTestCase {
         let hit = guideHit(app, "guide-hit-keys-title")
         XCTAssertEqual(hit.said, "Keyboard shortcuts")
         shot(app, "keys-8-search")
-        replace("quit", in: field)
-        XCTAssertTrue(waitUntil { self.guidePart(app, "guide-hit-keys").exists }, "the search does not find the Quit key")
+        replace("jump to a field", in: field)
+        XCTAssertTrue(waitUntil { self.guidePart(app, "guide-hit-keys").exists }, "the search does not find an action's words")
         replace("shift tab", in: field)
         XCTAssertTrue(waitUntil { self.guidePart(app, "guide-hit-keys").exists }, "the search does not find Shift Tab")
         tap(app, id: "guide-done")

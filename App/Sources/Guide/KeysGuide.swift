@@ -10,7 +10,7 @@ import PackingLibrary
 // VoiceOver reads a row as one thing — "Save, or Done", "Command S" — never the symbols.
 //
 // Ids: `guide-keys` (the heading card, with `guide-keys-title`), `guide-keys-card-<n>` (a card, n = its place),
-// `guide-keys-<n>-<m>` (a row: its label the action, its value the keys in words).
+// `guide-keys-<n>-<m>` (a row: its label the action and the keys in words).
 
 /// One key, drawn as a key cap: a rounded face, a firmer edge under it, the key's name in ink.
 struct KeyCap: View {
@@ -84,8 +84,7 @@ private struct KeyRow: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, 8)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(row.action)
-        .accessibilityValue(row.spoken)
+        .accessibilityLabel(row.voiceOver)          // "Save, or Done, Command S" — one label: the Mac hands on no separate value
         .accessibilityHint(row.note ?? "")
         .accessibilityIdentifier(id)
     }

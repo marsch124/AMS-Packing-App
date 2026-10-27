@@ -64,6 +64,9 @@ public enum KeyGuide {
 
         /// What VoiceOver says after the action: "Command S", or "Space, or Down arrow".
         public var spoken: String { chords.map(\.spoken).joined(separator: ", or ") }
+        /// What VoiceOver reads for the whole row: "Save, or Done, Command S" (one label — the Mac does not hand a
+        /// row's separate value on, and a symbol is never read).
+        public var voiceOver: String { "\(action), \(spoken)" }
         /// "⌘S", or "Space or ↓" — also what the guide's search reads, so the symbol he sees in a menu finds it.
         public var symbols: String { chords.map(\.symbols).joined(separator: " or ") }
     }
