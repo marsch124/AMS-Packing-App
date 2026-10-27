@@ -2843,7 +2843,8 @@ when the list was in view already.
 - **Next: …** in the sheet still offers the next station not done (`next(after:)`), unchanged.
 - **Pack's answer** (on the row, in the sheet, and Next: Pack): the first line not ticked and not set aside, in the
   order the list shows it and in a group not folded (`TripScreen.firstToPack`), is scrolled to the middle and its row
-  lit a moment — a soft fill of the trip's green (18 %, 30 % at night) behind the row, 1.6 s, then fading over 0.6 s;
+  lit a moment — a soft fill of the trip's green (18 %, 30 % at night) behind the row, 1.6 s (8 s under the UI
+  tests, 0.101 fix of 27 Oct 2026), then fading over 0.6 s; a second press lights it again from the start;
   with the list in view already, the same. Chosen as the calm Apple way: iOS Settings lights the row a search opens
   the same way; a pulse of a heading says less (which line?). Everything packed, or every open line folded away: the
   top of the list, as before. Reduce Motion: the scroll jumps, the light still fades. The lit row carries an element
