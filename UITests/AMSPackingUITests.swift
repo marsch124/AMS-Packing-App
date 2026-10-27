@@ -8598,12 +8598,12 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "look101-groupby")
         XCTAssertEqual(chosen(app, "trip-view"), "When", "When is not the starting sort")
 
-        // The list: the six sortings (Template since 0.74), When ticked, every row on the screen.
+        // The list: the seven sortings (Template since 0.74, Whose it is since 0.103), When ticked, every row on the screen.
         openDropDown(app, "trip-view")
-        let rows = (0..<6).map { app.buttons["trip-view-\($0)"] }
-        XCTAssertTrue(rows[5].waitForExistence(timeout: 5), "Template is not offered")
-        XCTAssertEqual(rows.map { words($0) }, ["When", "Into", "From where", "Category", "Section", "Template"])
-        XCTAssertFalse(app.buttons["trip-view-6"].exists, "more than six sortings")
+        let rows = (0..<7).map { app.buttons["trip-view-\($0)"] }
+        XCTAssertTrue(rows[6].waitForExistence(timeout: 5), "Whose it is is not offered")
+        XCTAssertEqual(rows.map { words($0) }, ["When", "Into", "From where", "Category", "Section", "Template", "Whose it is"])
+        XCTAssertFalse(app.buttons["trip-view-7"].exists, "more than seven sortings")
         XCTAssertTrue(isOn(rows[0]), "When is not the ticked row")
         XCTAssertTrue(rows.allSatisfy { screen.contains($0.frame) }, "a sorting runs off the screen")
         shot(app, "trip-sorting-open")
@@ -8657,6 +8657,68 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { heading(2) == "Everything else" }, "the last heading is not Everything else: '\(heading(2))'")
         XCTAssertFalse(app.buttons["trip-group-3-fold"].exists, "a heading after Everything else")
         shot(app, "trip-sorted-by-section-end")
+    }
+
+    /// Group by Whose it is (0.103, his idea of 27 Oct 2026: "pack everything that we share on my own, so
+    /// that when she comes home, I have already packed a lot of things"): the trip's lines under the owner
+    /// of each thing — Your choices' owners first (Anna, Ben), the one name no list holds after them
+    /// (Cleo), "Both have one" (no owner) last. Ticking, folding, Fold all and Take a break work as under
+    /// any grouping. The sample (`-uiTestingWhose`): Passport (Ben) is line 0, Phone charger (Anna) 1,
+    /// Toothbrush (no one) 2, Headlamp (no one) 3, Hiking boots (Anna) 4, Rain jacket (Cleo) 5, Map (no one) 6.
+    /// Pictures `whose-…`, day and night (the Mac's night: `TEST_RUNNER_NIGHT=1`).
+    func testGroupByWhoseItIsHasAHeadingPerOwnerAndBothHaveOneLast() {
+        let night = ProcessInfo.processInfo.environment["NIGHT"] == "1" ? ["-AppleInterfaceStyle", "Dark"] : []
+        let app = launch("-uiTestingWhose", ["-clockAt", "14:00:00"] + night)
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let progress = app.staticTexts["trip-progress"]
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/7" }, "the sample's trip: '\(words(progress))'")
+
+        // The seventh grouping, after Template; nothing after it.
+        openDropDown(app, "trip-view")
+        XCTAssertTrue(app.buttons["trip-view-6"].waitForExistence(timeout: 5), "Group by does not offer Whose it is")
+        XCTAssertFalse(app.buttons["trip-view-7"].exists, "more than seven groupings")
+        closeDropDown(app, "trip-view")
+        choose(app, "trip-view", 6)
+        func heading(_ g: Int) -> String { words(app.staticTexts["trip-group-\(g)-label"]) }
+        XCTAssertTrue(waitUntil { heading(0) == "Anna" }, "the first heading is not the first owner of Your choices: '\(heading(0))'")
+        XCTAssertTrue(waitUntil { heading(1) == "Ben" }, "the second heading is not Ben: '\(heading(1))'")
+        XCTAssertTrue(waitUntil { heading(2) == "Cleo" }, "an owner no list holds does not come after the list's: '\(heading(2))'")
+        XCTAssertTrue(scrollWithin(app, "trip-detail", until: "trip-group-3-fold"), "no fourth heading")
+        XCTAssertTrue(waitUntil { heading(3) == "Both have one" }, "no owner is not the last heading: '\(heading(3))'")
+        XCTAssertFalse(app.buttons["trip-group-4-fold"].exists, "a heading after Both have one")
+        shot(app, "whose-0-grouped")
+
+        // One tick takes a whole heading: Both have one — what the two of them share — is lines 2, 3 and 6.
+        tapVisible(app, app.buttons["trip-group-3-all"])
+        XCTAssertTrue(waitUntil { self.words(progress) == "3/7" }, "ticking Both have one: '\(words(progress))'")
+        for n in 0..<7 {
+            XCTAssertTrue(scrollUntil(app, "trip-line-\(n)", near: n > 0 ? "trip-line-\(n - 1)" : nil), "line \(n) never appeared")
+            let mine = [2, 3, 6].contains(n)
+            XCTAssertTrue(waitUntil { self.isOn(app.buttons["trip-line-\(n)"]) == mine },
+                          "line \(n) is \(mine ? "not ticked with Both have one" : "ticked, but it is someone's")")
+        }
+        XCTAssertTrue(scrollWithin(app, "trip-detail", until: "trip-group-3-all"), "Both have one is gone")
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["trip-group-3-all"]) }, "the heading's tick is not on")
+        XCTAssertFalse(isOn(app.buttons["trip-group-0-all"]), "Anna's tick is on")
+        shot(app, "whose-1-both-ticked")
+
+        // Fold all, and open them again; a heading folds by itself too.
+        tap(app, id: "trip-fold-all")
+        XCTAssertTrue(waitUntil { !(0..<7).contains { app.buttons["trip-line-\($0)"].exists } }, "Fold all left lines on screen")
+        XCTAssertTrue(app.staticTexts["trip-group-0-label"].exists && app.staticTexts["trip-group-2-label"].exists, "Fold all took the headings away")
+        shot(app, "whose-2-folded")
+        tap(app, id: "trip-fold-all")
+        XCTAssertTrue(waitUntil { (0..<7).contains { app.buttons["trip-line-\($0)"].exists } }, "Unfold all did not bring the lines back")
+
+        // Take a break counts the same headings: Anna's two, Ben's one and Cleo's one are left.
+        tap(app, id: "trip-break")
+        XCTAssertTrue(appears(app, "break-sheet", timeout: 5), "Take a break did not open")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["break-packed"]) == "3 of 7 packed" }, "'\(words(app.staticTexts["break-packed"]))'")
+        let groups = (0..<4).map { words(element(app, "break-group-\($0)")) }
+        XCTAssertEqual(groups, ["Anna 2 left", "Ben 1 left", "Cleo 1 left", "Both have one \u{2713}"], "the break says \(groups)")
+        XCTAssertFalse(element(app, "break-group-4").exists, "a fifth group")
     }
 
     /// After a trip: mark what went unused, add what was missed, save — the trip

@@ -1175,18 +1175,18 @@ name for that, **Group by**, as in the Finder and Files; every id stays `trip-vi
 history below still say "sorting" for the choice). (0.64; padding 16 sideways) — since 0.74 in the SCROLL AREA, directly above the first heading of
 the list (item 5 below; his ask of 12 Oct 2026: the choices sat far above the list, "disconnected from it", under
 the loop strip with the cards between them and the lines); top padding 10. "Group by" on the left and, on the SAME
-line to its right, ONE drop-down (`DropDown`, spec 06 §21, with `heading: .beside`) holding the six sortings —
-**When**, **Into**, **From where**, **Category**, **Section**, **Template** (0.74). Five pills did not fit an
+line to its right, ONE drop-down (`DropDown`, spec 06 §21, with `heading: .beside`) holding the seven sortings —
+**When**, **Into**, **From where**, **Category**, **Section**, **Template** (0.74), **Whose it is** (0.103). Five pills did not fit an
 iPhone's line, and he asked for drop-downs everywhere (6 Oct 2026); his marks of 2026-09-25 ("Sorting" on the
 left, the choice beside it) are kept.
 - "Group by" ("Sorting" until 0.101): Subheadline semibold, muted, one line, never squeezed (`fixedSize`); id `trip-view-label`.
 - The field, 10 to its right, takes the rest of the line: the chosen sorting's words in Body ink and a drawn ▾
   (`Metrics.tap` tall, card fill, radius 10, a hairline border); id `trip-view`; accessibility label "Group by" ("Sorting" until 0.101),
-  value = the chosen sorting's words (what tests read). A stored value that is none of the six (it cannot be,
+  value = the chosen sorting's words (what tests read). A stored value that is none of the seven (it cannot be,
   but a device keeps it) shows and ticks When, which is what `groupBy` does with it.
 - A tap opens the list as a popover beside the field (on the iPhone too; the system puts it above or below,
-  wherever it fits): container `trip-view-list`, six rows `trip-view-0…5` (When, Into, From where, Category,
-  Section, Template — the ids the pills had, Section the new 4 in 0.64, Template 5 in 0.74), the
+  wherever it fits): container `trip-view-list`, seven rows `trip-view-0…6` (When, Into, From where, Category,
+  Section, Template, Whose it is — the ids the pills had, Section the new 4 in 0.64, Template 5 in 0.74, Whose it is 6 in 0.103), the
   chosen one with a green tick and the selected trait. A tap on a row sorts the trip at once (stored in
   `ams.view`) and closes the list; the ticked row closes it unchanged.
 - Until 0.64: four capsule pills on the line (`ViewThatFits`: full size; slimmer; or "Sorting" above them), the
@@ -1397,8 +1397,8 @@ on the row itself — see Traps: the endless redraw):
 ### Sorting and grouping (`groupBy`, `Grouping.swift`)
 
 The groups come from ONE rule in the library, `Library.linesGrouped(tripId:sorting:lines:)` (0.77; until then
-`TripScreen.grouped` + the call in `TripScreen.groups`): Template = `linesByTemplate`, every other sorting the
-web app's `groupBy`, Into with a reminder under "To do". Take a break's overview (spec 07 part 16) reads the same
+`TripScreen.grouped` + the call in `TripScreen.groups`): Template = `linesByTemplate`, Whose it is (0.103) =
+`linesByWhose`, every other sorting the web app's `groupBy`, Into with a reminder under "To do". Take a break's overview (spec 07 part 16) reads the same
 groups, so its pills and the trip's headings never disagree.
 
 The chosen sorting is remembered on the device in AppStorage **`ams.view`** (default "when"), the same
@@ -1413,6 +1413,7 @@ each device keeps its own. Within every group the lines keep the trip's list ord
 | Category | `category` | category (empty → "Comfort & misc") | `CATEGORIES` order, then others A–Z | category |
 | Section (0.64) | `section` | the line's `section` (trimmed): the section's NAME on the template the line came from | first appearance in the trip's list order; "Everything else" (lines with no section) last | section name |
 | Template (0.74) | `template` | EVERY template of the trip the line comes from — a line can be under several (below) | the trip's template order (`listsForEvent`: base, transport, ticked); then templates no longer on the trip; "Added on the trip" last | template name (violet) |
+| Whose it is (0.103) | `whose` | the owner (`ownedBy`) of the THING behind the line, trimmed, matched by `normName`; no owner = "Both have one" | Your choices' owners in their order (A–Z); then owners the lines name that the list does not hold, A–Z; "Both have one" last | the owner's name as Your choices spells it (else as first met); "Both have one" (the trip's green, like Category) |
 
 **Section** (0.64; until then the model's `groupBy` knew "section" and the app did not offer it) uses
 PackingCore's `groupBySection`, unchanged. What it reads:
@@ -1467,6 +1468,35 @@ which the line's template icons read too ("Where it comes from", under "A line")
   place (spec 07 part 10), whatever the sorting; a place's code opens the trip sorted From where (it sets
   `ams.view` to `stored`), and the place filter and "Only what is still unticked" narrow the lines BEFORE they are
   grouped, under this sorting too. Set place shows only under From where.
+
+
+**Whose it is** (0.103, his idea of 27 Oct 2026: "When I am in packing mode, I sometimes want to pack on my own without my
+wife, even if she is going on the trip. I would like to pack everything that we share on my own, so that when she comes
+home, I have already packed a lot of things. Could we add that to the group by? Just to be clear, it is the property
+'Whose it is'.") — `Library.linesByWhose(lines:)` (PackingLibrary/TripByWhose.swift), NOT the web app's `groupBy` (which
+knows no such mode and stays as the parity check holds it: 211/211). The row's words are "Whose it is", the property's own
+name on a thing's page; id `whose`, row `trip-view-6`. What it reads:
+- **Whose a line is** comes from its THING as it is now (`thingNow`: the thing the line was built from, `sourceItemId`),
+  never from the line — a line does not carry the owner (`entryFromItem`, "Not carried: … owner"), so a change on the
+  thing's page reaches an open trip at once, with no rebuild. A line typed on the trip, or whose thing is gone, has no
+  owner (its own `ownedBy`, which is blank).
+- **The headings:** the owners of Your choices in the list's order (`Library.owners()`, A–Z — with no list of his own, the
+  owners his things name); then every owner the shown lines name that the list does not hold — a name taken out of Your
+  choices, or never on it — A–Z (`jsLocaleCompare`), so no line is ever left out of a heading; then **Both have one**
+  (`OWNER_BOTH`, the words the app already uses for a thing with no owner: the thing's drop-down, the table's Owner filter)
+  last. A heading with no line is left out, as under Template. Names are compared by `normName` — case and spaces do not split
+  a heading — and the heading is the list's spelling (else the first spelling met); an owner typed as "Both have one" counts
+  as no owner. A line stands under ONE heading.
+- Within a heading the lines keep the trip's list order, as under every sorting. The lines handed over are the screen's (the
+  place filter and "only what is still unticked" applied), as for every sorting.
+- Everything else is as under any sorting: the trip's green on every heading (no per-person colours — Template alone
+  has its own), the ring and count, the whole-heading tick (`trip-group-<n>-all`: tick "Both have one" to pack all that is shared
+  in one press), folding and Fold all (keys `<trip>|whose|<name>`), the Take a break overview's groups ("Anna 2 left ·
+  Both have one ✓"), the bag name on each line. Remembered like the other choices (`ams.view`).
+- Tests: `TripByWhoseTests` (the order — list, strays A–Z, Both have one last; an owner no longer on the list; the thing now, not the
+  line; a typed line; spelling; no list; the lines handed over; Take a break) and the UI test
+  `testGroupByWhoseItIsHasAHeadingPerOwnerAndBothHaveOneLast` (`-uiTestingWhose`: Anna, Ben, Cleo, Both have one; ticking one heading;
+  Fold all; Take a break). Pictures `whose-0…2`, iPhone and Mac, day and night.
 
 ### Folding
 

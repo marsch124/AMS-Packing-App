@@ -1067,7 +1067,8 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
    Before you go's To do at their step as "Camera: …", one tick wherever ticked — and a line "with Camera" that came along
    with another thing (its own bag and place; goes when the camera goes unless a template, another thing or he himself
    put it there, a packed one stays; ⊘ on the camera sets it aside too, ↻ brings it back); Group by ("Sorting" until 0.101; "puts the lines under headings") When /
-   Into / From where / Category; Weather line with + and Add all; tap a bag for Goes in the cabin; Bags fill
+   Into / From where / Category / Section / Template / Whose it is (0.103: under the owner of each thing, Both have one last — pack
+   what you share on your own); Weather line with + and Add all; tap a bag for Goes in the cabin; Bags fill
    colours and the scale reading, Clear, up to three photos, "Tap to weigh" on a bag with nothing weighed (0.62); (0.83) + Add a bag at its foot, as in Bags out, "nothing in it yet" and its ✕ for a bag added empty; Set place under "No place set"; (0.69) opened from a place's label, only what is kept there — the place's name
    under Group by shows every line again; typing a thing adds it
    to this trip only, Bought on site adds it ticked; Delete trip at the very end asks first (things and

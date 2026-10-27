@@ -114,6 +114,19 @@ enum SampleLibrary {
         return lib
     }
 
+    /// The sample library for Group by Whose it is (`-uiTestingWhose`, 0.103): Your choices holds Anna
+    /// and Ben; the trip's seven lines are Passport (Ben), Phone charger (Anna), Toothbrush (no one),
+    /// Headlamp (no one), Hiking boots (Anna), Rain jacket (Cleo — on no list) and Map (no one). So
+    /// the headings read Anna, Ben, Cleo, Both have one. The trip was built before the owners were
+    /// set: a line carries no owner, so the grouping reads the things.
+    static func whose() -> Library {
+        var lib = make()
+        lib.setNames("owners", ["Ben", "Anna"])
+        let owned = ["Passport": "Ben", "Phone charger": "Anna", "Hiking boots": "Anna", "Rain jacket": "Cleo"]
+        for n in lib.items.indices { lib.items[n].ownedBy = owned[lib.items[n].name] ?? "" }
+        return lib
+    }
+
     /// The sample library as the table left it before 0.62 (`-uiTestingOldConditions`):
     /// the Goggles' condition stored as the LABEL "Needs replacing", not its id — the
     /// app must repair it when it reads the library, so To buy offers them.
