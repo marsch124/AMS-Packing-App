@@ -121,7 +121,9 @@ tall (minimum height 60 with 14 horizontal padding until 0.67); whole row tappab
 Reached only through the door. **Since 0.92 the page works on a copy of the library** (`ListsScreen` =
 `DraftedPage { ListsPage(page:) }`, §20a): every Add, Remove, Rename, move and This is me changes the copy — and so
 does For the lost-luggage desk opened from This is me. Left with **Done** (top right, `HeaderButtonStyle(tint:
-settings slate, filled: true)`, id `lists-done`, ⌘S), which hands over what was changed (`PageDraft.save`), or
+settings slate, filled: true)`, id `lists-done`, ⌘S), which hands over what was changed (`PageDraft.save`; since
+0.102 `PageDraft.done`: a list the other device changed too meanwhile is asked about first — "Your storage places",
+Keep both or Keep mine, §20c), or
 **Cancel** (top left, outlined muted, id `lists-cancel`; Escape too — ⌘. on an iPhone keyboard, §20), which throws the
 copy away; a swipe down on the iPhone closes it while nothing is changed and with something changed asks "Discard
 changes?" first (§20a). Until 0.92 there was only Done (and Escape closed as Done
@@ -814,11 +816,12 @@ line border, container id `guide-release-<n>`, n = position, 0 = newest). Each c
   blue), **FIXED** (Care orange), **REMOVED** (muted). The part name is upper-cased, 15 heavy (12 until 0.62), letter-spaced 0.6,
   in its colour; each line is a 6-pt dot in that colour and the text (16 ink, wraps).
 
-**The version history** (101 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
+**The version history** (102 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
 against `Releases.swift`):
 
 | Version | Date | Title | Lines | Gist |
 |---|---|---|---|---|
+| 0.102 | 27 Oct 2026 | Two devices, one list | N2 F1 | his choice B of 26 Oct (spec 01 OQ 32 closed): Done/Save asks Keep both / Keep mine when the other device changed the same block meanwhile (grab list + 1-in-10 marks, template name/cover/colour/sections/area, Your choices, kit contents; SavesThatCross.swift, three-way compare), plus a quiet note when the other device's later save overwrote ours (kept 10 min in memory, id save-crossed); Pack's light readable on the Mac (accessibility element trip-flash-n, fill hidden) |
 | 0.101 | 26 Oct 2026 | Reminders on things, and your list | N6 C5 F1 | his list of 26 Oct + reminders on things (his yes to the picture): look101 (loop strip = Stations rule, sync dot, check-in by itself every 15 min, Group by, To do tab badge, Light blue/Light yellow), lists101 (Before you go folds, Fold all + Option-click, To do page Priority/Others/Done + Undo after a tick, To buy Bought), remind101 (Remember with it, Goes with, tapped station stays lit + Pack lights the next line, thing reminders in To prepare and notifications) |
 | 0.100 | 24 Oct 2026 | Two Mac crashes | F2 | his Mac crash of 24 Oct (0.99): an Objective-C exception from SwiftData reading a photo whose external file was missing (iCloud mid-delivery) inside a Task left Swift's executor bookkeeping broken → next click EXC_BAD_ACCESS; Record.read() through AMSCatchException (ObjCExceptions.h/.m, bridging header), photo left out and re-read after 5 s (≤3), iCloud reload no longer in a Task; DropDown keyRows[-1] (18 Oct, 0.87) clamped (clampedLit); tests testAPhotoWhoseFileIsMissingNeitherStopsTheSyncNorShutsTheApp (-uiTestingPhotoGone), testAnArrowOnAnotherRowOfAnOpenListDoesNotShutTheApp, red on 0.99 on GitHub |
 | 0.99 | 21 Oct 2026 | ⌘Q on the Mac | F1 | macOS refuses to quit while a sheet is open, silently: ⌘Q with a template page, Your choices or a bag page open now quits, and asks Discard changes? first when the page holds a change (EditDraft.swift, AMSPackingApp.swift, QuickActions.swift; work/macquit 4b925bc); Mac UI test red on 0.98 |
@@ -1178,7 +1181,11 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
     (§20a); (0.93) "Save keeps only
     what you changed on that page — a change made on the other device while it was open stays" — (0.95) ", and so does
     what it added to the same list (a section, a kind of thing, a grab list’s things)" — (0.98) "; Cancel never touches
-    what the other device changed." (0.95 to 0.97: "Cancel on a bag takes back only what you changed there.") — (0.93) "If a change cannot be
+    what the other device changed." (0.95 to 0.97: "Cancel on a bag takes back only what you changed there.") — (0.102,
+    warn instead of merge, §20c) "If the other device changed the same grab list, template (its name, look or sections),
+    kit or list of Your choices while your page was open, Save or Done asks first — “Changed on your iPhone meanwhile”:
+    Keep both keeps what each device added and took off, Keep mine keeps your page as it is. If its change arrives only
+    after yours was saved and takes its place, a small note names what was changed there — open it to check." — (0.93) "If a change cannot be
     saved, a small note says “Couldn't save that — try again.” The screen then shows what is kept; just do it again"
     — (0.94) "— a bag, a template or Your choices stays open with what you changed, so Done again saves it." (§20b); on the Mac Escape closes a window as its Cancel or Done does, never saving
     (0.62); (0.103) the last line now also says "⌘S is Save (or Done) on every page, even one that only shows
@@ -2190,7 +2197,7 @@ import), that answer says it too: "Nothing was replaced — it couldn't be saved
 it couldn't be saved. Try again." The red `library-problem` screen remains only for a store that cannot be opened or
 read at all.
 
-**The note.** `Text(SaveNote.words)`, Subheadline semibold, `Theme.ink` on a `Theme.card` capsule with a 1-pt
+**The note.** `Text(SaveNote.words)` (since 0.102 `show(_:id:seconds:)` also carries a save that crossed, §20c — its own words, id and 8 s, wrapped at 330 pt; the failed save's note is unchanged), Subheadline semibold, `Theme.ink` on a `Theme.card` capsule (since 0.102 drawn as a rounded rectangle of radius 20 — the same capsule on one line) with a 1-pt
 `Theme.line` border, padding 16 × 10; id `save-problem`; shown for 4 s, a tap puts it away; a second failure shows it
 afresh. It must be seen over whatever is open — a page is a sheet above the tabs — so it is a small window of its own:
 on the iPhone a `UIWindow` at `.alert + 1`, the note's own size, centred, 64 pt above the bottom safe area, and — while
@@ -2249,6 +2256,47 @@ its crash report is HIS: the button's own main-thread check (`MainActor.assumeIs
 `swift_task_isMainExecutorImpl` → `swift_getObjectType`), beside the system's note that an exception had been swallowed
 a second before. 🪤 The file deleted BEFORE the app's fetch is not enough: the photo is then read without a word
 (no throw, the test green on 0.99) — the throw comes only when the file goes between the fetch and the bytes.
+
+## 20c. Changed on the other device meanwhile — asked, never merged silently (0.102; `CrossedAsk` in `Screens/CrossedAsk.swift`, `PackingLibrary/SavesThatCross.swift`)
+
+**Why** (his decision of 26 Oct 2026 — "warn instead of merge", option B of spec 01 Open question 32). Some of the
+library is ONE value in ONE record, and iCloud keeps the last whole version sent: a grab list (its lines and "1 in 10"
+marks), a template's head (name, cover, sections…), what a kit holds, a list of Your choices, his kinds of thing
+(`Block`, spec 01 §5). Until 0.102 a page's Done merged the other device's change of such a block with the page's
+without a word (0.95/0.97), and a save that crossed lost one device's change without a word.
+
+**The question.** Done (Save) on a page that changed such a block, when the block changed here too since the page opened
+(the live value is not the one the page opened with — the other device's save arrived meanwhile) AND Keep both and Keep
+mine would give different blocks — asks, before anything is written: an Apple alert (`UIAlertController` on the
+iPhone, an `NSAlert` sheet on the page's sheet on the Mac; system type and colours, day and night): title **"Changed on
+your iPhone meanwhile"** ("your Mac" on the iPhone; "your other device" until that device has checked in here, spec 01
+§8), message one line naming it — **"Indoor swim’s grab list"**, **"The Hiking template"**, **"What the Camp pouch
+holds"**, **"Your storage places"** (several: "The Hiking template and your storage places") — and two buttons:
+**Keep both** (first, the preferred one — Return on the Mac; id `crossed-both`): the merge of 0.95/0.97, what each
+device added and took off; **Keep mine** (`crossed-mine`): the page's version of that block, whole — the other
+device's change of it goes. No third answer: the page's own Cancel is still there once the alert is answered — only
+after an answer does anything get written. The alert itself: `crossed-ask`. Nothing changed meanwhile, the page changed
+nothing in the block, or both devices made the same change: no question, saved as before.
+
+**Where.** A template's page and Your choices (`PageDraft.done`, §20a — every block the page's copy changed), the grab
+list's editor (`GrabScreen.saveEdits`), a thing's page for what it holds as a kit (`ThingEditor.save`, `KitDraft.crosses`).
+The small core's way out of a template's page (`page.save()` as its sheet closes) keeps the merge without asking.
+
+**The note — the case Done cannot see.** The other device's save of the same block, made before this device's save had
+reached it, arrives AFTER this device saved: iCloud keeps the last one sent, so this device's change is gone. The app
+watches each block it saved for 10 minutes (`RecentSaves`, in memory; nothing stored): when the store is read again and
+the block no longer holds what this device changed (our change put onto it again would change it — `mergeValue`), the
+note of §20b shows, with its own words and id, for 8 s: **"Indoor swim’s grab list was also changed on your iPhone —
+open it to check."** (several: "… were also changed … — open them to check."; id `save-crossed`; wrapped on two
+lines, 330 pt wide). Told once; a later save of the other device that HOLDS this device's change (it had seen it) is no
+loss and says nothing; a block deleted there says nothing. The app does not put its change back: he looks and decides.
+The same on both devices — whichever device's change was lost is the one told.
+
+**Tests.** Model `WarnInsteadOfMergeTests` (8). UI (`-otherDeviceOnOpen <grab|template|kit>`: the other device's save,
+through the store as iCloud brings it, with its check-in, 0.5 s after the page opened; `-otherDeviceAfterSave grab`: its
+save of the list as Edit opened, 0.5 s after Save): `testAGrabListChangedOnTheOtherDeviceWhileEditingAsksAtSave`,
+`testATemplateChangedOnTheOtherDeviceWhileItsPageIsOpenAsksAtDone`, `testAKitChangedOnTheOtherDeviceWhileItsPageIsOpenAsksAtSave`,
+`testAGrabListSaveTheOtherDeviceWroteOverIsTold` — spec 01 §5 has what each proves and its RED.
 
 ## 21. Type, headings, pills, drop-downs and sizes (`Headings.swift`, `Theme.swift` `Metrics`, `ScreenHeader.swift`, `Pills`/`FlowRow` in `HomeScreen.swift`, `DropDown` in `Screens/DropDown.swift`)
 

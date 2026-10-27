@@ -3114,6 +3114,134 @@ final class AMSPackingUITests: XCTestCase {
     }
     #endif
 
+    // MARK: - Warn instead of merge (0.102, his decision of 26 Oct 2026)
+
+    /// The other device's save of the same block while a page here has it open
+    /// (`-otherDeviceOnOpen <page>`: it arrives as iCloud would bring it, just after the page
+    /// opened, with that device's check-in). Done does not merge silently: it asks — Keep both
+    /// (`crossed-both`) or Keep mine (`crossed-mine`).
+
+    /// Keep both or Keep mine on the question. It is an Apple alert: on the iPhone each of its
+    /// buttons is in the tree twice, so the one that can be tapped is tapped.
+    private func answerCrossed(_ app: XCUIApplication, mine: Bool) {
+        let all = app.buttons.matching(identifier: mine ? "crossed-mine" : "crossed-both")
+        (all.allElementsBoundByIndex.first { $0.exists && $0.isHittable } ?? all.firstMatch).tap()
+        XCTAssertTrue(waitUntil { !app.buttons["crossed-both"].exists }, "the question stayed up after the answer")
+    }
+
+    /// The grab list's editor: Flip-flops taken off on the other device meanwhile, Goggles here.
+    /// Keep both leaves neither (5 things); Keep mine is the editor's list whole (Flip-flops back, 6).
+    func testAGrabListChangedOnTheOtherDeviceWhileEditingAsksAtSave() {
+        for mine in [false, true] {
+            let app = launch("-uiTesting", ["-otherDeviceOnOpen", "grab"])
+            XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+            app.buttons["grab-0"].tap()
+            XCTAssertTrue(appears(app, "grab-detail", timeout: 5))
+            let count = app.staticTexts["grab-count"]
+            XCTAssertTrue(waitUntil { self.words(count) == "0 of 7 in hand" }, "the list is not the sample's: '\(words(count))'")
+            tap(app, id: "grab-edit")
+            XCTAssertTrue(app.buttons["grab-cancel"].waitForExistence(timeout: 5))
+            sleep(2)                                                     // meanwhile, on the other device…
+            app.buttons["grab-remove-1"].tap()                           // Goggles
+            tap(app, id: "grab-edit")                                    // Save
+            XCTAssertTrue(app.buttons["crossed-both"].waitForExistence(timeout: 5),
+                          "Save did not ask: the other device's change of the list was merged without a word")
+            XCTAssertTrue(app.buttons["crossed-mine"].exists, "no Keep mine")
+            if !mine { shot(app, "crossed-grab") }
+            answerCrossed(app, mine: mine)
+            XCTAssertTrue(waitUntil { self.words(count) == (mine ? "0 of 6 in hand" : "0 of 5 in hand") },
+                          "Keep \(mine ? "mine" : "both"): '\(words(count))'")
+            if mine {
+                XCTAssertTrue(waitUntil { app.buttons["grab-item-5"].label.contains("Flip-flops") },
+                              "Keep mine did not bring back what the other device took off: '\(app.buttons["grab-item-5"].label)'")
+            }
+            XCTAssertFalse(app.buttons["grab-item-1"].label.contains("Goggles"), "the removal made here was lost")
+            app.terminate()
+        }
+    }
+
+    /// A template's page: Lights renamed Torches on the other device meanwhile, the template renamed
+    /// Hiking trip here. Keep both has both; Keep mine the page's template whole (Lights again).
+    func testATemplateChangedOnTheOtherDeviceWhileItsPageIsOpenAsksAtDone() {
+        for mine in [false, true] {
+            let app = launch("-uiTesting", ["-otherDeviceOnOpen", "template"])
+            tab(app, "templates")
+            XCTAssertTrue(appears(app, "screen-templates"))
+            tap(app, id: "template-row-1")                               // Hiking: its Headlamp under Lights
+            XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+            XCTAssertTrue(waitUntil { self.words(app.staticTexts["template-group-0"]) == "Lights" })
+            sleep(2)                                                     // meanwhile, on the other device…
+            replace("Hiking trip", in: app.textFields["template-name"])
+            tap(app, id: "template-rename")
+            hideKeyboard(app)
+            tap(app, id: "template-detail-done")
+            XCTAssertTrue(app.buttons["crossed-both"].waitForExistence(timeout: 5),
+                          "Done did not ask: the other device's change of the template was merged without a word")
+            if !mine { shot(app, "crossed-template") }
+            answerCrossed(app, mine: mine)
+            XCTAssertTrue(disappears(app, "template-detail", timeout: 5), "the page stayed open after the answer")
+            tap(app, id: "template-row-1")
+            XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+            XCTAssertTrue(waitUntil { self.value(app.textFields["template-name"]) == "Hiking trip" },
+                          "the new name made here was lost: '\(value(app.textFields["template-name"]))'")
+            let section = mine ? "Lights" : "Torches"
+            XCTAssertTrue(waitUntil { self.words(app.staticTexts["template-group-0"]) == section },
+                          "Keep \(mine ? "mine" : "both"): the section reads '\(words(app.staticTexts["template-group-0"]))'")
+            tap(app, id: "template-cancel")
+            app.terminate()
+        }
+    }
+
+    /// A kit's page: one more thing put in the Camp pouch on the other device meanwhile, the Plasters
+    /// taken out of it here. Keep both holds three; Keep mine the page's two.
+    func testAKitChangedOnTheOtherDeviceWhileItsPageIsOpenAsksAtSave() {
+        for mine in [false, true] {
+            let app = launch("-uiTestingKits", ["-otherDeviceOnOpen", "kit"])
+            openKitThing(app)
+            XCTAssertTrue(scrollWithin(app, "thing-detail", until: "thing-kit-add"), "no Add from your things")
+            sleep(2)                                                     // meanwhile, on the other device…
+            tap(app, id: "thing-kit-row-2-remove")                       // the Plasters
+            XCTAssertTrue(waitUntil { !app.staticTexts["thing-kit-row-2"].exists }, "the Plasters did not come out")
+            tap(app, id: "thing-save")
+            XCTAssertTrue(app.buttons["crossed-both"].waitForExistence(timeout: 5),
+                          "Save did not ask: the other device's change of the kit was merged without a word")
+            if !mine { shot(app, "crossed-kit") }
+            answerCrossed(app, mine: mine)
+            XCTAssertTrue(disappears(app, "thing-detail", timeout: 5), "the page stayed open after the answer")
+            tap(app, id: "thing-row-0")
+            XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+            XCTAssertTrue(scrollWithin(app, "thing-detail", until: "thing-kit-add"))
+            XCTAssertTrue(waitUntil { app.staticTexts["thing-kit-row-1"].exists }, "the kit lost what it held")
+            XCTAssertTrue(waitUntil { app.staticTexts["thing-kit-row-2"].exists == !mine },
+                          "Keep \(mine ? "mine" : "both"): a third thing inside is \(app.staticTexts["thing-kit-row-2"].exists)")
+            XCTAssertFalse(app.staticTexts["thing-kit-row-3"].exists, "the Plasters came back")
+            tap(app, id: "thing-cancel")
+            app.terminate()
+        }
+    }
+
+    /// The case Done cannot see: the other device's save of the list, made before this one had
+    /// arrived there, arrives AFTER it (`-otherDeviceAfterSave grab`) — iCloud keeps the last one sent,
+    /// and Goggles, taken off here, are back. Nothing is asked at Save (nothing had changed yet); once
+    /// it arrives a quiet note says so, naming the list.
+    func testAGrabListSaveTheOtherDeviceWroteOverIsTold() {
+        let app = launch("-uiTesting", ["-otherDeviceAfterSave", "grab"])
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        app.buttons["grab-0"].tap()
+        XCTAssertTrue(appears(app, "grab-detail", timeout: 5))
+        let count = app.staticTexts["grab-count"]
+        XCTAssertTrue(waitUntil { self.words(count) == "0 of 7 in hand" }, "'\(words(count))'")
+        tap(app, id: "grab-edit")
+        app.buttons["grab-remove-1"].tap()                               // Goggles
+        tap(app, id: "grab-edit")                                        // Save
+        let note = app.staticTexts["save-crossed"]
+        XCTAssertTrue(note.waitForExistence(timeout: 8), "the other device's later save wrote over this one and nothing was said")
+        XCTAssertFalse(app.buttons["crossed-both"].exists, "Save asked with nothing changed meanwhile")
+        XCTAssertTrue(words(note).hasPrefix("Indoor swim\u{2019}s grab list was also changed on your "), "the note says: '\(words(note))'")
+        shot(app, "crossed-note")
+        XCTAssertTrue(waitUntil { self.words(count) == "0 of 6 in hand" }, "not the other device's list: '\(words(count))'")
+    }
+
     // MARK: - The hardening (0.94, his "fix review items 3, 4, 5 and 7 plus the template-page merge and the empty bag name")
 
     // The 0.94 tests of this section that kept a page when the app was put away —
@@ -15823,18 +15951,21 @@ final class AMSPackingUITests: XCTestCase {
         station(app, "pack", opens: false)
         XCTAssertTrue(waitUntil { pack.isSelected }, "Pack is not lit after a tap")
         XCTAssertFalse(weigh.isSelected)
-        // The light is `trip-flash-<n>` on the row of `trip-line-<n>` while it shows.
-        func litLine() -> Int? { (0..<24).first { self.find(app, "trip-flash-\($0)") != nil } }
+        // The light is `trip-flash-<n>` on the row of `trip-line-<n>` while it shows — held 8 s under the
+        // tests (not 1.6): on GitHub's loaded Mac the reads below came after it had gone (27 Oct 2026).
         var lit: Int?
-        XCTAssertTrue(waitUntil(timeout: 3) { lit = litLine(); return lit != nil }, "Pack showed nothing on the list")
+        XCTAssertTrue(waitUntil(timeout: 5) { lit = self.packLight(app); return lit != nil }, "Pack showed nothing on the list")
         shot(app, "stations-pack-lit")
-        // The copy of the line on screen (the Mac's list can keep a stale one out of sight, `shownRow`).
-        let line = shownRow(app, "trip-line-\(lit ?? -1)")
-        XCTAssertNotNil(line, "the line lit is not in view")
+        let n = lit ?? -1
+        // The line lit is on the screen — read for as long as it takes the list to settle, and through
+        // the copy on screen (the Mac's list can keep a stale one out of sight, `shownRow`) — and not packed.
+        var line: XCUIElement?
+        XCTAssertTrue(waitUntil(timeout: 5) { line = self.shownRow(app, "trip-line-\(n)"); return line != nil },
+                      "the line lit is not in view: \(lineDiagnostics(app, n))")
         XCTAssertFalse(line?.isSelected ?? true, "the line lit is packed already")
-        XCTAssertTrue(waitUntil(timeout: 6) { litLine() == nil }, "the light did not fade")
+        XCTAssertTrue(waitUntil(timeout: 14) { self.packLight(app) == nil }, "the light did not fade")
         station(app, "pack", opens: false)
-        XCTAssertTrue(waitUntil(timeout: 3) { litLine() != nil }, "a second tap on Pack, the list in view, showed nothing")
+        XCTAssertTrue(waitUntil(timeout: 5) { self.packLight(app) != nil }, "a second tap on Pack, the list in view, showed nothing")
     }
 
 
@@ -15953,6 +16084,34 @@ final class AMSPackingUITests: XCTestCase {
     }
 
     private func value(_ e: XCUIElement) -> String { e.exists ? (e.value as? String ?? "") : "" }
+
+    /// The line Pack has lit (0.101): the number in `trip-flash-<n>`, nil when none shows. One query
+    /// for any n — not one per line, which on a loaded runner took longer than the light stays.
+    private func packLight(_ app: XCUIApplication) -> Int? {
+        let flash = NSPredicate(format: "identifier BEGINSWITH 'trip-flash-'")
+        for query in [app.otherElements, app.groups] {
+            let e = query.matching(flash).firstMatch
+            if e.exists, let n = Int(e.identifier.dropFirst("trip-flash-".count)) { return n }
+        }
+        return nil
+    }
+
+    /// Where a line's copies are, for a failure's words: each one's frame and whether it can be tapped,
+    /// and the window's.
+    private func lineDiagnostics(_ app: XCUIApplication, _ n: Int) -> String {
+        // The line and the two after it: a neighbour tappable while this one is not says it is covered.
+        func state(_ id: String) -> [String] {
+            app.buttons.matching(identifier: id).allElementsBoundByIndex
+                .map { $0.exists ? "frame \($0.frame) hittable \($0.isHittable) selected \($0.isSelected)" : "gone" }
+        }
+        let copies = state("trip-line-\(n)") + ["next:"] + state("trip-line-\(n + 1)") + state("trip-line-\(n + 2)")
+        #if os(macOS)
+        let window = app.windows.firstMatch.frame
+        #else
+        let window = app.frame
+        #endif
+        return "window \(window); trip-line-\(n) and the next: \(copies)"
+    }
 
     /// Tick everything on the trip by its headings' own ticks (`trip-group-<g>-all`), each one
     /// not yet all ticked — not by Tick everything, which 0.79 takes off the trip screen.

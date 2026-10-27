@@ -59,6 +59,9 @@ final class LibraryModel: ObservableObject {
 
     private let store: LibraryStore
     private var held: [StoredRecord] = []
+    /// What this device saved lately of each block iCloud keeps whole (0.102, `RecentSaves`): the other
+    /// device's save of the same block arriving later without our change in it is told, once.
+    private var recent = RecentSaves()
     let usesICloud: Bool
     /// Where a forecast comes from — the invented one under the tests.
     let sky: Forecaster
@@ -106,6 +109,11 @@ final class LibraryModel: ObservableObject {
         do {
             let (fresh, records) = try StoreSession.load(store)
             held = records
+            // A save of ours the other device's crossing save wrote over (0.102): said once, quietly.
+            let lost = recent.arrived(fresh)
+            if !lost.isEmpty {
+                SaveNote.shared.show(fresh.crossedNote(lost, thisDevice: SyncCard.device), id: "save-crossed", seconds: 8)
+            }
             if fresh != library { library = fresh }
             fresh.installLiveChoices()
             state = fresh.isEmpty ? .empty : .ready
@@ -152,6 +160,7 @@ final class LibraryModel: ObservableObject {
         do {
             guard let records = try StoreSession.save(next, held: held, to: store) else { return true }
             held = records
+            recent.note(before: library, after: next)
             library = next
             state = next.isEmpty ? .empty : .ready
             return true
@@ -191,6 +200,7 @@ final class LibraryModel: ObservableObject {
         guard commit(imported) else {
             throw NotSaved(words: "Nothing was brought in \u{2014} it couldn't be saved. Try again.")
         }
+        recent.forget()                                   // a whole library, not an edit to watch
         imported.installLiveChoices()
         return report
     }
@@ -285,12 +295,25 @@ final class LibraryModel: ObservableObject {
     /// Replace everything on this device with what the file held. What was here is
     /// written to a rescue copy FIRST — the write that destroys comes last. The
     /// devices' check-ins stay (`Importer.restoring`).
+    #if DEBUG
+    /// UI tests only (0.102, `OtherDeviceForTests`): the other device's save, arriving through the store
+    /// as iCloud brings it, with its check-in.
+    func arriveFromTheOtherDevice(_ body: (inout Library) -> Void) {
+        guard !isDraft, let memory = store as? MemoryStore else { return }
+        var next = library
+        body(&next)
+        next.checkIn(device: SyncCard.device == "Mac" ? "iPhone" : "Mac")
+        memory.simulateRemote(recordChanges(from: library.records(), to: next.records()))
+    }
+    #endif
+
     func restore(_ imported: Library) throws {
         try RescueCopies.write(library)
         // A restore the store refused said "Restored" (0.93, the outside review): it says so now.
         guard commit(Importer.restoring(imported, over: library)) else {
             throw NotSaved(words: "Nothing was replaced \u{2014} it couldn't be saved. Try again.")
         }
+        recent.forget()                                   // a whole library, not an edit to watch
         reload()
     }
 }

@@ -1084,7 +1084,11 @@ pick "C" of three pictured layouts, 5 Oct 2026).
 
 **Top row** (0.92; HStack spacing 12, padding 16 sides and top): **"Cancel"** (`template-cancel`,
 `HeaderButtonStyle` outlined muted, Escape — not while arranging), Spacer, **"Done"** (`template-detail-done`,
-filled violet, ⌘S). Done and Cancel stood on the name's row until 0.92 (Done only).
+filled violet, ⌘S). Done and Cancel stood on the name's row until 0.92 (Done only). Since 0.102 Done is `PageDraft.done`
+(warn instead of merge, spec 06 §20c): a template head (name, cover, sections…), kit or list the page changed that the
+other device changed too meanwhile is asked about first — "Changed on your iPhone meanwhile", "The Hiking template",
+Keep both or Keep mine (the page's head whole); then the page closes. UI
+`testATemplateChangedOnTheOtherDeviceWhileItsPageIsOpenAsksAtDone`.
 
 **Header row** (HStack spacing 12, padding 16 sides, 10 top and bottom):
 - `CoverDoor` (§3).
