@@ -18,6 +18,13 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.105", date: "28 Oct 2026", title: "New thing, Quick open, Undo, and several lines at once",
+                new: ["On the Mac, \u{2318}N opens a new, empty thing\u{2019}s page from any tab (File \u{25B8} New Thing). On the iPhone, hold the app icon: New thing.",
+                      "On the Mac, \u{2318}K is Quick open: type a few letters of a thing, a trip or a template \u{2014} a Swedish name too \u{2014} or of a command, and Return opens it.",
+                      "Undo: on the Mac, Edit \u{25B8} Undo (\u{2318}Z) takes back your last change, whatever page it was on, and says which (\u{201C}Undo Tick Passport\u{201D}); \u{21E7}\u{2318}Z puts it back. On the iPhone, shake it. What your other device changed in between stays.",
+                      "On a trip on the Mac, select several lines with \u{2318}-click, \u{21E7}-click or \u{2318}A, then Tick, Untick, Not this time or Move to bag for all of them at once."],
+                changed: ["A new window on the Mac is now \u{2325}\u{2318}N.",
+                          "The Keyboard shortcuts topic has four new cards: Quick open, New, A trip\u{2019}s list, and Undo and Redo."]),
         Release(version: "0.104.1", date: "28 Oct 2026", title: "The Templates tab no longer freezes",
                 fixed: ["On the Mac, the app no longer freezes on the Templates tab when a template\u{2019}s page closes over it \u{2014} the tab now lays its cards out in plain rows, looking the same as before."]),
         Release(version: "0.104", date: "28 Oct 2026", title: "A line\u{2019}s menu, Before a trip, and sync that mends itself",
