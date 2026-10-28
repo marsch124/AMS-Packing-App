@@ -1200,8 +1200,8 @@ apart; a field 6 pt under its heading):
       Save → `setTakenOut`); when it is ALSO on a template on its own (`kitAlsoOn`, his bag list left out): "Also on
       `A and B` on its own — a trip packs the `<kit>` instead." (Subheadline orange, `thing-kit-also`). It cannot
       hold things itself (one level deep): no Inside.
-    - **Any other thing:** band "Inside" (`thing-kit-title`). Holding nothing: "A pouch or a kit? Add the things
-      that stay packed in it." (Subheadline muted, `thing-kit-none`). Each thing inside, in his order
+    - **Any other thing:** band "Inside" (`thing-kit-title`). Holding nothing: "Is this item a pouch or a kit? Add the things
+      that stay packed in it." ("A pouch or a kit? …" until 0.103; his words, 28 Oct 2026) (Subheadline muted, `thing-kit-none`). Each thing inside, in his order
       (`thing-kit-row-<n>`, value "taken out" / ""): its name (Body; muted and struck through when taken out, with
       "Taken out" in red under it), its weight × how many (Footnote mono muted, when it has one), what is worth
       saying about it (`Library.contentWarnings`: out of date, runs out within 60 days, care overdue or due soon —
