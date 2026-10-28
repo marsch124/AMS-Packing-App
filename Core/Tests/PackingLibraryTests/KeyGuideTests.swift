@@ -24,6 +24,9 @@ final class KeyGuideTests: XCTestCase {
             ("lists", "Open a drop-down", "Space or ↓"), ("lists", "Move through", "↑↓"),
             ("lists", "Jump to a choice", "A–Z"), ("lists", "Choose the lit one", "Return"),
             ("lists", "Close the list", "Esc"), ("lists", "row of pills", "←→"), ("lists", "Switch the lit pill", "Space"),
+            ("trip", "Select a line, or let it go", "⌘Click"), ("trip", "Select the lines between", "⇧Click"),
+            ("trip", "Select every line shown", "⌘A"), ("trip", "Tick the selected lines", "Space"),
+            ("trip", "Clear the selection", "Esc"),
             ("mac", "Quit", "⌘Q"), ("mac", "New window", "⌘N"), ("mac", "Close the All your things window", "⌘W"),
         ]
         var missing: [String] = []

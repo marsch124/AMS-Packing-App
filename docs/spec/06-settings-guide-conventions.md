@@ -1093,7 +1093,11 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
 on the Mac, held on the iPhone, a tap still ticks: Show note (the Swedish name, the thing's note, its templates'
 notes, the line's note on this trip or for the way home; No note, switched off, when nothing), Open thing (Cancel or
 Save back to the trip), Tick and Not this time as a tap and ⊘; on the Mac the pointer resting on a line shows its
-notes; (0.101, spec 07 part 21) two lines after the reminder's: a thing's
+notes; (0.105, spec 03 "Several lines selected") "Several lines at once, on the Mac": ⌘-click selects a line (again lets
+it go), ⇧-click every line from the one chosen last to this one as the list shows them, across its headings, ⌘A every
+line shown; selected lines take the Mac's accent colour and are not ticked; with two or more a bar above Add a thing —
+"4 selected", Tick, Untick, Not this time, Move to bag (the trip's bags), Clear; right-click one of them and its Tick
+and Not this time act on all; Space ticks them, Esc lets them go; a plain click still ticks just its line; (0.101, spec 07 part 21) two lines after the reminder's: a thing's
    own reminders — "2 left" in orange on its line, under it once ticked "Before it goes: …" each with its own tick, in
    Before you go's To do at their step as "Camera: …", one tick wherever ticked — and a line "with Camera" that came along
    with another thing (its own bag and place; goes when the camera goes unless a template, another thing or he himself
@@ -1109,7 +1113,7 @@ notes; (0.101, spec 07 part 21) two lines after the reminder's: a thing's
    your time / Just pause, the iPhone's "🎒 Back to packing" (the backpack since 0.84) and since 0.84 "the cup shows
    when, small beside it (19:00; on another day, Fri 18:00)" (the button's "Back at 19:00" until then), Add to
    Calendar "— filled once a time is chosen —" (0.84) (nothing added until you say), one break per trip, gone when
-   the last thing is ticked, from the Mac your iPhone reminds you. (25 lines.)
+   the last thing is ticked, from the Mac your iPhone reminds you. (34 lines since 0.105, counted from the code.)
 2. **Pack by voice (iPhone, a test)** (Trips mark, 0.71 — spec 07 part 10): the button at the end of a trip's
    Group by row (Sorting until 0.101) walks what is still to pack, place by place as From where groups them — the place, then the thing
    ("Garage. Goggles.") — and listens for five words; Packed ticks, Skip sets aside (as ⊘), Later moves on
@@ -1370,7 +1374,8 @@ in its menu bar. On an iPhone or iPad with a keyboard attached, the same keys wo
 `cards`, each `Card(id, title, reach, line, rows)`; `reach` is `.withKeyboard` ("Mac, and iPhone or iPad with a
 keyboard") or `.macOnly` ("Mac only"); a `Row(action, chords, note)` has one chord or several ways ("Space or ↓"), a
 chord being `Key`s pressed together; a `Key` has its cap ("⌘", "S", "Esc", "A–Z") and its spoken name ("Command", "S",
-"Escape", "letters"). The seven cards, in order, with their rows:
+"Escape", "letters"; since 0.105 "Click", "click" — a click with the keys before it held). The eight cards (a trip's
+list since 0.105), in order, with their rows:
 
 | # | Card (id) | Reach | Rows (keys) |
 |---|---|---|---|
@@ -1379,8 +1384,9 @@ chord being `Key`s pressed together; a `Key` has its cap ("⌘", "S", "Esc", "A�
 | 2 | Search (`search`) | Mac | Search How it works (⌘F) · Find an icon, on a template’s icon page (⌘F) · Empty the search (Esc; "A second Esc closes the page.") |
 | 3 | Editing a list or a page (`edit`) | Mac + keyboard | Save a grab list, a template, your lists or an activity area (⌘S) · Throw away what you changed (Esc; a grab list stays open, a template being arranged ends Arrange first) |
 | 4 | A thing’s page (`thing`) | Mac | Save the thing ⌘S · Save, and start the next thing with the same choices ⌘N · Next thing in the list the page came from ⌘↓ · Previous thing ⌘↑ · Jump to a field by its name ⌘J · Next field Tab · Previous field ⇧Tab · Save from any field but Notes Return — "Also the Thing menu. Tab walks every field, top to bottom." |
-| 5 | Lists and drop-downs (`lists`) | Mac | Open a drop-down (Space or ↓) · Move through its choices (↑ ↓) · Jump to a choice by typing (A–Z) · Choose the lit one (Return) · Close the list, and stay on the page (Esc) · Move along a row of pills (← →) · Switch the lit pill, or a switch (Space) — "On a thing’s page, with the field lit." |
-| 6 | The Mac’s windows (`mac`) | Mac | Quit ⌘Q ("Asks first when a page holds a change you have not confirmed.") · New window ⌘N ("Not while a thing’s page is open: there ⌘N is Save and New.") · Close the All your things window ⌘W |
+| 5 | A trip’s list (`trip`, 0.105) | Mac | Select a line, or let it go ⌘Click ("It is not ticked.") · Select the lines between ⇧Click ("From the line chosen last to this one, as the list shows them — across its headings.") · Select every line shown ⌘A ("Not the lines under a folded heading.") · Tick the selected lines Space ("When all are ticked, Space unticks them.") · Clear the selection Esc ("With nothing selected, Esc closes the trip.") — "Select several lines, then Tick, Untick, Not this time or Move to bag in the bar under the list, or right-click one of them. A plain click still ticks one line." |
+| 6 | Lists and drop-downs (`lists`) | Mac | Open a drop-down (Space or ↓) · Move through its choices (↑ ↓) · Jump to a choice by typing (A–Z) · Choose the lit one (Return) · Close the list, and stay on the page (Esc) · Move along a row of pills (← →) · Switch the lit pill, or a switch (Space) — "On a thing’s page, with the field lit." |
+| 7 | The Mac’s windows (`mac`) | Mac | Quit ⌘Q ("Asks first when a page holds a change you have not confirmed.") · New window ⌘N ("Not while a thing’s page is open: there ⌘N is Save and New.") · Close the All your things window ⌘W |
 
 **On screen.** Last in the guide's `VStack(spacing: 12)`, after the twelve topics; every card padding 14, `Theme.card`,
 radius 12, 1-pt `Theme.line`. First a **heading card** (id `guide-keys`): the `command` symbol (SF Symbol, 24, slate)
@@ -1411,10 +1417,12 @@ scrolled to the topic (`KeysGuide.scrollId`). Off while a page is open, like the
 code: the missing or wrong ones are named in one message); the Go card is the six tabs in the tab bar's order, ⌘1 to ⌘6;
 VoiceOver's words ("Command S", "Shift Tab", "Command Down arrow", "Space, or Down arrow", "Escape, or Command period",
 the row's one label "Save, or Done, Command S") and no symbol in any; the search finds the keys by name, symbol and action and the line at the top; the line says the Mac
-first and then the iPhone and iPad, the seven cards in order. Seen red with faults planted (the Go card without Care; ⌘'s
+first and then the iPhone and iPad, the seven cards in order (since 0.105 the list also holds the trip card's five keys —
+seen red before the card was written: "trip: no row for Select a line, or let it go", …). Seen red with faults planted (the Go card without Care; ⌘'s
 spoken name the symbol): `("["go: no row for Care"]") is not equal to ("[]") - keys the app answers that the topic leaves
 out or gets wrong`, `("Optional("⌘ S")") is not equal to ("Optional("Command S")")`. UI `testHowItWorksHasAKeyboardShortcutsTopic`
-(iPhone and Mac): the topic is there, the heading card and seven cards, the rows' labels "Save, or Done, Command S", the Go
+(iPhone and Mac): the topic is there, the heading card and seven cards (eight since 0.105, "Select a line, or let it go,
+Command click" the trip card's first row), the rows' labels "Save, or Done, Command S", the Go
 card's six rows `Home, Command 1` … `Settings, Command 6, or Command comma`, `Previous field, Shift Tab`; each card brought to the top for a picture
 (`keys-0-top`, `keys-1-card` … `keys-7-card`, `keys-8-search`; day and night, iPhone and Mac); the search finds it for
 `command s`, `jump to a field`, `shift tab` ("quit" is said in other parts too, and the lazy results would not have built the last card).
@@ -2193,6 +2201,9 @@ besides). The Mac hands a sheet its own window, so a page's hidden ⌘S can neve
 | ⌘N | New Window (File menu) — Save and New while a thing's page is open | `ThingCommands` |
 | ⌘↓ ⌘↑ ⌘J | next / previous thing, jump to a field | Thing menu (`ThingKeys`, Mac) |
 | Tab ⇧Tab Space ↑ ↓ ← → Return, letters | the thing page's key walk and its drop-downs | `ThingEditor.key`, `DropDown.answer` (Mac) |
+| ⌘-click, ⇧-click | a trip's line into the selection or out; every line between (0.105) | `TripScreen.select` (Mac) |
+| ⌘A | every line shown on a trip selected — in a field being typed in, its words (0.105) | `TripScreen.selectionKeys` (Mac) |
+| Space, Esc | with lines selected on a trip: tick them (untick, all ticked); let them go — Done gives up Esc meanwhile (0.105) | `TripScreen.selectionKeys` (Mac) |
 | ⌘Q | quit | `QuitCommand` |
 | ⌘W | closes the All your things window | the system |
 

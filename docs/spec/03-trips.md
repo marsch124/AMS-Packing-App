@@ -1458,6 +1458,70 @@ on the row itself — see Traps: the endless redraw):
   tick, set-aside, place panel, pocket pills, pocket or night count changes (bug B1, his Mac 2026-09-26: a row
   showed no tick while the trip had it).
 
+### Several lines selected (0.105, the Mac)
+
+His yes of 28 Oct 2026 — "3. Select several lines... - yes please" — to the proposal "Select several lines (Mac): ⇧-click
+or ⌘-click lines on a trip, then tick, set aside or move to another bag in one go." Apple's way, as in the Finder and
+Mail. **The Mac only**: the iPhone is unchanged (the list is a lazy stack, not a SwiftUI `List`, so its edit-mode
+multi-select is not a small step — and he asked for the Mac). The rules live in the library (`LineSelection`,
+`PackingLibrary/LineSelection.swift`); the screen keeps one `@State picked` and hands each click to it.
+
+- **⌘-click** a line: it joins the selection, or leaves it — and it is NOT ticked. **⇧-click**: every line from the
+  one chosen last (the last ⌘-clicked; with none, this one) to this one, **in the order the list shows them** under the
+  chosen Group by, across its headings (sorted From where: the Passport ⇧-clicked to the Map takes in the Phone charger
+  and the Headlamp, not the Toothbrush above them). A second ⇧-click moves the END of that range (the Finder's way):
+  what the first took in and the second leaves out is let go; what was selected before the range stays. **⌘A** selects
+  every line shown — not those under a folded heading. **Esc** lets them go (Done gives up Escape while anything is
+  selected; with nothing selected Esc closes the trip as before). A **plain click** still ticks its line, as always —
+  and lets a selection go (no selection is needed for normal packing). The keys are the click's own
+  (`NSApp.currentEvent.modifierFlags`); a ⌘- or ⇧-click puts away a field's keyboard focus (`makeFirstResponder(nil)`),
+  so Space and Esc are the selection's.
+- **Looks:** a selected line has a tint of the Mac's **accent colour** (System Settings' choice, `controlAccentColor`
+  — what the Finder's and Mail's selected rows are made of) at 20 % by day, 34 % at night, under the whole row (the
+  line, a kit's arrow, ⊘), a rounded rectangle (corner 6) 6 points past the row each side — a tint, so the tick's
+  colours and the words stay as they are. It hangs on the row itself, OUTSIDE both keys (see the endless redraw, below):
+  selecting never makes a new row. For the tests, a selected row carries a 4 × 4 element at its foot,
+  `trip-picked-<n>` (label "Selected"), never over the line (Pack's light taught why).
+- Lines that stop being shown leave the selection (a heading folded, another Group by, a place's view, a line gone);
+  a new trip on the screen (Start a new trip from this one) starts with none.
+- **The bar** (`selectionBar`, id `trip-select-bar`), with 2 or more selected: a slim card between the list and "Add
+  a thing" (under the Undo bar when that shows; at the screen's foot on a place's view), padding 12 × 6, `Theme.card`,
+  corner 12, a 1-pt ring of the accent colour at 55 %; 16 in from the sides, 8 above. Left: **"4 selected"**
+  (Subheadline semibold ink, `trip-select-count`; it may shrink to 75 % on the narrowest window). Right, 6 apart, each
+  a capsule `Metrics.chip` tall in the trip's green, Subheadline semibold: **Tick** (filled — the main one;
+  `trip-select-tick`), **Untick** (`trip-select-untick`), **Not this time** — **Take them this time** once every
+  selected line is set aside (`trip-select-aside`), **Move to bag ▾** (`trip-select-bag`, a menu: the trip's bags as the
+  Bags card lists them — `Library.dayBags`, its lines' bags in the order they first come, then those "+ Add a bag" put
+  on — each `trip-select-bag-<k>`; no button when the trip has no bag), **Clear** (`trip-select-clear`). The selection
+  stays after an action (Finder's way), so a Tick can be followed by a Move.
+- **Each action is ONE change** (`TripScreen.changeSelection` → one `model.change`: one save, one step for Edit ▸ Undo —
+  named "Tick 4 things", "Untick 4 things", "Not this time for 4 things", "Take 4 things this time", "Move 4 things to
+  Day pack"; the name is handed to `LibraryModel.change` once it takes one, work/undo105):
+  - Tick / Untick — `Library.setChecked(_:tripId:entryIds:)`, the heading's round tick's own: a line already so is left,
+    a line set aside is never ticked, a kit still waiting for what is inside refuses, the usual pocket comes with a tick.
+    It is offered back for 6 seconds like the round tick's (`TickUndo.selection`: "Ticked 4 things" · Undo).
+  - Not this time / Take them this time — `Library.setAside(_:tripId:entryIds:)`, ⊘ / ↻ on each (the tick goes, what came
+    along goes with it).
+  - Move to bag — `Library.moveLines(tripId:entryIds:toBag:)`: the lines' bag on **this trip only** — the thing keeps its
+    own bag, the templates theirs — each moved line marked changed on the trip (`edited`), so Trip settings' rebuild
+    keeps it and a later change to the thing (`followThing`) does not take it back. Its pocket goes unless the new bag
+    has one of that name (a ticked line then gets the new bag's usual pocket, as a tick does); the same for its pocket
+    for the way home. A reminder ("To do") goes in no bag; a line already in that bag is left.
+- **The line's menu** on a selected line (with 2 or more selected): the same four entries — Show note and Open thing
+  stay that line's own; **Tick 4 things** (or **Untick 4 things** when every selected line not set aside is ticked;
+  switched off when all are set aside) and **Not this time for 4 things** / **Take 4 things this time** act on all
+  of them, as the bar does. The ids are the line's (`trip-line-<n>-menu-tick`, `-menu-aside`).
+- **Keys** (hidden buttons, as ⌘S's behind Done — `selectionKeys`): ⌘A selects every line shown; with a selection,
+  **Space** ticks it (unticks it when all are ticked) and **Esc** clears it. In a field being typed in, ⌘A selects the
+  field's words and Space types a space, as anywhere. Keyboard shortcuts in How it works has them on the card "A
+  trip's list" (spec 06 §7b).
+- Tests: model `LineSelectionTests` (3: ⌘-click / ⇧-click in the list's order with the range's end moving, ⌘A, Esc,
+  a folded heading's lines leaving; Tick / Untick / Not this time on exactly the lines given; Move to bag on this
+  trip only, through a change to the thing, a rebuild, the stored records and a backup — seen red with `edited` not
+  set: "a change to the thing took the line back"); UI (the Mac; skipped on the iPhone)
+  `testSeveralLinesAreSelectedOnTheMacAndTickedInOneGo`, `testAShiftClickSelectsTheLinesBetweenAcrossHeadings`,
+  `testMoveToBagMovesEverySelectedLine` (below).
+
 ### Sorting and grouping (`groupBy`, `Grouping.swift`)
 
 The groups come from ONE rule in the library, `Library.linesGrouped(tripId:sorting:lines:)` (0.77; until then
@@ -1718,6 +1782,16 @@ page (`thing-name` "Passport"), Cancel → the trip, the line still in view; a p
 menu; pictures `trip-menu-0-tooltip` (Mac), `trip-menu-1-open`, `trip-menu-2-note`, `trip-menu-3-thing`, the
 whole screen on the Mac — a menu and a bubble are windows of their own). Seen RED on 0.103: "the line's menu
 offers no Show note".
+UI (0.105, the Mac only; each skipped on the iPhone): `testSeveralLinesAreSelectedOnTheMacAndTickedInOneGo` (`-uiTesting`:
+⌘-click line 0 → `trip-picked-0`, not ticked, no bar; ⌘-click line 1 → `trip-select-count` "2 selected"; Tick → "2/7",
+both ticked, still "2 selected"; Esc → no bar, no `trip-picked-`, the trip still open; a plain click on line 2 → "3/7",
+nothing selected; ⌘A → "7 selected", Space → all packed; pictures `select-1-bar`, `select-2-ticked`, and `-night`),
+`testAShiftClickSelectsTheLinesBetweenAcrossHeadings` (From where: ⌘-click the Passport, ⇧-click the Map → "4
+selected", lines 0, 1, 3, 6; ⇧-click the Phone charger → lines 0, 1; the line's menu on the Passport says "Tick 2
+things" and ticks both → "2/7"; the bar's Not this time → "0/5 · 2 set aside"), `testMoveToBagMovesEverySelectedLine`
+(`-uiTestingPackingDay`, Into: the Day pack's heading "0 of 2 packed"; the Passport and the Phone charger selected,
+Move to bag's second bag is "Day pack" → its heading "0 of 4 packed", the count unchanged, still "2 selected"; picture
+`select-3-bag-menu`). Seen RED on 0.104 (GitHub's Mac probe, quoted in the commit).
 **Not covered by any test:** the gradient sweep/Reduce Motion; the done moment's spring (an animation); the
 placeholder for a vanished trip; a stored sorting that is none of the five; the Mac's tooltip on a line (a tooltip is not
 in the tree, and on GitHub's Mac the tests' hover showed none in the picture `trip-menu-0-tooltip` — to be looked
@@ -1725,7 +1799,8 @@ at by hand); the menu's Tick and Not this time (each one line calling
 what the tap and ⊘ call).
 
 ### iPhone vs Mac
-Same view. Mac minimum 520 × 640. The Sorting row is one line on both (since 0.64 there are no fall-backs:
+Same view. Mac minimum 520 × 640. Several lines selected (0.105) is the Mac's alone: ⌘-click, ⇧-click, ⌘A, Space,
+Esc and the bar; on the iPhone a tap ticks as before and a held press opens the line's own menu. The Sorting row is one line on both (since 0.64 there are no fall-backs:
 the field takes what the word leaves). The Group by list is a popover on both.
 
 ### Traps and history

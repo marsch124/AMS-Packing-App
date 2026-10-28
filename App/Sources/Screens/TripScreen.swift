@@ -65,6 +65,10 @@ struct TripScreen: View {
     /// tick in Trip settings — offered back for 6 seconds above the add bar (0.79, his decision
     /// of 13 Oct 2026). One at a time: a new press replaces it.
     @State private var undo: TickUndo?
+    /// Several lines selected on the Mac (0.105, his yes of 28 Oct 2026): ⌘-click, ⇧-click, ⌘A; Esc or a
+    /// plain click lets them go. 2 or more bring the bar above "Add a thing" (`selectionBar`). Never part of a
+    /// row's key — the selection's tint hangs on the row itself, as Pack's light does (spec 03, the endless redraw).
+    @State private var picked = LineSelection()
     /// The clock the loop's step and the On site door are read by (0.75): read when the trip
     /// opens, again at the next moment the trip turns by the clock alone (`Library.clockTurns`:
     /// it sets off at the time he leaves, or goes to Review) and whenever the app comes back to
@@ -253,6 +257,10 @@ struct TripScreen: View {
         // The groups, asked once: the list and Fold all (0.101) read the same headings.
         let grouped = groups(shownLines)
         let headings = grouped.filter { !$0.entries.isEmpty }.map(\.label)
+        // The lines as the list shows them, top to bottom — the folded headings' left out — for ⇧-click and ⌘A
+        // (0.105); and the selected lines in that order, each once.
+        let order = grouped.filter { !$0.entries.isEmpty && !isFolded($0.label) }.flatMap { $0.entries.map(\.id) }
+        let chosen = picked.ordered(order).compactMap { id in index[id].map { trip.entries[$0] } }
         ScrollViewReader { proxy in
         VStack(spacing: 0) {
             // ONE centre line (0.73, his ask of 12 Oct 2026): the name, its pen right
@@ -303,7 +311,8 @@ struct TripScreen: View {
                         .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.events.color)
                         // Escape closes it, as Done does (the spec pass, 5 Oct 2026 — on the Mac,
                         // and on an iPhone with a keyboard).
-                        .keyboardShortcut(.cancelAction)
+                        // …unless lines are selected (0.105): then Esc lets them go, as in the Finder.
+                        .keyboardShortcut(picked.isEmpty ? .cancelAction : nil)
                         .commandS { dismiss() }                         // ⌘S = Done (0.103)
                         .accessibilityIdentifier("trip-done")
                 }
@@ -509,6 +518,9 @@ struct TripScreen: View {
                                 VStack(alignment: .leading, spacing: 4) {
                                 HStack(spacing: 4) {
                                     Button {
+                                        #if os(macOS)
+                                        if select(line, order: order) { return }
+                                        #endif
                                         tick(line, g: g, aside: aside, pockets: pockets)
                                     } label: {
                                         PackLine(line: line, nights: qtyNights(trip), tint: Color(hexString: readableHex(phaseColor(line.phase), dark: scheme == .dark, graphic: true)),
@@ -552,7 +564,8 @@ struct TripScreen: View {
                                 #endif
                                 .contextMenu {
                                     lineMenu(line, n: n, g: g, aside: aside, notes: notes[line.id] ?? [],
-                                             thing: line.sourceItemId.flatMap { things.contains($0) ? $0 : nil }, pockets: pockets)
+                                             thing: line.sourceItemId.flatMap { things.contains($0) ? $0 : nil }, pockets: pockets,
+                                             many: chosen.count > 1 && picked.contains(line.id) ? chosen : [])
                                 }
                                 // A kit (0.70): what is missing from it, what is worth saying, what is inside.
                                 if let kit = kits[line.id] { kitParts(kit, line, n: n, trip: trip) }
@@ -604,6 +617,17 @@ struct TripScreen: View {
                                 }
                                 // Pack's answer (0.101): this line lit a moment, the trip's green, softly.
                                 .background {
+                                    #if os(macOS)
+                                    // Selected (0.105): the system's selection colour — his accent colour in System
+                                    // Settings, as the Finder's and Mail's rows — as a tint, so the line's own colours
+                                    // stay readable, day and night.
+                                    if picked.contains(line.id) {
+                                        RoundedRectangle(cornerRadius: 6)
+                                            .fill(Color(nsColor: .controlAccentColor).opacity(scheme == .dark ? 0.34 : 0.20))
+                                            .padding(.horizontal, -6)
+                                            .accessibilityHidden(true)
+                                    }
+                                    #endif
                                     if flash == line.id {
                                         RoundedRectangle(cornerRadius: 8)
                                             .fill(AppSection.events.color.opacity(scheme == .dark ? 0.30 : 0.18))
@@ -624,6 +648,17 @@ struct TripScreen: View {
                                     }
                                 }
                                 .animation(.easeOut(duration: 0.6), value: flash == line.id)
+                                #if os(macOS)
+                                // Selected, as an element of its own for the tests — at the row's foot, never over the line.
+                                .overlay(alignment: .bottomLeading) {
+                                    if picked.contains(line.id) {
+                                        Color.clear.frame(width: 4, height: 4)
+                                            .accessibilityElement()
+                                            .accessibilityLabel("Selected")
+                                            .accessibilityIdentifier("trip-picked-\(n)")
+                                    }
+                                }
+                                #endif
                                 // The row ITSELF is a new row only when it MOVES — to another section, or up
                                 // or down in its own: a lazy row that moved kept its old face ("Set place"
                                 // still showing under the place just chosen — the same staleness, seen
@@ -700,6 +735,13 @@ struct TripScreen: View {
                 }, gone: { if undo?.id == u.id { undo = nil } })
                 .padding(.bottom, placeFilter == nil ? 0 : 10)
             }
+            #if os(macOS)
+            // Several lines selected (0.105): what can be done to them all at once, right above "Add a thing".
+            if chosen.count > 1 {
+                selectionBar(chosen)
+                    .padding(.bottom, placeFilter == nil ? 0 : 10)
+            }
+            #endif
             if placeFilter == nil {
             HStack(spacing: 8) {
                 TextField("Add a thing to this trip", text: $newName)
@@ -741,6 +783,16 @@ struct TripScreen: View {
         }
         }
         .onAppear { if placeFilter != nil { view = "stored" } }
+        #if os(macOS)
+        .background { selectionKeys(chosen, order: order) }
+        #endif
+        // Only lines still shown stay selected: a heading folded, another grouping, a line gone (0.105).
+        .onChange(of: order) { _, shown in
+            var still = picked
+            still.keep(only: shown)
+            if still != picked { picked = still }
+        }
+        .onChange(of: tripId) { _, _ in picked.clear() }
         .background {
             // Everything packed: the screen itself says so. The green is painted ON
             // the background, not under it, or the opaque one hides it.
@@ -811,8 +863,10 @@ struct TripScreen: View {
     /// A line's menu (0.104): Show note — "No note", switched off, when nothing is written, so the menu is
     /// always the same — Open thing (off for a line typed on the trip: no thing behind it), then the
     /// line's own two: Tick / Untick, and Not this time / Take it this time (its ⊘ / ↻).
+    /// On a line among several selected (0.105, the Mac) those two act on all of them — "Tick 4 things" — the
+    /// note and the thing staying this line's own; the same four entries, so the menu keeps its shape.
     @ViewBuilder private func lineMenu(_ line: Item, n: Int, g: Int, aside: Bool, notes: [LineNote], thing: String?,
-                                       pockets: [String: [String]]) -> some View {
+                                       pockets: [String: [String]], many: [Item] = []) -> some View {
         Button(notes.isEmpty ? "No note" : "Show note") { noteShown = "\(g)|\(line.id)" }
             .disabled(notes.isEmpty)
             .accessibilityIdentifier("trip-line-\(n)-menu-note")
@@ -820,14 +874,178 @@ struct TripScreen: View {
             .disabled(thing == nil)
             .accessibilityIdentifier("trip-line-\(n)-menu-open")
         Divider()
-        Button(line.checked && !aside ? "Untick" : "Tick") { tick(line, g: g, aside: aside, pockets: pockets) }
-            .disabled(aside)
-            .accessibilityIdentifier("trip-line-\(n)-menu-tick")
-        Button(aside ? "Take it this time" : "Not this time") {
-            model.change { _ = $0.setAside(!aside, tripId: tripId, entryId: line.id) }
+        if many.count > 1 {
+            let them = LineSelection.things(many.count)
+            let open = many.filter { !isSetAside($0) }
+            let on = open.contains { !$0.checked }
+            let allAside = open.isEmpty
+            Button("\(on || open.isEmpty ? "Tick" : "Untick") \(them)") { tickSelection(on, many) }
+                .disabled(open.isEmpty)
+                .accessibilityIdentifier("trip-line-\(n)-menu-tick")
+            Button(allAside ? "Take \(them) this time" : "Not this time for \(them)") { asideSelection(!allAside, many) }
+                .accessibilityIdentifier("trip-line-\(n)-menu-aside")
+        } else {
+            Button(line.checked && !aside ? "Untick" : "Tick") { tick(line, g: g, aside: aside, pockets: pockets) }
+                .disabled(aside)
+                .accessibilityIdentifier("trip-line-\(n)-menu-tick")
+            Button(aside ? "Take it this time" : "Not this time") {
+                model.change { _ = $0.setAside(!aside, tripId: tripId, entryId: line.id) }
+            }
+            .accessibilityIdentifier("trip-line-\(n)-menu-aside")
         }
-        .accessibilityIdentifier("trip-line-\(n)-menu-aside")
     }
+
+    // MARK: - Several lines selected (0.105, the Mac)
+
+    /// One action on the selected lines is ONE change of the library: one save, and one step back for Edit ▸
+    /// Undo (⌘Z, work/undo105) — `name` is what that step is called ("Tick 4 things"), handed on once
+    /// `LibraryModel.change` takes a name; until then it is said only here.
+    private func changeSelection(_ name: String, _ body: (inout Library) -> Void) {
+        _ = name
+        model.change { body(&$0) }
+    }
+
+    /// Tick, or Untick, the selected lines — a line set aside is left alone, a kit still waiting for what is
+    /// inside refuses, as by hand — and offer it back for 6 seconds, as a heading's round tick does.
+    private func tickSelection(_ on: Bool, _ lines: [Item]) {
+        let ids = lines.map(\.id)
+        var change: TicksChanged?
+        changeSelection("\(on ? "Tick" : "Untick") \(LineSelection.things(ids.count))") {
+            change = $0.setChecked(on, tripId: tripId, entryIds: ids)
+        }
+        if let change, !change.isEmpty { undo = .selection(change) }
+        pocketing = nil
+    }
+
+    /// Not this time — or Take them this time — for the selected lines, as ⊘ / ↻ on each.
+    private func asideSelection(_ aside: Bool, _ lines: [Item]) {
+        let ids = lines.map(\.id)
+        changeSelection(aside ? "Not this time for \(LineSelection.things(ids.count))" : "Take \(LineSelection.things(ids.count)) this time") {
+            _ = $0.setAside(aside, tripId: tripId, entryIds: ids)
+        }
+    }
+
+    /// Move to bag: the selected lines go into the bag, on this trip only (`Library.moveLines`).
+    private func moveSelection(_ bag: String, _ lines: [Item]) {
+        let ids = lines.map(\.id)
+        changeSelection("Move \(LineSelection.things(ids.count)) to \(bag)") {
+            _ = $0.moveLines(tripId: tripId, entryIds: ids, toBag: bag)
+        }
+        pocketing = nil
+    }
+
+    #if os(macOS)
+    /// ⌘-click and ⇧-click choose lines (0.105) — and tick nothing; true when the click was one of them. A plain
+    /// click lets a selection go, and ticks as before. The keys are the event's that made the click.
+    private func select(_ line: Item, order: [String]) -> Bool {
+        let keys = NSApp.currentEvent?.modifierFlags ?? NSEvent.modifierFlags
+        guard keys.contains(.command) || keys.contains(.shift) else {
+            if !picked.isEmpty { picked.clear() }
+            return false
+        }
+        if keys.contains(.command) { picked.toggle(line.id) } else { picked.extend(to: line.id, shown: order) }
+        pocketing = nil
+        // A field left with the keyboard would take Space and Esc: they are the selection's now.
+        NSApp.keyWindow?.makeFirstResponder(nil)
+        return true
+    }
+
+    /// The field being typed in, if any — ⌘A and Space are its own there.
+    private var typing: NSTextView? {
+        guard let editor = NSApp.keyWindow?.firstResponder as? NSTextView, editor.isEditable else { return nil }
+        return editor
+    }
+
+    /// ⌘A selects every line shown, Space ticks the selection (or unticks it, all ticked), Esc lets it go —
+    /// hidden buttons, as ⌘S's behind Done (Keys.swift); Done gives up Escape meanwhile. In a field being typed
+    /// in, ⌘A selects its words and Space types a space, as anywhere.
+    private func selectionKeys(_ chosen: [Item], order: [String]) -> some View {
+        ZStack {
+            Button("Select all lines") {
+                if let field = typing { field.selectAll(nil) } else { picked.selectAll(order) }
+            }
+            .keyboardShortcut("a", modifiers: .command)
+            if !picked.isEmpty {
+                Button("Tick the selected lines") {
+                    if let field = typing { field.insertText(" ", replacementRange: field.selectedRange()); return }
+                    let open = chosen.filter { !isSetAside($0) }
+                    tickSelection(open.contains { !$0.checked }, chosen)
+                }
+                .keyboardShortcut(.space, modifiers: [])
+                Button("Clear the selection") { picked.clear() }
+                    .keyboardShortcut(.cancelAction)
+            }
+        }
+        .buttonStyle(.plain)
+        .opacity(0).allowsHitTesting(false).accessibilityHidden(true)
+    }
+
+    /// Several lines selected (0.105): "4 selected", then Tick, Untick, Not this time (Take them this time when
+    /// all are set aside), Move to bag ▾ (the trip's bags, in the Bags card's order) and Clear — each ONE change.
+    /// A slim card between the list and "Add a thing", as the Undo bar; it never covers a line.
+    private func selectionBar(_ lines: [Item]) -> some View {
+        let tint = AppSection.events.color
+        let allAside = lines.allSatisfy(isSetAside)
+        let bags = model.library.dayBags(tripId: tripId)
+        func chip(_ words: String, filled: Bool = false) -> some View {
+            Text(words).font(.system(.subheadline, weight: .semibold)).lineLimit(1).fixedSize()
+                .foregroundStyle(filled ? Color.white : tint)
+                .padding(.horizontal, 10).frame(minHeight: Metrics.chip)
+                .background(Capsule().fill(filled ? tint : Color.clear))
+                .overlay(Capsule().stroke(tint, lineWidth: 1.4))
+                .contentShape(Capsule())
+        }
+        return HStack(spacing: 6) {
+            Text("\(lines.count) selected")
+                .font(.system(.subheadline, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.ink)
+                .lineLimit(1).minimumScaleFactor(0.75)
+                .accessibilityIdentifier("trip-select-count")
+            Spacer(minLength: 4)
+            Button { tickSelection(true, lines) } label: { chip("Tick", filled: true) }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("trip-select-tick")
+            Button { tickSelection(false, lines) } label: { chip("Untick") }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("trip-select-untick")
+            Button { asideSelection(!allAside, lines) } label: { chip(allAside ? "Take them this time" : "Not this time") }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("trip-select-aside")
+            if !bags.isEmpty {
+                Menu {
+                    ForEach(Array(bags.enumerated()), id: \.offset) { k, bag in
+                        Button(bag) { moveSelection(bag, lines) }
+                            .accessibilityIdentifier("trip-select-bag-\(k)")
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Text("Move to bag")
+                        SVGPath.path("M7 10l5 5 5-5")
+                            .stroke(style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                            .frame(width: 12, height: 12)
+                    }
+                    .font(.system(.subheadline, weight: .semibold)).lineLimit(1).fixedSize()
+                    .foregroundStyle(tint)
+                    .padding(.horizontal, 10).frame(minHeight: Metrics.chip)
+                    .overlay(Capsule().stroke(tint, lineWidth: 1.4))
+                    .contentShape(Capsule())
+                }
+                .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
+                .focusEffectDisabled()
+                .accessibilityIdentifier("trip-select-bag")
+                .accessibilityLabel("Move to bag")
+            }
+            Button { picked.clear() } label: { chip("Clear") }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("trip-select-clear")
+        }
+        .padding(.horizontal, 12).padding(.vertical, 6)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(nsColor: .controlAccentColor).opacity(0.55), lineWidth: 1))
+        .padding(.horizontal, 16).padding(.top, 8)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("trip-select-bar")
+    }
+    #endif
 
     /// Whether this copy of a line has its Show note up.
     private func noteBinding(_ key: String) -> Binding<Bool> {

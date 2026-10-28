@@ -21,6 +21,11 @@ struct TickUndo: Identifiable, Equatable {
         TickUndo(change: change, said: "\(change.checked ? "Ticked" : "Unticked") \(change.count) in \(group)")
     }
 
+    /// Several lines selected on the Mac, ticked or unticked in one go (0.105): "Ticked 4 things".
+    static func selection(_ change: TicksChanged) -> TickUndo {
+        TickUndo(change: change, said: "\(change.checked ? "Ticked" : "Unticked") \(LineSelection.things(change.count))")
+    }
+
     /// Clear every tick in Trip settings: "Cleared 12 ticks".
     static func cleared(_ change: TicksChanged) -> TickUndo {
         TickUndo(change: change, said: "Cleared \(change.count) tick\(change.count == 1 ? "" : "s")")

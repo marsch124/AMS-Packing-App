@@ -17936,9 +17936,9 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(top.exists, "no card for the line at the top")
         toTopThird(app, title)
         shot(app, "keys-0-top")
-        // Seven cards, each row read as words.
-        for n in 0..<7 { XCTAssertTrue(guidePart(app, "guide-keys-card-\(n)").exists, "no card \(n)") }
-        XCTAssertFalse(guidePart(app, "guide-keys-card-7").exists, "an eighth card")
+        // Eight cards (a trip's list since 0.105), each row read as words.
+        for n in 0..<8 { XCTAssertTrue(guidePart(app, "guide-keys-card-\(n)").exists, "no card \(n)") }
+        XCTAssertFalse(guidePart(app, "guide-keys-card-8").exists, "a ninth card")
         // One label for a whole row: the action, then the keys read as words.
         func row(_ id: String) -> String {
             let e = guidePart(app, id)
@@ -17951,7 +17951,8 @@ final class AMSPackingUITests: XCTestCase {
         }
         XCTAssertEqual(row("guide-keys-1-5"), "Settings, Command 6, or Command comma")
         XCTAssertEqual(row("guide-keys-4-6"), "Previous field, Shift Tab")
-        for n in 0..<7 {
+        XCTAssertEqual(row("guide-keys-5-0"), "Select a line, or let it go, Command click", "a trip's list: ⌘-click")
+        for n in 0..<8 {
             let card = guidePart(app, "guide-keys-card-\(n)")
             toTopThird(app, card)
             shot(app, "keys-\(n + 1)-card")
