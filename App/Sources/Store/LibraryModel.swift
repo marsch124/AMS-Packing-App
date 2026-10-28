@@ -469,6 +469,9 @@ extension LibraryModel {
     ///                           his own (a grab list's headings, 0.85)
     ///  -uiTestingBigLibrary   → a store FILE holding an invented library of his size (`SampleLibrary.big`,
     ///                           for measuring with -timeEdits, 0.91)
+    ///  -uiTestingManyTemplates → memory, the sample + 44 templates in seven areas, names of one and two
+    ///                           lines, 18 past trips from them (`SampleLibrary.manyTemplates`: the Templates
+    ///                           tab at his size, 0.104.1)
     ///  -uiTestingLostSection  → memory, the sample after two saves of Hiking crossed: its section Lights
     ///                           given back from the Headlamp's line, and Swim's Goggles naming a section
     ///                           whose name is stored nowhere (0.97, his check 6)
@@ -602,6 +605,9 @@ extension LibraryModel {
         }
         if args.contains("-uiTestingLeaving") {
             return LibraryModel(store: MemoryStore(SampleLibrary.leaving().records()), usesICloud: false, sky: sky)
+        }
+        if args.contains("-uiTestingManyTemplates") {
+            return LibraryModel(store: MemoryStore(SampleLibrary.manyTemplates().records()), usesICloud: false, sky: sky)
         }
         if args.contains("-uiTestingBigBase") {
             return LibraryModel(store: MemoryStore(SampleLibrary.bigBase().records()), usesICloud: false, sky: sky)
