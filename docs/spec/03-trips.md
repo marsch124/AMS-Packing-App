@@ -1382,6 +1382,66 @@ smaller tick circles and less space between lines").
   folded. The kit's own tick is a plain tick. Its weight on the Bags card is the weight then
   (`linesWithKitWeights(trip:)`). A trip reviewed before 0.73 shows the kits as they are now, as before.
 
+### A line's menu (0.104)
+
+His words, 28 Oct 2026, with a picture of a trip on the Mac grouped by Whose it is: "During my packing, I sometimes
+don't understand what the English word means, so I would need to have a way to see the notes for an item. I can't
+click the item (in order to show notes) because that would check the radio button indicating that the item is
+packed. Would it be possible to create a right-click function and then show various things, such as show notes,
+open item, etc.?"
+
+- **Where:** every line of the trip's list (`TripScreen`, the row's `HStack` — the line, a kit's fold arrow and the
+  ⊘ — carries a SwiftUI `.contextMenu`): **right-click (or a two-finger click) on the Mac, a press held on the
+  iPhone.** A plain click or tap ticks as before and opens no menu; a held press ticks nothing. On the iPhone the
+  lifted preview is the row in a rounded rectangle (corner 8, `contentShape(.contextMenuPreview, …)`, iPhone only —
+  the Mac has no such shape). The Packing Stations' Pack goes to this same list, so it has the menu too. **Not**
+  on Pack to go home (On site → Pack to go home, `WayHomeScreen`): its rows are a view of their own and already
+  carry **Note** (the note for the way home, typed there) and **Open** (the thing's page) beside each line. Take a
+  break shows groups, not lines; On site's lists are what was bought, used up and noted.
+- **The entries, always the same four, in this order** (words in the app's sentence case, no icons — as the To do
+  rows' menu, 0.101):
+  1. **Show note** — or **No note**, switched off, when nothing is written about the line (so the menu never
+     changes shape); id `trip-line-<n>-menu-note`. Opens the note bubble (below).
+  2. **Open thing** — the thing's page (`ThingEditor`, the same page as from Your things) over the trip, as Before
+     you go opens one (`@State checking`); its Cancel or Save comes back to the trip, which has not moved.
+     Switched off for a line with no thing behind it — the thing the line was built from (`sourceItemId`) still in
+     the library, the rule of the way home's Open (`thingBehind`): a line typed on the trip, Bought on site, sent
+     by someone. Id `trip-line-<n>-menu-open`.
+  3. (a divider) **Tick** / **Untick** — what a tap does (`TripScreen.tick`: the pocket pills come too);
+     switched off on a line set aside, which takes no tick. Id `trip-line-<n>-menu-tick`.
+  4. **Not this time** / **Take it this time** — what ⊘ / ↻ do (the words are theirs for VoiceOver). Id
+     `trip-line-<n>-menu-aside`.
+- **The note bubble** (`LineNoteCard`, TripScreen.swift): a popover pointing at the line (arrow edge bottom: above
+  the line when there is room), on the iPhone too (`presentationCompactAdaptation(.popover)`, as Home's sync light)
+  so the list stays in sight; background `Theme.card`; 300 wide on the Mac, 320 on the iPhone; padding 16, 12
+  between its parts. At its top the line's name (Headline, ink, up to two lines; `trip-note-name`) and **Done**
+  (filled trip green, `HeaderButtonStyle`; Escape — and ⌘S on the Mac — do the same; `trip-note-done`); a tap or
+  click beside it closes it too. Then each note: its label (Footnote semibold muted, `trip-note-<k>-label`) over
+  its words (Body ink, wrapping, `trip-note-<k>`). Container id `trip-note`. Which copy of a line shows it is kept
+  as "<group>|<line id>" (`@State noteShown`) — under Template a line stands twice — and it hangs on the row
+  itself, OUTSIDE the box whose key renews its face, so a tick arriving from the other device meanwhile leaves it
+  up; it is in no key (see the endless redraw below).
+- **What it says** — `Library.lineNotes(tripId:)` (PackingLibrary/LineNotes.swift), read once for the whole list
+  (the templates' rows grouped by thing once — not once per line); per line, in this order, each trimmed, a blank
+  one left out:
+  1. **In Swedish** — the thing's Swedish name (`swedish`, the web app's original wording: "Pannlampa" for the
+     Headlamp; the line's own when the thing has none), only when it is not the line's name (`normName`). The
+     plainest answer to "what does the English word mean". Added by the build, beyond his words.
+  2. **Note** — the thing's own Notes.
+  3. **Note on the <template> template** — each note his templates keep for the thing, as its page lists them
+     (`rowNotes`: templates in their order, a note the thing already says left out, one note once per template).
+  4. **Note on this trip** — the line's own `note` (copied when the trip was built) only when it says something
+     none of the above says: a line sent by someone else, or one packed with a note that has changed since.
+  5. **Note for the way home** — the line's `homeNote` (On site, 0.88).
+  The thing is the one the line was built from (`sourceItemId`); a line typed on the trip has only its own words.
+- **The Mac: hover.** The pointer resting on a line shows the same notes as its tooltip (`.help` on the line's
+  button), one per line, "Label: words" (`Library.lineNotesTip`); nothing for a line with nothing written. The
+  template icons keep their own tooltip (their names) where the pointer is on them. The iPhone has no hover: the
+  menu covers it.
+- Tests: model `LineNotesTests` (6: the order and labels, the line's note not said twice, the line's own note,
+  a typed line, the Swedish name only when it is another word, the whole trip answering as each line); UI
+  `testALinesMenuShowsItsNoteAndOpensItsThing` (below).
+
 Each row has two keys (since 0.96; until then one key, "id|checked|aside|group|placing|qtyNights|pocketing|pocket",
 on the row itself — see Traps: the endless redraw):
 - **The row itself** — what the lazy stack holds — is keyed by "id|group|place in its group": it is a NEW row only
@@ -1645,8 +1705,20 @@ right of the mark, bigger, a button; Toothbrush unticked → "0 of 1 packed"; pi
 one tick → "6 left · about 5 min", every line ticked → "All packed"; `-uiTestingBattery`: "… · 2 to charge · …";
 pictures `trip-whats-left`, `trip-whats-left-all-packed`, `trip-whats-left-charge`). Model `PackingPaceTests` (10;
 see spec 07 part 20, with the planted faults each was seen red with).
+UI (0.104): `testALinesMenuShowsItsNoteAndOpensItsThing` (`-uiTestingNotes`; the menu opened by `rightClick()` on
+the Mac, `press(forDuration: 1.2)` on the iPhone — the shared `contextMenu` helper: on the Passport's line Show note
+→ `trip-note-0` "Renew before May⏎Keep it in the blue pouch with the tickets" under "Note", Done closes it, the
+line's tick and the count unchanged; the Map's → "Note on the Hiking template" "The waterproof one, folded in the
+lid"; the Headlamp's → "No note", switched off, Esc / a tap beside it closes the menu; Open thing → the Passport's
+page (`thing-name` "Passport"), Cancel → the trip, the line still in view; a plain tap still ticks and opens no
+menu; pictures `trip-menu-0-tooltip` (Mac), `trip-menu-1-open`, `trip-menu-2-note`, `trip-menu-3-thing`, the
+whole screen on the Mac — a menu and a bubble are windows of their own). Seen RED on 0.103: "the line's menu
+offers no Show note".
 **Not covered by any test:** the gradient sweep/Reduce Motion; the done moment's spring (an animation); the
-placeholder for a vanished trip; a stored sorting that is none of the five.
+placeholder for a vanished trip; a stored sorting that is none of the five; the Mac's tooltip on a line (a tooltip is not
+in the tree, and on GitHub's Mac the tests' hover showed none in the picture `trip-menu-0-tooltip` — to be looked
+at by hand); the menu's Tick and Not this time (each one line calling
+what the tap and ⊘ call).
 
 ### iPhone vs Mac
 Same view. Mac minimum 520 × 640. The Sorting row is one line on both (since 0.64 there are no fall-backs:

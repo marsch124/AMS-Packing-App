@@ -44,8 +44,11 @@ struct TripScreen: View {
     @State private var newPlace = ""
     /// What Save in Set place was missing, said under it (never a grey button).
     @State private var placeNeeds = ""
-    /// The thing opened from Before you go.
+    /// The thing opened from Before you go — or from a line's menu, Open thing (0.104).
     @State private var checking: CheckedThing?
+    /// The line whose Show note is up (0.104, from its menu): "<group>|<line id>", the copy pressed —
+    /// under Template a line can stand twice. Never part of a row's key (spec 03, the endless redraw).
+    @State private var noteShown: String?
     /// On site is open (their field test, 3 Oct 2026) — Pack to go home is inside it.
     @State private var onSite = false
     /// Kits opened or folded on this visit (0.70); a kit not in here is open only while
@@ -240,6 +243,10 @@ struct TripScreen: View {
         let from = view == "template" ? [:] : model.library.lineTemplates(tripId: tripId)
         // Reminders on things (0.101): each line's, read once for all the lines.
         let remind = model.library.thingReminders(tripId: tripId)
+        // What is written about each line's thing (0.104): its menu's Show note, and the Mac's tooltip.
+        let notes = model.library.lineNotes(tripId: tripId)
+        // The things still in the library, for Open thing (a line typed on the trip has none behind it).
+        let things = Set(model.library.items.map(\.id))
         // Where the trip stands in the loop, on the screen's clock — the strip, Take a break and the
         // Packing day read the same answer.
         let step = model.library.loopStep(tripId: tripId, today: Today.iso(clock), time: Today.time(of: clock))
@@ -499,13 +506,7 @@ struct TripScreen: View {
                                 VStack(alignment: .leading, spacing: 4) {
                                 HStack(spacing: 4) {
                                     Button {
-                                        if !aside {
-                                            let on = !line.checked
-                                            model.change { _ = $0.setChecked(on, tripId: tripId, entryId: line.id) }
-                                            // Its bag has pockets: they show under it, the usual one chosen (0.69).
-                                            // Under the copy tapped only: under Template a line can stand twice.
-                                            pocketing = on && pockets[normName(line.container)] != nil ? "\(g)|\(line.id)" : nil
-                                        }
+                                        tick(line, g: g, aside: aside, pockets: pockets)
                                     } label: {
                                         PackLine(line: line, nights: qtyNights(trip), tint: Color(hexString: readableHex(phaseColor(line.phase), dark: scheme == .dark, graphic: true)),
                                                  showBag: view != "container", washed: washes(trip),
@@ -518,6 +519,10 @@ struct TripScreen: View {
                                     .accessibilityIdentifier("trip-line-\(n)")
                                     .accessibilityValue(PackLine.count(line, qtyNights(trip), washed: washes(trip)))
                                     .accessibilityAddTraits(line.checked ? .isSelected : [])
+                                    #if os(macOS)
+                                    // The pointer resting on a line shows what is written about its thing (0.104).
+                                    .help(Library.lineNotesTip(notes[line.id] ?? []))
+                                    #endif
                                     // A kit: the arrow that shows what is inside it (0.70).
                                     if let kit = kits[line.id] {
                                         KitFoldButton(open: kitIsOpen(kit, line), name: line.name, id: "trip-line-\(n)-kit") {
@@ -536,6 +541,15 @@ struct TripScreen: View {
                                     .buttonStyle(.plain).focusEffectDisabled()
                                     .accessibilityIdentifier("trip-line-\(n)-aside")
                                     .accessibilityLabel(aside ? "Take it this time" : "Not this time")
+                                }
+                                // The line's menu (0.104, his ask of 28 Oct 2026): right-click on the Mac, a
+                                // press held on the iPhone — a tap still ticks. Spec 03, "A line's menu".
+                                #if os(iOS)
+                                .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: 8))
+                                #endif
+                                .contextMenu {
+                                    lineMenu(line, n: n, g: g, aside: aside, notes: notes[line.id] ?? [],
+                                             thing: line.sourceItemId.flatMap { things.contains($0) ? $0 : nil }, pockets: pockets)
                                 }
                                 // A kit (0.70): what is missing from it, what is worth saying, what is inside.
                                 if let kit = kits[line.id] { kitParts(kit, line, n: n, trip: trip) }
@@ -579,6 +593,11 @@ struct TripScreen: View {
                                 if line.checked, let rows = remind[line.id] {
                                     ThingRemindersUnder(tripId: tripId, rows: rows, n: n).environmentObject(model)
                                 }
+                                }
+                                // Show note (0.104): over the list, pointing at this line — on the row itself, outside
+                                // the box whose key renews its face, so a tick arriving meanwhile leaves it up.
+                                .popover(isPresented: noteBinding("\(g)|\(line.id)"), arrowEdge: .bottom) {
+                                    LineNoteCard(name: line.name, notes: notes[line.id] ?? []) { noteShown = nil }
                                 }
                                 // Pack's answer (0.101): this line lit a moment, the trip's green, softly.
                                 .background {
@@ -774,6 +793,42 @@ struct TripScreen: View {
             clock = Today.now
         }
         .onChange(of: scenePhase) { _, phase in if phase == .active { clock = Today.now } }
+    }
+
+    /// A tap on a line, or Tick in its menu: ticks it, or takes the tick back — not a line set aside.
+    private func tick(_ line: Item, g: Int, aside: Bool, pockets: [String: [String]]) {
+        guard !aside else { return }
+        let on = !line.checked
+        model.change { _ = $0.setChecked(on, tripId: tripId, entryId: line.id) }
+        // Its bag has pockets: they show under it, the usual one chosen (0.69).
+        // Under the copy tapped only: under Template a line can stand twice.
+        pocketing = on && pockets[normName(line.container)] != nil ? "\(g)|\(line.id)" : nil
+    }
+
+    /// A line's menu (0.104): Show note — "No note", switched off, when nothing is written, so the menu is
+    /// always the same — Open thing (off for a line typed on the trip: no thing behind it), then the
+    /// line's own two: Tick / Untick, and Not this time / Take it this time (its ⊘ / ↻).
+    @ViewBuilder private func lineMenu(_ line: Item, n: Int, g: Int, aside: Bool, notes: [LineNote], thing: String?,
+                                       pockets: [String: [String]]) -> some View {
+        Button(notes.isEmpty ? "No note" : "Show note") { noteShown = "\(g)|\(line.id)" }
+            .disabled(notes.isEmpty)
+            .accessibilityIdentifier("trip-line-\(n)-menu-note")
+        Button("Open thing") { if let thing { checking = CheckedThing(id: thing) } }
+            .disabled(thing == nil)
+            .accessibilityIdentifier("trip-line-\(n)-menu-open")
+        Divider()
+        Button(line.checked && !aside ? "Untick" : "Tick") { tick(line, g: g, aside: aside, pockets: pockets) }
+            .disabled(aside)
+            .accessibilityIdentifier("trip-line-\(n)-menu-tick")
+        Button(aside ? "Take it this time" : "Not this time") {
+            model.change { _ = $0.setAside(!aside, tripId: tripId, entryId: line.id) }
+        }
+        .accessibilityIdentifier("trip-line-\(n)-menu-aside")
+    }
+
+    /// Whether this copy of a line has its Show note up.
+    private func noteBinding(_ key: String) -> Binding<Bool> {
+        Binding(get: { noteShown == key }, set: { if !$0, noteShown == key { noteShown = nil } })
     }
 
     /// Where the Packing day's Pack sends the list (the Sorting row, above the first heading).
@@ -1382,6 +1437,59 @@ struct AsideMark: View {
             .stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
             .frame(width: 24, height: 24)
             .foregroundStyle(Theme.muted)
+    }
+}
+
+/// Show note, from a line's menu (0.104 — his words, 28 Oct 2026: "During my packing, I sometimes don't
+/// understand what the English word means, so I would need to have a way to see the notes for an item"):
+/// the line's name, then everything written about its thing (`Library.lineNotes`), each under its small
+/// label — In Swedish, Note, Note on the Hiking template, Note on this trip, Note for the way home. A
+/// bubble pointing at the line, on the iPhone too (as Home's sync light), so the list stays in sight;
+/// Done, Escape or a click beside it closes it. Spec 03.
+struct LineNoteCard: View {
+    let name: String
+    let notes: [LineNote]
+    let done: () -> Void
+
+    #if os(macOS)
+    static let width: CGFloat = 300
+    #else
+    static let width: CGFloat = 320
+    #endif
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .center, spacing: 12) {
+                Text(name)
+                    .font(.system(.headline)).foregroundStyle(Theme.ink)
+                    .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("trip-note-name")
+                Spacer(minLength: 8)
+                Button("Done", action: done)
+                    .buttonStyle(HeaderButtonStyle(tint: AppSection.events.color, filled: true)).focusEffectDisabled()
+                    .keyboardShortcut(.cancelAction)
+                    .commandS { done() }
+                    .accessibilityIdentifier("trip-note-done")
+            }
+            ForEach(Array(notes.enumerated()), id: \.offset) { k, note in
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(note.label)
+                        .font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
+                        .accessibilityIdentifier("trip-note-\(k)-label")
+                    Text(note.text)
+                        .font(.system(.body)).foregroundStyle(Theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("trip-note-\(k)")
+                }
+            }
+        }
+        .padding(16)
+        // A width of its own: a bubble takes its content's ideal width, and wrapping words have none.
+        .frame(width: LineNoteCard.width, alignment: .leading)
+        .presentationCompactAdaptation(.popover)
+        .presentationBackground(Theme.card)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("trip-note")
     }
 }
 
