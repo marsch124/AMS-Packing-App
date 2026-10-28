@@ -306,6 +306,7 @@ final class QuickOpenPanel: NSObject, NSWindowDelegate {
         p.backgroundColor = .clear
         p.hasShadow = true
         p.isReleasedWhenClosed = false
+        p.isRestorable = false                            // never brought back at the next launch
         p.isMovable = false
         p.hidesOnDeactivate = true
         p.delegate = self

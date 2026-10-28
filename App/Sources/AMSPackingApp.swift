@@ -25,6 +25,10 @@ struct AMSPackingApp: App {
         }
         #if os(macOS)
         .defaultSize(width: 760, height: 900)
+        // Under the UI tests no window comes back from the launch before (0.105's Mac probe, 28 Oct 2026: two windows
+        // left open by a test — 0.104's ⌘N, which was New Window — came back at every later launch, and every
+        // "tab-…" and "count-things" matched twice). For him the Mac brings his windows back as always.
+        .restorationBehavior(AMSPackingApp.testing ? .disabled : .automatic)
         // No title bar (0.67, his note on 0.63: the strip at the top was "underused"): the
         // tab's own header sits on the traffic lights' line (`TitleBarStrip`). The window
         // still moves when the empty parts of that strip are dragged, as by its title bar —
