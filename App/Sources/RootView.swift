@@ -125,6 +125,9 @@ struct RootView: View {
                 if AMSPackingApp.testing { RootView.playWhatHappenedWhileAway(model) }
             }
         }
+        // A sync that hangs heals itself (0.104, `SyncHealer`): it looks every 30 s and as the app comes to
+        // the front, and restarts the connection when an exchange has hung. Once per run.
+        .onAppear { SyncHealer.shared.start(model) }
         // This device checks in by itself while it syncs (0.101, `SyncWatch.checkInIfDue`): as the app
         // opens, every minute while it runs (a quarter of an hour apart at most), and back in front.
         .task {

@@ -314,6 +314,36 @@ final class LibraryModel: ObservableObject {
     }
     #endif
 
+    /// How a restart of the connection to iCloud went (0.104, `restartSync`).
+    enum RestartOutcome: Equatable {
+        /// Restarted, and the store read again.
+        case done
+        /// Not now — a save under way, or a store that cannot be closed in place. Nothing has changed.
+        case refused
+        /// Closed, and it would not open again: only quitting and opening Packing helps.
+        case failed
+    }
+
+    /// Restart the connection to iCloud (0.104, `SyncHealer`): the store closed and opened again in place
+    /// (`CloudStore.reconnect`) — what quitting Packing and opening it again does — then read again, as at
+    /// launch. The library in memory and every page's copy of it are not touched; a store with no iCloud
+    /// (the tests' memory) is only read again.
+    func restartSync() -> RestartOutcome {
+        guard !isDraft else { return .refused }
+        guard let cloud = store as? CloudStore else { reload(); return .done }
+        do {
+            guard try cloud.reconnect() != nil else { return .refused }
+        } catch {
+            state = .failed("Restarting the iCloud connection did not work \u{2014} quit Packing and open it again.")
+            return .failed
+        }
+        reload()
+        return .done
+    }
+
+    /// A save is under way (0.104: the restart waits for it).
+    var saving: Bool { (store as? CloudStore)?.saving ?? false }
+
     func restore(_ imported: Library) throws {
         try RescueCopies.write(library)
         // A restore the store refused said "Restored" (0.93, the outside review): it says so now.
@@ -451,6 +481,11 @@ extension LibraryModel {
     ///  -uiTestingPhotoGone    → (debug builds) a store FILE holding the sample; 6 s after launch "the other
     ///                           device" writes a photo and a thing called Sunglasses into it, and the
     ///                           photo's file goes as the app reads them (24 Oct 2026, crash A)
+    ///  -uiTesting -importHangs <minutes>|page → a store FILE holding the sample, and an invented record of
+    ///                           iCloud with a receive that never ends (0.104, `TestHang`): since that many
+    ///                           minutes before launch, or from the moment a page first holds a change;
+    ///                           + -selfHealAfter <seconds>: the app restarts by itself after that long
+    ///                           (without it, only Restart sync restarts)
     ///  -uiTesting             → memory, holding the invented sample library
     ///  PackingUsesICloud=YES  → SwiftData + iCloud (TestFlight and release builds)
     ///  otherwise              → SwiftData on this device only (a plain debug build)
@@ -466,7 +501,7 @@ extension LibraryModel {
             // A test must start from the same screen every time: the columns he has
             // chosen, the sort and the direction are remembered on the device, and
             // one test's choice would otherwise decide the next test's grid.
-            for key in ["ams.table.columns", "ams.table.widths", "ams.table.sort", "ams.table.down", "ams.table.then", "ams.table.filters", ThingsTable.batteryArrivedKey, "ams.care.view", BagsScreen.sortKey, "ams.view", "ams.trip.folded", BagsCard.openKey, HomeScreen.moreKey, "ams.template.grouping", "ams.pick.grouping", "ams.pick.folded", PackingReminders.onKey, TripMessages.onKey, SettingsScreen.savedKey, GrabQuickActions.openedKey, StationPicks.storageKey] {
+            for key in ["ams.table.columns", "ams.table.widths", "ams.table.sort", "ams.table.down", "ams.table.then", "ams.table.filters", ThingsTable.batteryArrivedKey, "ams.care.view", BagsScreen.sortKey, "ams.view", "ams.trip.folded", BagsCard.openKey, HomeScreen.moreKey, "ams.template.grouping", "ams.pick.grouping", "ams.pick.folded", PackingReminders.onKey, TripMessages.onKey, SettingsScreen.savedKey, GrabQuickActions.openedKey, StationPicks.storageKey, SyncHealer.key] {
                 UserDefaults.standard.removeObject(forKey: key)
             }
             // -tableChosenBefore (0.86): columns he chose before the Battery column came —
@@ -542,6 +577,13 @@ extension LibraryModel {
             }
         }
         #endif
+        // A hung exchange with iCloud, invented (0.104, `TestHang`): the sample in a store FILE, so a
+        // restart of the connection closes and opens a real store, as the app does with his.
+        if TestHang.asked, let store = try? CloudStore(cloud: false, file: LibraryModel.freshTestFile("hangs")) {
+            _ = TestHang.since                            // its minutes count back from now, the launch
+            try? store.apply(RecordChanges(puts: SampleLibrary.make().records()))
+            return LibraryModel(store: store, usesICloud: false, sky: sky)
+        }
         // A library of his size, kept by SwiftData in a file as his is — every change pays what his
         // pays: all records built, compared, the store's whole fetch, and what the store says after
         // a save (`EditTiming`, 0.91). A fresh file each launch, in the app's temporary folder.
@@ -640,6 +682,12 @@ extension LibraryModel {
             return LibraryModel(store: MemoryStore(SampleLibrary.reviewed().records()), usesICloud: false, sky: sky)
         }
         if args.contains("-uiTesting") {
+            return LibraryModel(store: MemoryStore(SampleLibrary.make().records()), usesICloud: false, sky: sky)
+        }
+        // Under the tests, never his store (0.104): an argument starting with -uiTesting that no line above
+        // knows used to fall through to the app's own store file — on his Mac, a test build shares the
+        // app's folder, so that is HIS library. The sample in memory instead.
+        if AMSPackingApp.testing {
             return LibraryModel(store: MemoryStore(SampleLibrary.make().records()), usesICloud: false, sky: sky)
         }
         let cloud = (Bundle.main.object(forInfoDictionaryKey: "PackingUsesICloud") as? String) == "YES"

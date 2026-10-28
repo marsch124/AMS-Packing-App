@@ -60,12 +60,16 @@ public struct SyncCheck: Equatable {
     public var receiving: Running?
     /// Every attempt, newest first, for "Copy details".
     public var attempts: [Event] = []
+    /// The newest setting-up of iCloud for the store (type 0) — each opening of the store does one (0.104:
+    /// after the app restarted its connection, this says whether the new one took).
+    public var setup: Event?
 
     public init() {}
 
     /// What the events say, newest first (by when each started).
-    public init(events newestFirst: [Event], notSent: [String: Int] = [:], waitingSince: Date? = nil) {
+    public init(events newestFirst: [Event], notSent: [String: Int] = [:], waitingSince: Date? = nil, setup: Event? = nil) {
         attempts = newestFirst
+        self.setup = setup
         self.notSent = notSent
         self.waitingSince = notSent.values.contains { $0 > 0 } ? waitingSince : nil
         // Only what has ENDED went well or failed (0.92); one with no end is running or left behind.
@@ -128,7 +132,16 @@ public struct SyncCheck: Equatable {
         rows(db, "SELECT MIN(r.ZUPDATEDAT) \(waiting) AND r.ZUPDATEDAT IS NOT NULL") { r in
             if sqlite3_column_type(r.s, 0) != SQLITE_NULL { since = Date(timeInterval: r.double(0), since: ref) }
         }
-        return SyncCheck(events: events, notSent: notSent, waitingSince: since)
+        // The newest setting-up (type 0, 0.104), on its own: never one of the sends and receives above.
+        var setup: Event?
+        rows(db, """
+            SELECT ZSUCCEEDED, IFNULL(ZERRORDOMAIN,''), IFNULL(ZERRORCODE,0), IFNULL(ZENDEDAT, ZSTARTEDAT), ZENDEDAT IS NULL
+            FROM ANSCKEVENT WHERE ZCLOUDKITEVENTTYPE = 0 ORDER BY ZSTARTEDAT DESC LIMIT 1
+            """) { r in
+            setup = Event(type: 0, ok: r.int(0) != 0, at: Date(timeInterval: r.double(3), since: ref),
+                          domain: r.text(1), code: Int(r.int(2)), unfinished: r.int(4) != 0)
+        }
+        return SyncCheck(events: events, notSent: notSent, waitingSince: since, setup: setup)
     }
 
     // MARK: The light — on Home, and the card's pill
@@ -209,10 +222,12 @@ public struct SyncCheck: Equatable {
     }
 
     /// The card's line about a send or receive running now (0.92): quiet while it runs, LOUD once
-    /// it has hung. "Receiving from iCloud has hung since 07:57 — quit Packing and open it again."
+    /// it has hung. "Receiving from iCloud has hung since 07:57 — press Restart sync." (0.104: the card
+    /// offers Restart sync, which does what quitting Packing and opening it again did — the words until
+    /// 0.104.)
     public func runningWords(now: Date, awake: Date = .distantPast, calendar: Calendar = .current) -> (words: String, hung: Bool)? {
         if let h = hung(now: now, awake: awake) {
-            return ("\(SyncCheck.doing(h)) has hung since \(SyncCheck.since(h.since, now: now, calendar: calendar)) \u{2014} quit Packing and open it again.", true)
+            return ("\(SyncCheck.doing(h)) has hung since \(SyncCheck.since(h.since, now: now, calendar: calendar)) \u{2014} press Restart sync.", true)
         }
         guard let r = receiving ?? sending else { return nil }
         return ("\(SyncCheck.doing(r)) since \(SyncCheck.since(r.since, now: now, calendar: calendar)).", false)

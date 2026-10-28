@@ -310,6 +310,20 @@ private struct DiscardAsk: ViewModifier {
     @State private var page = UUID()
 
     func body(content: Content) -> some View {
+        tracked(asked(content))
+    }
+
+    /// Every page that asks, on both devices, tells `OpenPages` whether it holds a change (0.104: a
+    /// restart of the sync waits for it).
+    private func tracked<V: View>(_ view: V) -> some View {
+        view
+            .onAppear { OpenPages.shows(page, changed: changed) }
+            .onChange(of: changed) { _, now in OpenPages.shows(page, changed: now) }
+            .onDisappear { OpenPages.gone(page) }
+    }
+
+    @ViewBuilder
+    private func asked(_ content: Content) -> some View {
         #if os(iOS)
         content
             .interactiveDismissDisabled(changed || holds)
@@ -325,6 +339,29 @@ private struct DiscardAsk: ViewModifier {
             .onChange(of: keptEarlier) { _, now in QuitGuard.shows(page, changed: changed, keptEarlier: now) }
             .onDisappear { QuitGuard.gone(page) }
         #endif
+    }
+}
+
+/// The pages open now that hold changes not confirmed with Done — on both devices (0.104): the sync's
+/// restart (`SyncHealer`) waits until there is none. A page's copy lives in memory and a restart does not
+/// touch it; waiting is the careful choice all the same — nothing is reopened under a page in his hands.
+@MainActor
+enum OpenPages {
+    private static var changed: Set<UUID> = []
+    /// A page holds a change now.
+    static var anyChanged: Bool { !changed.isEmpty }
+
+    static func shows(_ id: UUID, changed now: Bool) {
+        if now {
+            changed.insert(id)
+            TestHang.pageChanged()
+        } else if changed.remove(id) != nil {
+            SyncHealer.shared.pageClosed()
+        }
+    }
+
+    static func gone(_ id: UUID) {
+        if changed.remove(id) != nil { SyncHealer.shared.pageClosed() }
     }
 }
 

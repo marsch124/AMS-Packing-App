@@ -138,6 +138,21 @@ What it took, each one found in a log rather than guessed:
 - The Development environment is a TEST copy. The real import happens once more,
   into Production, on the first TestFlight build — after the schema is deployed.
 
+## A sync that hangs heals itself (0.104)
+
+His Mac, 21 and 28 Oct 2026: right after a launch one exchange with iCloud never ended, and since iCloud's side
+of the store does one exchange at a time, nothing more came in until he quit the app. The log of 28 Oct: TestFlight
+opened the new build behind his windows, the system took the app for one in the background and held its first send
+back ("discretionary") — not a byte in 387 s. Opened again in front, it fetched in 2 s.
+
+So the app does the quit-and-reopen itself: when an exchange has had no end for five minutes — or, begun while the
+app was not in front, still runs a minute after it came to the front — it **restarts its connection**: the store is
+taken off its Core Data coordinator (Core Data's own way to stop iCloud for a store), everything that used it is let
+go, and it is opened again, in the same run (`StoreConnection`, `CloudStore.reconnect`). Never two iCloud connections
+on one store (a second opening is refused); only in front, never while a page holds a change not confirmed with Done
+or a save is under way, three times an hour at most; each restart noted on the device and said on the sync card and in
+Home's dot. Stuck, the card offers **Restart sync**. Spec 01 §4 and §8.
+
 ## What it needs from the project
 
 - Capabilities: iCloud → CloudKit, container `iCloud.com.schabbauer.AMSPacking`;

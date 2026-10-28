@@ -179,7 +179,7 @@ final class SyncCheckTests: XCTestCase {
         XCTAssertEqual(c.runningWords(now: almost, calendar: his)?.hung, false)
         XCTAssertEqual(SyncCheck.light(usesICloud: true, check: c, now: ten), .stuck)
         XCTAssertEqual(c.runningWords(now: ten, calendar: his)?.words,
-                       "Receiving from iCloud has hung since 07:57 \u{2014} quit Packing and open it again.")
+                       "Receiving from iCloud has hung since 07:57 \u{2014} press Restart sync.")
         XCTAssertEqual(c.runningWords(now: ten, calendar: his)?.hung, true)
         XCTAssertEqual(SyncCheck.line(.stuck, check: c, now: ten, calendar: his), "Stuck \u{2014} Receiving has hung since 07:57")
         // Back in front at 08:05: its ten minutes start again there.
@@ -190,7 +190,7 @@ final class SyncCheckTests: XCTestCase {
         let send = SyncCheck(events: [SyncCheck.Event(type: 2, ok: false, at: started, unfinished: true)])
         let nextDay = started.addingTimeInterval(86_400)
         XCTAssertEqual(send.runningWords(now: nextDay, calendar: his)?.words,
-                       "Sending to iCloud has hung since 16 Oct 07:57 \u{2014} quit Packing and open it again.")
+                       "Sending to iCloud has hung since 16 Oct 07:57 \u{2014} press Restart sync.")
         XCTAssertEqual(SyncCheck.light(usesICloud: true, check: send, now: started.addingTimeInterval(30)), .sending)
     }
 

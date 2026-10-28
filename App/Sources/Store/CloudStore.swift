@@ -53,13 +53,24 @@ final class CloudStore: LibraryStore {
     /// ("NSCloudKitMirroringDelegate.import"), or any author not named here, is read.
     static let bringNothingIn: Set<String> = [author, "NSCloudKitMirroringDelegate.export"]
 
-    private let container: ModelContainer
-    private let context: ModelContext
+    /// The store, open — and able to be closed and opened again in this run (0.104, `reconnect`).
+    private let connection: StoreConnection
+    /// What is in use while the store is open: its container, the context the app saves through, and
+    /// the history's own reader (0.91). nil only for the moment of a restart.
+    private struct Live {
+        let container: ModelContainer
+        let context: ModelContext
+        /// What changed since the last look (0.91) — read only on `looking`, never on the main thread,
+        /// and never the whole history (0.94, `StoreHistory`).
+        let history: StoreHistory
+    }
+    private var live: Live?
     private var observer: NSObjectProtocol?
     var onRemoteChange: (() -> Void)?
-    /// What changed since the last look (0.91) — read only on `looking`, never on the main thread,
-    /// and never the whole history (0.94, `StoreHistory`).
-    private let history: StoreHistory
+    /// A save is under way (0.104: a restart never runs during one).
+    private(set) var saving = false
+    /// The store is not open — only for the moment of a restart, or after one that could not open it again.
+    struct NotOpen: Error {}
     /// One queue, one look at a time: the launch's look first, then one per notification, in order.
     private let looking: OperationQueue = {
         let q = OperationQueue()
@@ -76,25 +87,36 @@ final class CloudStore: LibraryStore {
             ?? ModelConfiguration(
                 "Library", schema: schema, isStoredInMemoryOnly: inMemory,
                 cloudKitDatabase: cloud ? .private(CloudStore.containerId) : .none)
-        container = try ModelContainer(for: schema, configurations: [config])
-        context = ModelContext(container)
+        // The iCloud store is never open twice at once (0.104, `StoreConnection`).
+        connection = StoreConnection(schema: schema, configuration: config, exclusive: cloud && file == nil && !inMemory)
+        try start()
+    }
+
+    /// Open the store and everything that uses it — at launch, and again after a restart (0.104).
+    private func start() throws {
+        let container = try connection.open()
+        let context = ModelContext(container)
         context.autosaveEnabled = false
         context.author = CloudStore.author
         let history = StoreHistory(container, quiet: CloudStore.bringNothingIn)
-        self.history = history
+        live = Live(container: container, context: context, history: history)
         // Where the history stands at launch: its newest transaction alone, off the main thread
         // (0.94 — until then the WHOLE history, which grows with every change, was read here, on the
         // main thread, at every launch). Queued first, so every notification is looked at after it.
         looking.addOperation { history.lookAtLaunch() }
-        // Records that arrived from the other device land in the store behind our
-        // back; this is how we hear about it. The model then reloads the whole store
-        // on the main thread (see LibraryModel.init for what that costs).
-        // 🪤 The store also says so after every save of OUR OWN (0.91, measured: on a library of
-        // his size every change was followed, a few seconds later, by a whole reload of 1.4 s on
-        // the main thread — the wait he felt after typing). So the history is asked first — on
-        // `looking`, not the main thread (0.94) — and when everything since the last look is this
-        // app's own saving, nothing is read again. Anything else — iCloud bringing the other
-        // device's changes, a history that cannot be read — reloads exactly as before.
+        listen(history)
+    }
+
+    /// Records that arrived from the other device land in the store behind our back; this is how we
+    /// hear about it. The model then reloads the whole store on the main thread (see LibraryModel.init
+    /// for what that costs).
+    /// 🪤 The store also says so after every save of OUR OWN (0.91, measured: on a library of his size
+    /// every change was followed, a few seconds later, by a whole reload of 1.4 s on the main thread —
+    /// the wait he felt after typing). So the history is asked first — on `looking`, not the main thread
+    /// (0.94) — and when everything since the last look is this app's own saving, nothing is read again.
+    /// Anything else — iCloud bringing the other device's changes, a history that cannot be read —
+    /// reloads exactly as before.
+    private func listen(_ history: StoreHistory) {
         observer = NotificationCenter.default.addObserver(
             forName: .NSPersistentStoreRemoteChange, object: nil, queue: looking
         ) { [weak self] _ in
@@ -103,9 +125,51 @@ final class CloudStore: LibraryStore {
         }
     }
 
+    /// Restart the connection to iCloud in place (0.104, `SyncHealer`) — what quitting Packing and opening
+    /// it again does, without quitting: the store is closed the way Core Data tears down a store's iCloud
+    /// connection (taken off its coordinator, `StoreConnection.close`), everything that used it let go,
+    /// and it is opened again — a new connection, which sets itself up and fetches what it missed.
+    /// On the main thread, between saves (never during one). The order is what makes it safe:
+    ///  1. no more looks at the history asked for, and the history's queue drained — a look in progress
+    ///     finishes, none waiting starts;
+    ///  2. nothing pending in the context (every save ends saved or rolled back, so this is a check);
+    ///  3. the store taken off its coordinator. If that is refused, NOTHING has changed — the store works
+    ///     on as before, and nil is returned (nil too during a save, or for a store not opened that way);
+    ///  4. the old container, its contexts and the history's reader let go — the old one gone before
+    ///     the new one opens (never two at once: `StoreConnection` refuses a second opening);
+    ///  5. opened again, as at launch. A store that will not open again throws: quitting and opening helps.
+    /// The library in memory, and every page's copy of it, are not touched; the model reads the store
+    /// again afterwards (`LibraryModel.restartSync`).
+    func reconnect() throws -> StoreConnection.Closed? {
+        dispatchPrecondition(condition: .onQueue(.main))
+        guard !saving, live != nil, connection.canClose else { return nil }
+        // No look at the history may run once the store is off its coordinator (reading through a context
+        // whose store is gone throws an exception no Swift code catches): no new one is asked for, and the
+        // ones asked for are let finish — before anything else.
+        if let o = observer { NotificationCenter.default.removeObserver(o) }
+        observer = nil
+        looking.cancelAllOperations()
+        looking.waitUntilAllOperationsAreFinished()
+        if live?.context.hasChanges == true { live?.context.rollback() }
+        do {
+            try connection.detach()
+        } catch {
+            // Refused: nothing has changed — the store works on as before, and is listened to again.
+            if let history = live?.history { listen(history) }
+            return nil
+        }
+        let released: Bool = autoreleasepool {
+            live = nil
+            return connection.release()
+        }
+        try start()
+        return StoreConnection.Closed(removed: true, released: released)
+    }
+
     /// Under the UI tests (`-uiTestingOnDisk`): records written into the store by ANOTHER hand, as
     /// iCloud writes what the other device changed — a context of its own, under another name.
     func writeAsTheOtherDevice(_ records: [StoredRecord]) {
+        guard let container = live?.container else { return }
         let other = ModelContext(container)
         other.author = "the other device"
         for r in records { other.insert(Record(r)) }
@@ -119,6 +183,7 @@ final class CloudStore: LibraryStore {
     /// twins, no difference stored — so the store keeps it exactly as iCloud left it. And the store is
     /// read again a few seconds later, when iCloud has usually finished, a few times at most.
     func loadAll() throws -> [StoredRecord] {
+        guard let context = live?.context else { throw NotOpen() }
         let all = try context.fetch(FetchDescriptor<Record>())
         #if DEBUG
         afterFetchForTests?()
@@ -145,6 +210,9 @@ final class CloudStore: LibraryStore {
 
     func apply(_ changes: RecordChanges) throws {
         guard !changes.isEmpty else { return }
+        guard let context = live?.context else { throw NotOpen() }
+        saving = true
+        defer { saving = false }
         // Nothing is unique in a CloudKit store, so a key can have twins. `planTwins`
         // (PackingLibrary, 0.94) says which twins take a put and which are deleted —
         // by what they hold, never by the order this fetch returns them in, so both

@@ -709,7 +709,7 @@ until then).
 - (0.92) The pill says what Home's sync light says (`SyncCheck.light`; spec 02 §12b, spec 01 §8): iCloud off, Can’t
   tell, In sync (green), Sending… / Receiving… (orange), Stuck (red — failed, hung ten minutes, or waited half an hour);
   new lines `sync-running` (a send or receive running; loud once hung: "Receiving from iCloud has hung since 07:57 —
-  quit Packing and open it again.") and `sync-waited`; "Not in iCloud yet" orange until it has waited too long; a
+  quit Packing and open it again." — since 0.104 "… — press Restart sync.") and `sync-waited`; "Not in iCloud yet" orange until it has waited too long; a
   receive with no end is never "failed" again. The card also opens from Home — the sync dot at the foot of "This
   Device", its bubble, Details — as Sync details (spec 02 §12b). What follows is the card before 0.92.
 - (0.101) **No pill.** His words (26 Oct 2026) on Sync details' "In sync": "should not look as a pill. Please design
@@ -732,6 +732,30 @@ until then).
   checked in" and the other device's "The <device> last checked in" say when each device was last there, at most a
   quarter of an hour behind; Sync now still checks in at once. With iCloud off (and under the UI tests' own library)
   only Sync now checks in — there is no other device to tell.
+- (0.104) **A sync that hangs heals itself — and Restart sync.** His "can we harden this?" (28 Oct 2026): twice on his
+  Mac, right after a launch, nothing more was received until he quit Packing and opened it again. Now the app does that
+  by itself (spec 01 §8, "A sync that hangs heals itself"): it restarts its connection to iCloud — the store closed and
+  opened again in place — when an exchange has had no end for five minutes, or, begun while the app was not in front, a
+  minute after it came to the front; never while a page holds changes not confirmed with Done or a save is under way
+  (it waits, and goes when the page closes), only in front, three times an hour at most. The card, under the state's
+  lines (only with iCloud on): `sync-healed` — today's last restart in plain words, quiet: "Receiving was stuck —
+  restarted the connection at 07:51." / "Sending was stuck — …" / "Restarted the connection at 07:51." (Restart sync
+  pressed); LOUD (red) when it did not take: "Restarting the connection at 07:51 did not help — quit Packing and open
+  it again."; `sync-heal-wait` (quiet) when a restart that is due waits: "Restarts the connection as soon as the open
+  page is closed." (also after Restart sync pressed while a page holds changes — the button stays) or "It restarted 3
+  times in the last hour — press Restart sync to try again."; and, whenever the state is **Stuck** (any cause),
+  **Restart sync** (`sync-restart`): the card's own capsule — callout semibold white on the Stuck red
+  (`AppSection.actions.color`, `#dc3d43`, the colour of the state it answers; white on it 4.4 : 1), padding 12 at the
+  sides, min height `Metrics.tap`, `.plain` with the focus ring off, 2 pt above and below, its own row under the lines
+  and over the check-ins; hint "Restarts the connection to iCloud, as quitting Packing and opening it again does."
+  Pressed: `SyncHealer.press` — at once, or once the open page is closed; the card looks again when the restart is
+  done (`SyncWatch.restarted`). Copy details for Claude adds "Restarts of the connection (0.104), newest first:" and
+  one line per restart kept ("  restarted the connection <ISO> (receiving stuck|sending stuck|Restart sync pressed)",
+  "— DID NOT TAKE" when it did not). DEBUG builds only: `sync-heal-record`, a 1-pt element whose value is "restarts
+  <n> · hung <epoch s of the tests' invented hang> · at <epoch s of the last restart>" — the tests' one way to see
+  when, to the second (on the Mac a text's value is its words, so not on `sync-healed`). Day and night: the app's
+  tokens only. Tests: spec 01 §8. Pictures `sync104-stuck`, `sync104-restarted`, `sync104-home-line` (iPhone and
+  Mac, day and night).
 - Header (before 0.101's dot): **"iCloud sync"** (18 bold) and a state pill (13 heavy white, id `sync-state`; `SyncCheck.state`): **"Off"**
   (muted fill) when this build keeps its library on the device only (`model.usesICloud == false`, always so under
   tests); **"Can’t tell"** (muted, 0.62) when iCloud is on but the store file could not be read — then no
@@ -1155,7 +1179,12 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
    (times, what is not in iCloud, Sync now, Copy details for Claude, "Can't tell" explained — 0.62; since 0.101 first
    "at its top right the same dot as on Home, and its words in that colour — green In sync, orange while changes are on
    their way, red Stuck", and "With iCloud on, each device checks in by itself every quarter of an hour while it is
-   open, so the card says when each was last there; Sync now checks in from here at once"); Save a backup / restore (a copy is kept
+   open, so the card says when each was last there; Sync now checks in from here at once"; since 0.104, in place of
+   "Receiving from iCloud that has hung for ten minutes says so in red: quit Packing and open it again.": "When
+   receiving or sending hangs, the app restarts its connection to iCloud by itself after five minutes, as quitting
+   Packing and opening it again would, and the card and the dot on Home say so: “Receiving was stuck — restarted the
+   connection at 07:51.” It waits while a page holds changes you have not confirmed with Done. Stuck in red: Restart
+   sync on the card does it at once."); Save a backup / restore (a copy is kept
    first; when the last backup was saved, where the library came from — 0.62); Your first real trip door; Your choices (places, owners, packers, conditions, When steps; the pen renames, the arrows move, the grip drags (0.70), owners stay A–Z,
    no duplicates, the reason for a refused remove right under it, Owners from his things when he has no list — 0.62);
    (0.69) each storage place's square code and its label for the P-touch, 12 mm tape (iPhone: Share → Save Image, and
@@ -2786,6 +2815,7 @@ screen and the number TestFlight shows can never disagree"; `marketing` = the sh
 | Darwin notification `se.ams.packing.uitest.inactive` | **gone in 0.98** — (debug builds only; not a launch argument — the UI test posted it) a page that wrote when the app went away heard the phase go inactive and come back, as for a glance at Control Center (`PretendPhase`); since 0.98 no page with Cancel listens to the phase (§20a) | 0.94 |
 | `-uiTestingKept` | (debug builds only) the sample with bags in a store file that outlives the app — a test ends the app with a page open and finds what was kept at the next launch (§20a, 0.98) | 0.98 |
 | `-keptStart` | (with `-uiTestingKept`) the file is made afresh | 0.98 |
+| `-importHangs <minutes>\|page`, `-selfHealAfter <seconds>` | (testing only, with `-uiTesting`) the sample in a store file and an invented iCloud record whose receive never ends — since that many minutes before launch, or from when a page first holds a change; with `-selfHealAfter` the app restarts its connection by itself after that many seconds, without it only Restart sync does (`TestHang`, §4, spec 01 §6 and §8). And any `-uiTesting…` that no mode knows now gives the sample in memory — never the app's own store, which on his Mac a test build shares | 0.104 |
 | `-quickAction <title>` | (testing only, iPhone) the entry under the app icon with that title — taken from the entries the app hands the system, so only one of the four — tapped to START the app: handed over through the cold-start path (`PackingAppDelegate`, as `options.shortcutItem`) | 0.86 |
 | `-quickActionOnReturn <title>` | (testing only, iPhone) played when the app returns from the background: that entry handed to the scene's delegate (`windowScene(_:performActionFor:)`), as iOS does while the app runs | 0.86 |
 | `-dockMenu <title>`, `-dockMenuWhenClosed <title>` | (testing only, Mac) the Dock icon's menu asked of the app's delegate and that entry performed — a second after the window is up / after the last main window closed | 0.86 |

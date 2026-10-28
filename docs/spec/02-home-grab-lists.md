@@ -2066,8 +2066,12 @@ library), and This Device as in 0.91 (`deviceBlockIsAsIn091`: the Trips tile, `c
 as in 0.91 and the dot (the middle of its 44-pt frame) left of the first tile, under `device-heading`, centred on it
 (± 1.5) and not below the tiles; with `hung` "red · Stuck — Receiving has hung since …"; a tap 16 pt ABOVE the dot's
 middle opens `home-sync-popover`, whose `home-sync-line` says the same; `home-sync-details` opens `sync-details`,
-whose `sync-state` says "Stuck" and `sync-running` "…has hung since … — quit Packing and open it again." and no
-`sync-problem`; Done closes it. Pictures `synclight2-insync`, `-sending`, `-hung`, `-hung-bubble`, `-hung-details`.
+whose `sync-state` says "Stuck" and `sync-running` "…has hung since … — press Restart sync." (0.104; "— quit Packing
+and open it again." until then) and no `sync-problem`; Done closes it. (0.104) After a restart of the connection the
+dot's line — `SyncCheck.line`, then `SyncHeal.line` — carries today's restart after it: "In sync · today 07:52.
+Receiving was stuck — restarted the connection at 07:51." (after "…" a space, not a full stop); the bubble says the
+same (`home-sync-line`), and VoiceOver's value. UI `testAReceiveThatHangsIsRestartedByItself` reads both (spec 01 §8);
+the healer never acts on `-syncLight`'s fixed records. Pictures `synclight2-insync`, `-sending`, `-hung`, `-hung-bubble`, `-hung-details`.
 Seen red (iPhone): the dot in a row of its own under the label — `("17.666666666666686") is not equal to ("10.0")
 +/- ("1.0") - This Device pushed Create new trip down`; a dot without its 44 pt — `XCTAssertTrue failed - a tap beside
 the dot did not open its bubble` (iPhone: the button 8 × 8; the Mac: the old wider tap shape); Details doing nothing — `XCTAssertTrue failed - Details did not open Sync details`;

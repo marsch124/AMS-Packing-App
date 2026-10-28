@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreData
+import Combine
 #if os(iOS)
 import UIKit
 #else
@@ -19,6 +20,8 @@ struct SyncCard: View {
     @State private var seen: SyncWatch.Seen? = SyncWatch.last
     @State private var said = ""
     @Environment(\.colorScheme) private var scheme
+    /// The connection's restarts and why one waits (0.104).
+    @ObservedObject private var healer = SyncHealer.shared
 
     static var device: String {
         #if os(macOS)
@@ -87,6 +90,20 @@ struct SyncCard: View {
                 // so, rather than a green "Working" over nothing (the spec pass, 2026-10-05).
                 quiet("This device cannot tell right now how the sync is going.", id: "sync-unknown")
             }
+            // A sync that hung and was restarted (0.104): what happened, today, in plain words; why a restart
+            // that is due waits; and, Stuck, Restart sync — what quitting Packing and opening it again did.
+            if on {
+                if let last = healer.restarts.last, let words = SyncHeal.words(last, now: now) {
+                    if last.ok { quiet(words, id: "sync-healed") } else { loud(words, id: "sync-healed") }
+                }
+                #if DEBUG
+                if !healer.restarts.isEmpty { HealedRecord(healer: healer) }
+                #endif
+                if let wait = healer.pressedWaiting ? SyncHeal.Wait.page : healer.waiting, let words = SyncHeal.words(wait, now: now) {
+                    quiet(words, id: "sync-heal-wait")
+                }
+                if stuck || healer.pressedWaiting { restartButton }
+            }
             quiet(model.library.lastCheckIn(device: SyncCard.other).map { "The \(SyncCard.other) last checked in \(SyncCard.when(iso: $0))." }
                   ?? "The \(SyncCard.other) has not checked in yet \u{2014} press Sync now there.", id: "sync-other")
             quiet(model.library.lastCheckIn(device: SyncCard.device).map { "This \(SyncCard.device) checked in \(SyncCard.when(iso: $0))." }
@@ -118,6 +135,25 @@ struct SyncCard: View {
         .task { await SyncWatch.keepLooking(model) { seen = $0 } }
         .onReceive(model.$library.debounce(for: .seconds(1), scheduler: RunLoop.main)) { _ in refresh() }
         .onReceive(SyncWatch.storeChanged) { _ in refresh() }
+        .onReceive(SyncWatch.restarted) { _ in seen = SyncWatch.last }
+    }
+
+    /// Restart sync (0.104): the card's own capsule, in the Stuck colour it answers — the store closed
+    /// and opened again in place, as quitting Packing and opening it again did.
+    private var restartButton: some View {
+        Button {
+            healer.press(model)
+            refresh()
+        } label: {
+            Text("Restart sync").font(.system(.callout, weight: .semibold)).foregroundStyle(.white)
+                .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
+                .background(Capsule().fill(AppSection.actions.color))
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .padding(.vertical, 2)
+        .accessibilityHint("Restarts the connection to iCloud, as quitting Packing and opening it again does.")
+        .accessibilityIdentifier("sync-restart")
     }
 
     private func line(_ text: String, id: String, tone: Color) -> some View {
@@ -155,6 +191,8 @@ struct SyncCard: View {
     private func copyDetails() {
         var text = seen?.check?.details(device: SyncCard.device, version: AppInfo.version)
             ?? "Sync details · \(SyncCard.device) · \(AppInfo.version)\nNo iCloud record on this device."
+        let restarts = SyncHeal.details(healer.restarts)
+        if !restarts.isEmpty { text += "\nRestarts of the connection (0.104), newest first:\n" + restarts.joined(separator: "\n") }
         text += "\nThis device holds: " + model.library.records().reduce(into: [String: Int]()) { $0[$1.table.rawValue, default: 0] += 1 }
             .sorted { $0.key < $1.key }.map { "\($0.key) \($0.value)" }.joined(separator: ", ")
         #if os(iOS)
@@ -168,6 +206,24 @@ struct SyncCard: View {
 
     /// "today 13:52", "2 Oct 22:10", "never" (`SyncCheck.when`, held by the model tests).
     static func when(_ date: Date?) -> String { SyncCheck.when(date) }
+
+    #if DEBUG
+    /// The tests' only way to see when the connection restarted, to the second (debug builds): "restarts 1
+    /// · hung 1761634561 · at 1761634567" — the invented hang's start (`TestHang`) and the last restart.
+    /// An element of its own: on the Mac a text's value IS its words.
+    private struct HealedRecord: View {
+        @ObservedObject var healer: SyncHealer
+        var body: some View {
+            let hung = TestHang.since.map { String(Int($0.timeIntervalSince1970)) } ?? "-"
+            let at = healer.restarts.last.map { String(Int($0.at.timeIntervalSince1970)) } ?? "-"
+            Color.clear.frame(width: 1, height: 1)
+                .accessibilityElement()
+                .accessibilityLabel("restart record")
+                .accessibilityValue("restarts \(healer.restarts.count) \u{00B7} hung \(hung) \u{00B7} at \(at)")
+                .accessibilityIdentifier("sync-heal-record")
+        }
+    }
+    #endif
 
     static func when(iso: String) -> String { SyncCheck.when(iso: iso) }
 }
@@ -195,15 +251,42 @@ enum SyncWatch {
         NotificationCenter.default.addObserver(forName: UIApplication.willEnterForegroundNotification,
                                                object: nil, queue: .main) { _ in awake = Date() }
         #endif
-        return invented != nil ? .distantPast : Date()
+        return invented != nil || TestHang.asked ? .distantPast : Date()
     }()
+
+    /// When the app last came to the front (0.104, `SyncHeal`): an exchange begun before it was held
+    /// back by the system (his Mac, 28 Oct 2026 — TestFlight opened the app behind his windows) and is
+    /// restarted a minute after. nil while the app has not been in front. Not under the tests' hang.
+    static var cameForward: Date?
+    private static var watchingFront = false
+
+    /// Starts keeping `cameForward` (once, `SyncHealer.start`).
+    @MainActor
+    static func watchFront() {
+        guard !watchingFront, !TestHang.asked else { return }
+        watchingFront = true
+        if SyncHealer.inFront { cameForward = Date() }
+        #if os(iOS)
+        let name = UIApplication.didBecomeActiveNotification
+        #else
+        let name = NSApplication.didBecomeActiveNotification
+        #endif
+        NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { _ in
+            cameForward = Date()
+            // A look straight away: what was held back while it was not in front is seen now.
+            Task { @MainActor in await SyncHealer.shared.look(LibraryModel.shared) }
+        }
+    }
+
+    /// The connection was restarted (0.104): the card and Home's dot look again at once.
+    static let restarted = PassthroughSubject<Void, Never>()
 
     /// The store says it changed — a save, iCloud sending or bringing something (a second's calm first).
     static let storeChanged = NotificationCenter.default.publisher(for: .NSPersistentStoreRemoteChange)
         .debounce(for: .seconds(1), scheduler: RunLoop.main)
 
     /// Does this copy of the app sync through iCloud?
-    static func on(_ model: LibraryModel) -> Bool { invented?.on ?? model.usesICloud }
+    static func on(_ model: LibraryModel) -> Bool { invented?.on ?? (TestHang.asked || model.usesICloud) }
 
     /// A look, the reading done off the main thread.
     @MainActor
@@ -225,7 +308,11 @@ enum SyncWatch {
         }
     }
 
-    private static func read() -> SyncCheck? { invented.map { $0.check } ?? SyncCheck.read() }
+    private static func read() -> SyncCheck? {
+        if let invented { return invented.check }
+        if TestHang.asked { return TestHang.check }                // the tests' hang (0.104)
+        return SyncCheck.read()
+    }
 
     /// This device checks in by itself while it syncs (0.101, `Library.checkInIfDue` — his Mac said
     /// "This Mac checked in 10 Oct 19:11" while it sent and received every day: only Sync now wrote a
@@ -286,6 +373,8 @@ struct SyncLight: View {
     /// Details was pressed in the bubble: Sync details opens once the bubble has gone.
     @State private var detailsNext = false
     @State private var details = false
+    /// A restart of the connection is said after the line (0.104).
+    @ObservedObject private var healer = SyncHealer.shared
 
     /// The dot's size, and the points a tap may land away from it on every side (8 + 2 × 18 = 44).
     static let dot: CGFloat = 8
@@ -325,6 +414,7 @@ struct SyncLight: View {
             }
             .task { await SyncWatch.keepLooking(model) { seen = $0 } }
             .onReceive(SyncWatch.storeChanged) { _ in Task { seen = await SyncWatch.look(model) } }
+            .onReceive(SyncWatch.restarted) { _ in seen = SyncWatch.last }
             .sheet(isPresented: $details) { SyncDetailsSheet().environmentObject(model) }
         }
     }
@@ -332,7 +422,10 @@ struct SyncLight: View {
     private func dot(_ seen: SyncWatch.Seen) -> some View {
         let light = SyncCheck.light(usesICloud: true, check: seen.check, now: seen.now, awake: SyncWatch.awake)
         let tone = SyncLight.color(light.colour)
-        let line = SyncCheck.line(light, check: seen.check, now: seen.now, awake: SyncWatch.awake)
+        // Today's restart of the connection after it, if there was one (0.104): "In sync · today 07:52.
+        // Receiving was stuck — restarted the connection at 07:51."
+        let line = SyncHeal.line(SyncCheck.line(light, check: seen.check, now: seen.now, awake: SyncWatch.awake),
+                                 restart: healer.restarts.last, now: seen.now)
         // The dot is drawn 8 points across; the button over it is 44 × 44 and invisible — an overlay, so the
         // column stays 16 wide and the block as tall. (A tap shape drawn wider than the dot worked on the
         // iPhone and not on the Mac: GitHub's Mac, 19 Oct 2026, a click 16 points above it opened nothing.)

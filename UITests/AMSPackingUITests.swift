@@ -4885,7 +4885,7 @@ final class AMSPackingUITests: XCTestCase {
         let state = app.staticTexts["sync-state"], running = app.staticTexts["sync-running"]
         XCTAssertTrue(running.waitForExistence(timeout: 5), "Sync details do not say the receive has hung")
         XCTAssertEqual(words(state), "Stuck", "the card's pill does not say what the dot says")
-        XCTAssertTrue(words(running).contains("has hung since") && words(running).hasSuffix("quit Packing and open it again."),
+        XCTAssertTrue(words(running).contains("has hung since") && words(running).hasSuffix("press Restart sync."),
                       "the details do not say what to do: '\(words(running))'")
         XCTAssertFalse(app.staticTexts["sync-problem"].exists, "a receive with no end was called a failure")
         shot(app, "synclight2-hung-details")
@@ -4920,6 +4920,129 @@ final class AMSPackingUITests: XCTestCase {
             shot(app, "look101-sync-\(state)")
             app.terminate()
         }
+    }
+
+    // MARK: A sync that hangs heals itself (0.104)
+
+    /// The tests' record of the last restart of the connection (debug builds, `sync-heal-record`): how many,
+    /// when the invented receive began that never ends, and when the connection restarted — to the second.
+    private func healRecord(_ app: XCUIApplication) -> (count: Int, hung: Int?, at: Int?) {
+        let e = app.descendants(matching: .any)["sync-heal-record"]
+        guard e.exists, let v = e.value as? String else { return (0, nil, nil) }
+        let parts = v.components(separatedBy: " \u{00B7} ")
+        func number(_ i: Int, _ name: String) -> Int? {
+            i < parts.count ? Int(parts[i].replacingOccurrences(of: name + " ", with: "")) : nil
+        }
+        return (number(0, "restarts") ?? 0, number(1, "hung"), number(2, "at"))
+    }
+
+    /// 0.104 — his "can we harden this?" (28 Oct 2026): twice on his Mac, right after a launch, receiving
+    /// hung until he quit Packing and opened it again. Stuck now offers Restart sync, which does that in
+    /// place: under `-importHangs` the store is a real file, closed and opened again. The card returns to
+    /// In sync and says what happened, and a change made afterwards is kept by the reopened store.
+    func testAStuckSyncOffersRestartSyncWhichMendsIt() {
+        let app = launch("-uiTesting", ["-importHangs", "12"])
+        tab(app, "settings")
+        XCTAssertTrue(appears(app, "screen-settings"))
+        let state = app.staticTexts["sync-state"]
+        XCTAssertTrue(state.waitForExistence(timeout: 5), "no iCloud sync card in Settings")
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(state) == "Stuck" },
+                      "a receive with no end for 12 minutes: the card says '\(words(state))', not Stuck")
+        let restart = app.buttons["sync-restart"]
+        XCTAssertTrue(restart.waitForExistence(timeout: 5), "the card says Stuck and offers no Restart sync")
+        let running = app.staticTexts["sync-running"]
+        XCTAssertTrue(words(running).contains("has hung since") && words(running).hasSuffix("\u{2014} press Restart sync."),
+                      "the card does not say what to do: '\(words(running))'")
+        XCTAssertEqual(healRecord(app).count, 0, "restarted by itself, with no -selfHealAfter")
+        bringIntoView(app, restart)
+        shot(app, "sync104-stuck")
+        restart.tap()
+        XCTAssertTrue(waitUntil(timeout: 15) { self.words(state) == "In sync" },
+                      "after Restart sync the card says '\(words(state))', not In sync")
+        let healed = app.staticTexts["sync-healed"]
+        XCTAssertTrue(waitUntil { self.words(healed).hasPrefix("Restarted the connection at ") && self.words(healed).hasSuffix(".") },
+                      "the card does not say the connection was restarted: '\(words(healed))'")
+        XCTAssertEqual(healRecord(app).count, 1, "one press, not one restart")
+        XCTAssertFalse(app.buttons["sync-restart"].exists, "In sync, and Restart sync still offered")
+        bringIntoView(app, healed)
+        shot(app, "sync104-restarted")
+        // The store opened again keeps a change: a to-do added now is saved (a save the store refused
+        // would say "Couldn't save that" and add nothing).
+        tab(app, "actions")
+        type("Call the ferry", into: app.textFields["action-add-text"])
+        tap(app, id: "action-add")
+        XCTAssertTrue(app.buttons["action-0"].waitForExistence(timeout: 5), "after the restart a to-do could not be added")
+        XCTAssertFalse(app.staticTexts["save-problem"].exists, "after the restart the store refused a save")
+    }
+
+    /// 0.104: the app restarts by itself — five minutes in his app, a few seconds under the tests
+    /// (`-selfHealAfter 6`) — and not before; the card and Home's dot then say what happened.
+    func testAReceiveThatHangsIsRestartedByItself() {
+        let app = launch("-uiTesting", ["-importHangs", "0", "-selfHealAfter", "6"])
+        tab(app, "settings")
+        XCTAssertTrue(appears(app, "screen-settings"))
+        let healed = app.staticTexts["sync-healed"]
+        XCTAssertTrue(waitUntil(timeout: 40) { self.words(healed).hasPrefix("Receiving was stuck \u{2014} restarted the connection at ") },
+                      "a receive with no end was not restarted by itself: '\(words(healed))'")
+        let record = healRecord(app)
+        XCTAssertEqual(record.count, 1, "restarted more than once: \(record)")
+        if let hung = record.hung, let at = record.at {
+            XCTAssertGreaterThanOrEqual(at - hung, 5, "restarted \(at - hung) s after the receive began — before its time")
+        } else {
+            XCTFail("no record of when it hung and restarted: \(record)")
+        }
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(app.staticTexts["sync-state"]) == "In sync" },
+                      "after the restart the card says '\(words(app.staticTexts["sync-state"]))'")
+        XCTAssertFalse(app.buttons["sync-restart"].exists, "In sync, and Restart sync still offered")
+        // Home's dot says it too, in its one line.
+        tab(app, "home")
+        let dot = app.buttons["home-sync-light"]
+        XCTAssertTrue(dot.waitForExistence(timeout: 10), "no sync dot on Home")
+        XCTAssertTrue(waitUntil { (dot.value as? String ?? "").contains("Receiving was stuck \u{2014} restarted the connection at ") },
+                      "Home's dot does not say what happened: '\(dot.value as? String ?? "")'")
+        bringIntoView(app, dot)
+        _ = waitUntil(timeout: 3) { self.settled(dot) }
+        dot.tap()
+        let line = app.staticTexts["home-sync-line"]
+        XCTAssertTrue(line.waitForExistence(timeout: 5) && words(line).hasPrefix("In sync \u{00B7} today ")
+                      && words(line).contains(". Receiving was stuck \u{2014} restarted the connection at "),
+                      "the bubble does not say what happened: '\(words(line))'")
+        shot(app, "sync104-home-line")
+    }
+
+    /// 0.104: never while a page holds a change not confirmed with Done — the restart waits, and goes
+    /// once the page is closed; what the page changed is kept. (`-importHangs page`: the receive hangs
+    /// from the moment a page first holds a change; restarted 4 s later, were it allowed.)
+    func testTheRestartWaitsWhileAPageHoldsAChange() {
+        let app = launch("-uiTesting", ["-importHangs", "page", "-selfHealAfter", "4"])
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        tap(app, id: "template-row-1")                                   // Hiking
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        replace("Hiking trip", in: app.textFields["template-name"])
+        tap(app, id: "template-rename")
+        hideKeyboard(app)
+        sleep(12)                                                        // three times its four seconds
+        XCTAssertTrue(app.textFields["template-name"].exists, "the page went while it held a change")
+        XCTAssertEqual(value(app.textFields["template-name"]), "Hiking trip", "the page lost its change")
+        let closed = Int(Date().timeIntervalSince1970)
+        tap(app, id: "template-detail-done")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5), "Done did not close the page")
+        tab(app, "settings")
+        XCTAssertTrue(appears(app, "screen-settings"))
+        let healed = app.staticTexts["sync-healed"]
+        XCTAssertTrue(waitUntil(timeout: 20) { self.words(healed).hasPrefix("Receiving was stuck \u{2014} restarted the connection at ") },
+                      "the receive was not restarted once the page was closed: '\(words(healed))'")
+        let record = healRecord(app)
+        XCTAssertEqual(record.count, 1, "\(record)")
+        XCTAssertGreaterThanOrEqual(record.at ?? 0, closed - 1, "restarted while the page held its change: \(record), closed at \(closed)")
+        // The page's change was kept, through the restart.
+        tab(app, "templates")
+        tap(app, id: "template-row-1")
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.value(app.textFields["template-name"]) == "Hiking trip" },
+                      "the page's new name was lost: '\(value(app.textFields["template-name"]))'")
+        tap(app, id: "template-cancel")
     }
 
     /// 0.101 — his Sync details on the Mac (26 Oct 2026): "This Mac checked in 10 Oct 19:11" while it sent
