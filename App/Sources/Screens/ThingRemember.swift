@@ -278,7 +278,9 @@ struct ThingRememberPart: View {
             Text(other.name).font(.system(.subheadline, weight: .semibold)).foregroundStyle(tint).lineLimit(1)
                 .accessibilityIdentifier("thing-with-\(n)")
             Button { draft.with.removeAll { $0 == other.id } } label: {
-                ClearMark().frame(width: Metrics.mark, height: Metrics.mark).frame(width: Metrics.chip, height: Metrics.chip).contentShape(Rectangle())
+                // On the 24-point grid it is drawn on, so the cross sits in the middle of its disc (framed
+                // smaller, it hung off-centre — 0.101's chips).
+                ClearMark().onGrid(Metrics.mark).frame(width: Metrics.chip, height: Metrics.chip).contentShape(Rectangle())
             }
             .buttonStyle(.plain).focusEffectDisabled()
             .accessibilityIdentifier("thing-with-\(n)-remove")
