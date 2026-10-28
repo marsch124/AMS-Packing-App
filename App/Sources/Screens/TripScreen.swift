@@ -310,13 +310,20 @@ struct TripScreen: View {
                             .font(.system(.body, weight: .semibold))
                             .accessibilityIdentifier("trip-review")
                     }
-                    Button("Done") { dismiss() }
+                    Button("Done") {
+                        #if os(macOS)
+                        // Esc is the selection's while lines are selected (0.105) — and an Esc that comes a moment
+                        // after one that let them go is not taken as a second, closing the trip (GitHub's Mac).
+                        if selectKeys.isSelectionsEscape(NSApp.currentEvent) { picked.clear(); return }
+                        #endif
+                        dismiss()
+                    }
                         .buttonStyle(HeaderButtonStyle(tint: AppSection.events.color, filled: true)).focusEffectDisabled()
                         .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.events.color)
                         // Escape closes it, as Done does (the spec pass, 5 Oct 2026 — on the Mac,
                         // and on an iPhone with a keyboard).
-                        // …unless lines are selected (0.105): then Esc lets them go, as in the Finder.
-                        .keyboardShortcut(picked.isEmpty ? .cancelAction : nil)
+                        // …unless lines are selected (0.105): then Esc lets them go, as in the Finder (`SelectionKeys`).
+                        .keyboardShortcut(.cancelAction)
                         .commandS { dismiss() }                         // ⌘S = Done (0.103)
                         .accessibilityIdentifier("trip-done")
                 }
@@ -975,12 +982,6 @@ struct TripScreen: View {
     /// ⌘A selects every line shown — a hidden button, as ⌘S's behind Done (Keys.swift); in a field being typed in,
     /// its words, as anywhere. Space and Esc are `SelectionKeys`'s.
     private func selectionKeys(order: [String]) -> some View {
-        ZStack {
-        // Esc's second way to the selection, should the key monitor not have taken it: Done gives up Escape meanwhile.
-        if !picked.isEmpty {
-            Button("Clear the selection") { picked.clear() }
-                .keyboardShortcut(.cancelAction)
-        }
         Button("Select all lines") {
             if let field = typing { field.selectAll(nil) } else {
                 picked.selectAll(order)
@@ -988,7 +989,6 @@ struct TripScreen: View {
             }
         }
         .keyboardShortcut("a", modifiers: .command)
-        }
         .buttonStyle(.plain)
         .opacity(0).allowsHitTesting(false).accessibilityHidden(true)
     }
@@ -1747,19 +1747,45 @@ final class SelectionKeys: ObservableObject {
     /// Lines are selected on this window's trip.
     var active = false
     weak var window: NSWindow?
-    private let monitor = KeyMonitor()
+    private var token: Any?
+    /// The keys whose press was taken: their release is taken too. Let through, the release of Space and then
+    /// of Esc reached the window, and the Esc after a Space closed the trip (GitHub's Mac probes, 28 Oct 2026 —
+    /// the same with Space and Esc as hidden shortcuts).
+    private var held: Set<UInt16> = []
+    private var lastEscape = Date.distantPast
 
-    func start() { monitor.start { [weak self] event in self?.take(event) ?? event } }
-    func stop() { monitor.stop() }
+    /// Done was pressed by Esc while lines are selected, or a moment after an Esc that let them go: the
+    /// selection's, not Done's.
+    func isSelectionsEscape(_ event: NSEvent?) -> Bool {
+        guard let event, event.type == .keyDown || event.type == .keyUp, event.keyCode == 53 else { return false }
+        return active || Date().timeIntervalSince(lastEscape) < 0.8
+    }
+
+    func start() {
+        stop()
+        token = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp]) { [weak self] event in self?.take(event) ?? event }
+    }
+    func stop() {
+        if let token { NSEvent.removeMonitor(token) }
+        token = nil
+        held = []
+    }
+    deinit { stop() }
 
     private func take(_ event: NSEvent) -> NSEvent? {
+        if event.type == .keyUp { return held.remove(event.keyCode) != nil ? nil : event }
         guard active, let window, event.window === window, window.isKeyWindow,
               event.modifierFlags.intersection([.command, .option, .control, .shift]).isEmpty else { return event }
         switch event.keyCode {
-        case 53: escape += 1; return nil         // Esc — in a field too: the selection goes first
+        case 53:                                 // Esc — in a field too: the selection goes first
+            held.insert(53)
+            if !event.isARepeat { escape += 1; lastEscape = Date() }
+            return nil
         case 49:                                 // Space — a field being typed in keeps it
             if let field = window.firstResponder as? NSTextView, field.isEditable { return event }
-            space += 1; return nil
+            held.insert(49)
+            if !event.isARepeat { space += 1 }   // held down, it ticks once
+            return nil
         default: return event
         }
     }
