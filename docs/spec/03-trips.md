@@ -3470,7 +3470,9 @@ non-empty but unreadable.
 pocket a thing went into. On site you ask 'Where is my charger?' and the answer comes back: 'Backpack, front
 pocket.'" A bag's pockets are named on the bag's page (spec 05); a thing's usual pocket on its page (spec 05).
 
-**The pills** (`PocketPills`): ticking a line (way out) whose bag has pockets sets `pocketing` to that line;
+**The pills** (`PocketPills`): ticking a line (way out) whose bag has two pockets or more (`Library.asksPocket`; a bag
+with one never asks since 0.105.2 — his words 28 Oct 2026 about a lone "MaxPack" pill under each line in his carry-on;
+Pack to go home the same) sets `pocketing` to that line;
 under it, indented `Metrics.mark` + 8, one horizontal row (scrolls sideways if long) of small pills —
 Footnote semibold, `Metrics.chip` tall (28 / Mac 22), 6 apart, green: the chosen one filled with white words, the
 others outlined 1.2 pt — row id `trip-line-<n>-pocket`, pills `trip-line-<n>-pocket-<k>` (k = the bag's order),
@@ -3530,7 +3532,9 @@ out of the Camp pouch", and "Where it usually goes." ("It has no usual bag." wit
 corner 10, card fill, green 1-pt border at 60 %, 10 above, id `search-where`. No trip under way: no card.
 
 ### Tests
-UI `testTickingALineOffersItsBagsPockets` (`-uiTestingPockets`: ticking the charger shows `trip-line-1-pocket-*`,
+UI `testABagWithOnlyOnePocketNeverAsks` (0.105.2: the Backpack cut to Lid alone on its page — the tick and Pack to go home
+offer no `trip-line-1-pocket-0` / `wayhome-line-1-pocket-0`; model `testOnlyABagWithTwoPocketsOrMoreAsksWhichOne`),
+`testTickingALineOffersItsBagsPockets` (`-uiTestingPockets`: ticking the charger shows `trip-line-1-pocket-*`,
 Front pocket selected, the line says "Backpack · Front pocket"; Lid tapped → the row goes and the line says
 "Backpack · Lid"; the Toothbrush in the carry-on shows none — red with `pocketing` never set: "ticking the charger
 did not offer the Backpack's pockets"), `testPackToGoHomeKeepsItsPockets` (the way home's pills, the way-out pocket

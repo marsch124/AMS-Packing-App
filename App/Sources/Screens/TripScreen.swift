@@ -586,7 +586,7 @@ struct TripScreen: View {
                                 if let kit = kits[line.id] { kitParts(kit, line, n: n, trip: trip) }
                                 // Which pocket (0.69): one short row of small pills under the line just
                                 // ticked — tap one, or ignore it.
-                                if pocketing == "\(g)|\(line.id)", line.checked, let choices = pockets[normName(line.container)] {
+                                if pocketing == "\(g)|\(line.id)", line.checked, let choices = pockets[normName(line.container)], Library.asksPocket(choices) {
                                     PocketPills(pockets: choices, chosen: Library.pocket(line), tint: AppSection.events.color,
                                                 id: "trip-line-\(n)-pocket") { picked in
                                         let id = tripId, entry = line.id
@@ -883,9 +883,10 @@ struct TripScreen: View {
         guard !aside else { return }
         let on = !line.checked
         model.change { _ = $0.setChecked(on, tripId: tripId, entryId: line.id) }
-        // Its bag has pockets: they show under it, the usual one chosen (0.69).
-        // Under the copy tapped only: under Template a line can stand twice.
-        pocketing = on && pockets[normName(line.container)] != nil ? "\(g)|\(line.id)" : nil
+        // Its bag has pockets to choose from: they show under it, the usual one chosen (0.69) —
+        // not for a bag with one pocket (0.105.2). Under the copy tapped only: under Template a
+        // line can stand twice.
+        pocketing = on && Library.asksPocket(pockets[normName(line.container)] ?? []) ? "\(g)|\(line.id)" : nil
     }
 
     /// A line's menu (0.104): Show note — "No note", switched off, when nothing is written, so the menu is

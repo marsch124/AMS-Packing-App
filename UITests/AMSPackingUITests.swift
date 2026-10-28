@@ -4603,6 +4603,38 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertFalse(app.buttons["trip-line-2-pocket-0"].exists, "pockets offered for a bag with none")
     }
 
+    /// A bag with only one pocket never asks (0.105.2, his words 28 Oct 2026 about a lone
+    /// "MaxPack" pill under every line in his carry-on): the Backpack's pockets cut to one (Lid),
+    /// ticking the charger offers nothing, and neither does packing it for home.
+    func testABagWithOnlyOnePocketNeverAsks() {
+        let app = launch("-uiTestingPockets")
+        tab(app, "care")
+        tap(app, id: "care-bags")
+        tap(app, id: "bag-0-name")
+        XCTAssertTrue(appears(app, "bag-detail", timeout: 5), "the bag's page did not open")
+        let count = app.staticTexts["bag-pockets-count"]
+        XCTAssertTrue(waitUntil { self.words(count) == "3" }, "the Backpack does not list its 3 pockets: '\(words(count))'")
+        tap(app, id: "bag-pocket-0-remove")
+        XCTAssertTrue(waitUntil { self.words(count) == "2" }, "✕ did not remove Main: '\(words(count))'")
+        tap(app, id: "bag-pocket-0-remove")
+        XCTAssertTrue(waitUntil { self.words(count) == "1" }, "✕ did not remove the Front pocket: '\(words(count))'")
+        tap(app, id: "bag-done")
+        XCTAssertTrue(disappears(app, "bag-detail", timeout: 5))
+        tap(app, id: "yourbags-done")
+
+        openPocketsTrip(app)
+        tap(app, id: "trip-line-1")
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["trip-line-1"]) }, "the charger was not ticked")
+        XCTAssertFalse(app.buttons["trip-line-1-pocket-0"].waitForExistence(timeout: 2),
+                       "a bag with one pocket asked which: '\(words(app.buttons["trip-line-1-pocket-0"]))'")
+        shot(app, "pockets-one-no-pills")
+        openWayHome(app)
+        XCTAssertTrue(appears(app, "wayhome-screen", timeout: 5))
+        tap(app, id: "wayhome-line-1")
+        XCTAssertFalse(app.buttons["wayhome-line-1-pocket-0"].waitForExistence(timeout: 2),
+                       "packing for home, a bag with one pocket asked which")
+    }
+
     /// Pack to go home keeps each pocket too: packing the charger for home offers the
     /// Backpack's pockets, the one it went out in chosen first; another is kept.
     func testPackToGoHomeKeepsItsPockets() {

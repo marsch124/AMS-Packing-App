@@ -49,6 +49,12 @@ extension Library {
     /// have, or a bag made on the same page and not saved yet.
     public func takesPockets(bag name: String) -> Bool { bagRecord(named: name) != nil }
 
+    /// Whether ticking a line (or packing it for home) offers its bag's pockets: only when there is
+    /// a choice — two or more. A bag with one pocket never asks (0.105.2, his words 28 Oct 2026 about
+    /// a lone "MaxPack" pill under each line packed in his carry-on: "a bag with only one pocket
+    /// never asks"). A line's menu still offers its one pocket: that is asked for.
+    public static func asksPocket(_ pockets: [String]) -> Bool { pockets.count > 1 }
+
     public func pockets(bagId: String) -> [String] {
         items.first { $0.id == bagId }.map(Library.pockets(of:)) ?? []
     }

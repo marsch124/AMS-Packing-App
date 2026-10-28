@@ -213,7 +213,7 @@ struct WayHomeScreen: View {
                     guard !used else { return }
                     let on = !packed
                     model.change { _ = $0.setPackedHome(on, tripId: tripId, entryId: line.id) }
-                    pocketing = on && !choices.isEmpty ? line.id : nil
+                    pocketing = on && Library.asksPocket(choices) ? line.id : nil
                 } label: {
                     HStack(spacing: 12) {
                         ZStack {
@@ -276,7 +276,7 @@ struct WayHomeScreen: View {
                     .accessibilityIdentifier("wayhome-line-\(n)-notetext")
             }
             if noting == line.id { noteEditor(line) }
-            if pocketing == line.id, packed, !choices.isEmpty {
+            if pocketing == line.id, packed, Library.asksPocket(choices) {
                 PocketPills(pockets: choices, chosen: Library.homePocket(line), tint: tint, id: "wayhome-line-\(n)-pocket") { picked in
                     let id = tripId, entry = line.id
                     model.change { _ = $0.setHomePocket(picked, tripId: id, entryId: entry) }

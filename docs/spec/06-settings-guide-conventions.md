@@ -841,11 +841,12 @@ line border, container id `guide-release-<n>`, n = position, 0 = newest). Each c
   blue), **FIXED** (Care orange), **REMOVED** (muted). The part name is upper-cased, 15 heavy (12 until 0.62), letter-spaced 0.6,
   in its colour; each line is a 6-pt dot in that colour and the text (16 ink, wraps).
 
-**The version history** (107 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
+**The version history** (108 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
 against `Releases.swift`):
 
 | Version | Date | Title | Lines | Gist |
 |---|---|---|---|---|
+| 0.105.2 | 28 Oct 2026 | One pocket, no question | C1 | his ask while packing (28 Oct): a lone "MaxPack" pill after each tick in his one-pocket carry-on; `Library.asksPocket` (≥ 2 pockets) gates `PocketPills` on the trip and on Pack to go home; model + UI test `testABagWithOnlyOnePocketNeverAsks` |
 | 0.105.1 | 28 Oct 2026 | Kits without the red line | C1 | his screenshot while packing (28 Oct): the red "1 missing: Camera Action" under a kit with things left at home on purpose — "far too dominant… not needed"; `KitLineParts` no longer shows `missingWords`; taken out = struck through in the fold, left out of "N inside"; four kit UI tests assert no `trip-line-<n>-kit-missing` |
 | 0.105 | 28 Oct 2026 | New thing, Quick open, Undo, and several lines at once | N4 C2 | keys105 (⌘N File ▸ New Thing from any tab, New Window → ⌥⌘N, iPhone app-icon quick action New thing, Dock menu New Thing; ⌘K Quick open panel over things/trips/templates incl. Swedish names and commands; under the UI tests no Mac window is restored), undo105 (UndoBook, 50 in-memory steps, Edit ▸ Undo/Redo named per step, iPhone shake; three-way field rule keeps the other device's changes with a "Partly undone" note; banners take back the same step), select105 (Mac: ⌘-click, ⇧-click, ⌘A, Space, Esc via SelectionKeys; bar with Tick/Untick/Not this time/Move to bag; each action one named ⌘Z step); Keyboard shortcuts topic now eleven cards |
 | 0.104.1 | 28 Oct 2026 | The Templates tab no longer freezes | F1 | his Mac froze at 13:24 on 28 Oct (0.104) on the Templates tab: a lazy grid per area inside a lazy list re-laid itself out without end during a sheet's close (signalPrefetch → updateItemPhases → placements → signalPrefetch, the 0.96 trip-screen loop); freeze1041 made the tab a plain VStack of headings with `cardRows` (two cards a row, same look), test `testTheTemplatesTabLivesOnWhenAPageClosesOverIt` with `-uiTestingManyTemplates` (66 templates, nine headings) on both devices; spec 03 rule: never a lazy container inside another |

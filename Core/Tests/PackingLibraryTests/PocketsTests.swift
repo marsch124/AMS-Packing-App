@@ -306,4 +306,13 @@ final class PocketsTests: XCTestCase {
         XCTAssertEqual(lib.whereIs("lighter", today: "2026-10-05")?.said, "In the Camp pouch, in the Backpack (lid).")
         XCTAssertEqual(lib.whereIs("lighter", today: "2026-10-05"), lib.whereIs(thingId: lighter.id, today: "2026-10-05"))
     }
+
+    /// A tick asks for a pocket only when there is a choice (0.105.2, his words 28 Oct 2026: "a bag
+    /// with only one pocket never asks").
+    func testOnlyABagWithTwoPocketsOrMoreAsksWhichOne() {
+        XCTAssertFalse(Library.asksPocket([]), "a bag with no pockets asked")
+        XCTAssertFalse(Library.asksPocket(["MaxPack"]), "a bag with one pocket asked")
+        XCTAssertTrue(Library.asksPocket(["Main", "Lid"]), "a bag with two pockets did not ask")
+        XCTAssertTrue(Library.asksPocket(["Main", "Front pocket", "Lid"]))
+    }
 }
