@@ -477,7 +477,8 @@ struct TripScreen: View {
                                         // What it changed, offered back as Undo (0.79): exactly those ticks.
                                         var change: TicksChanged?
                                         // Edit ▸ Undo names it after the heading (0.105): "Tick Toiletries".
-                                        model.change(named: "\(sectionDone ? "Untick" : "Tick") \(group.label)") {
+                                        let heading = jsTrim(group.label)
+                                        model.change(named: heading.isEmpty ? nil : "\(sectionDone ? "Untick" : "Tick") \(heading)") {
                                             change = $0.setChecked(!sectionDone, tripId: tripId, entryIds: mine.map(\.id))
                                         }
                                         if let change, !change.isEmpty { undo = .heading(change, group: group.label, step: model.lastStep) }
