@@ -865,14 +865,14 @@ inside (the kit in the place of a thing that is on a template on its own), a kit
 template or on two templates still one line, a rebuild and a change to a thing never bring a content back, the
 checked kit's ticking rules, the checks before you go looking inside. UI (0.70, `-uiTestingKits`):
 `testAKitIsOneLineOnATripAndWeighsWhatIsInside` (8 lines, "3 inside", no ninth line; Bags 2.4 kg; the arrow opens
-three rows; the plasters' warning; Take out → "1 missing: Lighter", "2 inside"; Put back; Care's heaviest:
+three rows; the plasters' warning; Take out → "2 inside", the lighter "taken out" in the fold and no `trip-line-7-kit-missing` (0.105.1); Put back → "3 inside"; Care's heaviest:
 Wash bag then Camp pouch at rows 2 and 3), `testAKitCheckedBeforeEachTripIsPackedWhenAllInsideIsTicked` (the
 wash bag open with two ticks and "2 to go"; its own tap does not tick it; the second tick does). A past trip (0.73):
 model `testAReviewedTripKeepsWhatWasInsideItsKitsAndALiveTripFollowsThem`,
 `testATripReviewedBeforeKitsWereKeptShowsThemAsTheyAreNow`,
 `testWhatAPastTripKeptIsStoredSyncedBackedUpAndRestoredButNeverSentOrStartedAgain`; UI
 `testAReviewedTripShowsWhatWasInsideItsKitThen` (the sample's first trip reviewed, then the pouch changed: still
-"3 inside" with the Plasters and no Take out; the second trip, `trip-row-1`, "1 missing: Spare cord").
+"3 inside" with the Plasters and no Take out; the second trip, `trip-row-1`, "1 inside" and no red line (0.105.1)).
 
 ---
 
@@ -1354,8 +1354,10 @@ smaller tick circles and less space between lines").
   count muted, after a middle dot: what is inside and not taken out). Between the line and its ⊘, a fold arrow
   (`KitFoldButton`, the section fold's chevron at `Metrics.glyph`, muted, `Metrics.lineButton` − 10 wide;
   id `trip-line-<n>-kit`, value "open" / "folded"). Under the line, indented `Metrics.mark` + 8 like Set place
-  (`KitLineParts`): "1 missing: Lighter" / "2 missing: Lighter, Spare cord" (Footnote semibold red,
-  `trip-line-<n>-kit-missing`) while something is taken out; with Check before each trip, while neither ticked
+  (`KitLineParts`): until 0.105 "1 missing: Lighter" (Footnote semibold red, `trip-line-<n>-kit-missing`) while
+  something was taken out — gone in 0.105.1 (his words, 28 Oct 2026, packing with cameras and drones left at home on
+  purpose: "This red text is far too dominant. This is not needed."); a thing taken out shows only struck through in
+  the fold, and the count leaves it out. With Check before each trip, while neither ticked
   nor set aside, "Tick what is inside first: 2 to go." (Footnote semibold green, `trip-line-<n>-kit-togo`);
   what is worth saying about what is inside for this trip (`kitWarnings(kitId:today:before: trip's last day)`:
   out of date, runs out before the trip ends, care overdue or due soon; Footnote semibold orange,
@@ -1379,7 +1381,7 @@ smaller tick circles and less space between lines").
   in a cabin bag is not allowed on board; "Plasters, in the Camp pouch" runs out before you are home — each opens
   that thing. It always reads the kit as it is NOW (`liveKitOnLine`), like every thing it reads.
   **A reviewed trip (0.73):** its kit lines show what was inside at the review (`KitOnLine.kept`; spec 07 part 9,
-  "A past trip"): the count, "1 missing" and the fold as then; open, the fold starts with "As it was when the trip
+  "A past trip"): the count and the fold as then; open, the fold starts with "As it was when the trip
   was reviewed" (Footnote muted, `trip-line-<n>-kit-then`), each thing's name muted (struck through when it was
   taken out; `trip-line-<n>-kit-<k>-name` — on a live kit's plain rows too), and NO Take out / Put back, no ticks
   ("Check before each trip" is not asked: `check` false, `setKitContentTicked` refuses) and no warnings; it opens

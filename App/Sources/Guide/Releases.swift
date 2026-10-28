@@ -18,6 +18,8 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.105.1", date: "28 Oct 2026", title: "Kits without the red line",
+                changed: ["A kit on a trip no longer says \u{201C}1 missing\u{201D} in red under its line when you took something out \u{2014} it shows struck through when you open the kit, and the count after its name leaves it out."]),
         Release(version: "0.105", date: "28 Oct 2026", title: "New thing, Quick open, Undo, and several lines at once",
                 new: ["On the Mac, \u{2318}N opens a new, empty thing\u{2019}s page from any tab (File \u{25B8} New Thing). On the iPhone, hold the app icon: New thing.",
                       "On the Mac, \u{2318}K is Quick open: type a few letters of a thing, a trip or a template \u{2014} a Swedish name too \u{2014} or of a command, and Return opens it.",

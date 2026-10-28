@@ -15665,8 +15665,15 @@ final class AMSPackingUITests: XCTestCase {
 
         openKitTrip(app)
         XCTAssertTrue(scrollWithin(app, "trip-detail", until: "trip-line-7-kit"), "no Camp pouch line")
-        let missing = app.staticTexts["trip-line-7-kit-missing"]
-        XCTAssertTrue(waitUntil { self.words(missing) == "1 missing: Spare cord" }, "the trip does not say what is missing: '\(words(missing))'")
+        // Taken out: one fewer inside, struck through in the fold — and no red "1 missing" under
+        // the line (0.105.1, his words: "far too dominant… not needed").
+        let pouch = app.buttons["trip-line-7"]
+        XCTAssertTrue(waitUntil { self.words(pouch).contains("3 inside") }, "with the map in and the cord out, not 3 inside: '\(words(pouch))'")
+        XCTAssertFalse(app.staticTexts["trip-line-7-kit-missing"].exists,
+                       "a thing taken out on purpose is said missing in red: '\(words(app.staticTexts["trip-line-7-kit-missing"]))'")
+        tap(app, id: "trip-line-7-kit")
+        let cord = app.descendants(matching: .any)["trip-line-7-kit-1"]
+        XCTAssertTrue(waitUntil { cord.value as? String == "taken out" }, "the fold does not show the cord taken out: '\(cord.value ?? "")'")
         shot(app, "kit-trip-missing")
     }
 
@@ -15688,10 +15695,11 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(words(app.staticTexts["trip-line-7-kit-warning-0"]).contains("Plasters"), "the plasters' date is not said on the kit")
         shot(app, "kit-trip-open")
         tap(app, id: "trip-line-7-kit-0-out")
-        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-line-7-kit-missing"]) == "1 missing: Lighter" }, "taken out on the trip, nothing is missing")
         XCTAssertTrue(waitUntil { self.words(pouch).contains("2 inside") }, "'\(words(pouch))'")
+        XCTAssertEqual(app.descendants(matching: .any)["trip-line-7-kit-0"].value as? String, "taken out", "the lighter is not shown taken out")
+        XCTAssertFalse(app.staticTexts["trip-line-7-kit-missing"].exists, "taken out on the trip, a red \"1 missing\" under the line")
         tap(app, id: "trip-line-7-kit-0-out")
-        XCTAssertTrue(waitUntil { !app.staticTexts["trip-line-7-kit-missing"].exists }, "put back, still missing")
+        XCTAssertTrue(waitUntil { self.words(pouch).contains("3 inside") }, "put back, not counted inside: '\(words(pouch))'")
         tap(app, id: "trip-done")
 
         // Care's heaviest things: the Wash bag (208 g with its things) and the pouch (190 g)
@@ -15792,9 +15800,8 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
         tap(app, id: "things-done")
         openKitTrip(app)
-        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-line-2-kit-missing"]) == "1 missing: Toothbrush" },
-                      "taken out on its page, it is not missing on the trip: '\(words(app.staticTexts["trip-line-2-kit-missing"]))'")
-        XCTAssertTrue(words(app.staticTexts["trip-line-2-kit-togo"]).contains("1 to go"), "it still asks for the toothbrush")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-line-2-kit-togo"]).contains("1 to go") }, "it still asks for the toothbrush")
+        XCTAssertFalse(app.staticTexts["trip-line-2-kit-missing"].exists, "taken out on its page, a red \"1 missing\" on the trip")
     }
 
     // MARK: - Batteries and To charge (0.75, spec 07 part 15)
@@ -16119,9 +16126,9 @@ final class AMSPackingUITests: XCTestCase {
         app.buttons["trip-row-1"].tap()
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
         XCTAssertTrue(scrollWithin(app, "trip-detail", until: "trip-line-7-kit"), "no Camp pouch line on the trip ahead")
-        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-line-7-kit-missing"]) == "1 missing: Spare cord" },
-                      "the trip ahead does not follow the pouch: '\(words(app.staticTexts["trip-line-7-kit-missing"]))'")
-        XCTAssertTrue(words(app.buttons["trip-line-7"]).contains("1 inside"), "'\(words(app.buttons["trip-line-7"]))'")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["trip-line-7"]).contains("1 inside") },
+                      "the trip ahead does not follow the pouch: '\(words(app.buttons["trip-line-7"]))'")
+        XCTAssertFalse(app.staticTexts["trip-line-7-kit-missing"].exists, "the trip ahead says what is taken out in red")
         shot(app, "kit-live-trip")
     }
 

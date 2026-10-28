@@ -6,8 +6,10 @@ import PackingLibrary
 // · 3 inside" — with a fold arrow beside its ⊘ that shows what is inside, muted and not
 // ticked; with Check before each trip, small ticks instead (open until the kit is
 // packed), and the kit counts as packed only when every one is ticked. Under the line,
-// always: "1 missing: Lighter" while something is taken out, and what is worth saying
-// about what is inside ("Plasters runs out in 10 days").
+// what is worth saying about what is inside ("Plasters runs out in 10 days"). A thing
+// taken out shows only struck through in the fold, and the count leaves it out — no red
+// "1 missing" any more (0.105.1, his words 28 Oct 2026: "far too dominant… not needed";
+// they leave some cameras and drones at home on purpose).
 //
 // A past trip (0.73): reviewed, its kit lines kept what was inside them then
 // (`KitOnLine.kept`). The fold shows that — muted, taken out struck through, no Take out
@@ -55,12 +57,6 @@ struct KitLineParts: View {
     var body: some View {
         let aside = isSetAside(line)
         VStack(alignment: .leading, spacing: 2) {
-            if !kit.missingWords.isEmpty {
-                Text(kit.missingWords)
-                    .font(.system(.footnote, weight: .semibold)).foregroundStyle(AppSection.actions.color)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityIdentifier("trip-line-\(n)-kit-missing")
-            }
             if !aside && !line.checked && !kit.toTickWords.isEmpty {
                 Text(kit.toTickWords)
                     .font(.system(.footnote, weight: .semibold)).foregroundStyle(AppSection.events.color)
@@ -85,7 +81,7 @@ struct KitLineParts: View {
         }
         // Set in under the name, past the tick circle.
         .padding(.leading, Metrics.mark + 8)
-        .padding(.bottom, open || !kit.missingWords.isEmpty || !warnings.isEmpty ? 4 : 0)
+        .padding(.bottom, open || !warnings.isEmpty ? 4 : 0)
     }
 
     /// One thing inside: its name, muted — with a small tick when the kit is checked

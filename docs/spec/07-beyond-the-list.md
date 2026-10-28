@@ -544,8 +544,8 @@ a pouch of cables and chargers, a pouch of small tools. He said yes to kits on 7
   condition and Valid until; they stay in Your things, the table and Care like any other.
 - **One level deep.** A kit can go in a bag; a kit never goes inside a kit; a thing is in one kit at most; a bag
   is never a kit nor inside one (a bag holds its things by name); a to-do is never inside one.
-- **Taken out** (for now): a thing taken out of its kit is still its content, but not in it — "1 missing: Lighter"
-  until it is put back. Taken out on the thing's page, on the kit's page, or from the kit's fold on a trip — it is
+- **Taken out** (for now): a thing taken out of its kit is still its content, but not in it — struck through in the
+  kit's fold, and left out of its count, until it is put back. Taken out on the thing's page, on the kit's page, or from the kit's fold on a trip — it is
   the thing's, so every trip and both pages follow.
 - **Check before each trip** (on the kit's page): the contents show as small ticks under the kit's line, and the
   kit counts as packed only when all inside it are ticked. A NEW kit starts with it ON (0.76, below).
@@ -607,7 +607,8 @@ click on any of them moves the page's focus there, as on the other fields.
 - With **Check before each trip**: open until packed, small ticks, "Tick what is inside first: 2 to go."; the
   kit's own tick is refused until all inside are ticked (a section's tick-all too; Tick everything until 0.79); the last
   tick packs it; unticking one unpacks it.
-- **"1 missing: Lighter"** under the line while something is taken out.
+- Nothing under the line for what is taken out (until 0.105 a red "1 missing: Lighter"; his words 28 Oct 2026: "far
+  too dominant… not needed") — it shows struck through in the fold, and the count leaves it out.
 - What is worth saying about what is inside, for this trip, under the line ("Plasters runs out in 10 days").
 - **Trip building never adds a content as a line.** Templates hold the kit. A thing inside a kit that is ALSO on a
   template on its own: on a template with its kit, it is left out; on one without, the KIT comes in its place. Each
@@ -623,7 +624,7 @@ A trip line is a copy, and since 0.73 what is inside a kit line is too. **The mo
 lists' history; `followThing` stops at a reviewed trip). At the FIRST review (`keepKitsAtReview`, only when the trip
 was not reviewed before) each kit line keeps what is inside its kit now — `kitThen`: `[{id, name, qty (how many),
 weight (grams each), out: true (taken out)}]`, his order — and the trip is marked `kitsKept: true`. From then on:
-- the trip shows what was inside THEN (`kitOnLine(kept:)`, `kitLines`): "3 inside", "1 missing: Lighter" as at the
+- the trip shows what was inside THEN (`kitOnLine(kept:)`, `kitLines`): "3 inside" and the fold as at the
   review, whatever the kit holds now, even when the kit is renamed, changed or deleted (the line is the kit then);
 - the fold says **"As it was when the trip was reviewed"** (Footnote muted, `trip-line-<n>-kit-then`) and shows
   each thing's name (`trip-line-<n>-kit-<k>-name`), muted, struck through when it was taken out — no Take out /
@@ -671,7 +672,7 @@ started again keeping the copy (3 failures, e.g. "("["Lighter", "Spare cord", "P
 UI (`-uiTestingKits`: the sample + a Camp pouch on Hiking with a Lighter, Spare cord and Plasters, and a Wash bag on
 no template, checked before each trip, with the Toothbrush — still on Common base — and Soap):
 `testAKitsPageHoldsItsThingsTakesOneOutAndAddsAnother` (190 g; the cord taken out → 110 g; the Map added → 170 g;
-kept after Save; the trip says "1 missing: Spare cord"), `testAKitIsOneLineOnATripAndWeighsWhatIsInside`,
+kept after Save; the trip says "3 inside", the cord struck through in the fold, no red line since 0.105.1), `testAKitIsOneLineOnATripAndWeighsWhatIsInside`,
 `testAKitCheckedBeforeEachTripIsPackedWhenAllInsideIsTicked`, `testAThingInsideAKitSaysSoAndIsTakenOutFromItsPage`.
 Each was seen red with a planted fault: Save not writing the kit ("Save did not keep the map inside"), the bags not
 weighing the contents ("… '2.1 kg'"), the kit's tick not refused ("the kit was packed before what is inside it was
@@ -679,7 +680,7 @@ ticked"), Save not writing taken out ("taken out on its page, it is not missing 
 kit part also ran on the Mac (probe). Since 0.73 (the sample has a second trip, "Autumn in the hills", two months
 ahead, `trip-row-1`): `testAReviewedTripShowsWhatWasInsideItsKitThen` (the first trip reviewed; then the cord taken
 out and the plasters ✕'d on the pouch's page; the reviewed trip still "3 inside", nothing missing, its fold "As it
-was…" with the Plasters and no Take out; the trip ahead "1 missing: Spare cord", "1 inside") and, Mac only,
+was…" with the Plasters and no Take out; the trip ahead "1 inside", no red line since 0.105.1) and, Mac only,
 `testTheKitPartIsWalkedByTheKeys` (Weight → Tab → row 0's Take out, ✕, row 1's Take out; Space takes the cord out;
 Tab → row 1's ✕, row 2's Take out, ✕; Space removes the plasters and the focus stays on row 1's ✕; Tab → Add; Space
 opens the list with the cursor in Find a thing; "map" lights the Map, Return adds it, the page stays, the search
@@ -4135,6 +4136,7 @@ set aside"). Pictures `remind-thing-page`, `remind-thing-page-changed`, `remind-
 | 28 Oct 2026 | **0.105, ⌘N New Thing and ⌘K Quick open — his yes.** ⌘N (File ▸ New Thing) opens a new, empty thing's page from any tab, over it (the tab stays); New Window moves to ⌥⌘N; New Thing comes first under the iPhone's app icon (three grab lists with it — iOS shows four — the build's decision) and in the Mac's Dock menu. ⌘K (Go ▸ Quick Open, Mac): a panel over the window — a few letters find a thing (its Swedish name too), a trip or a template, or a command (the tabs, New thing, Keyboard shortcuts, Sync details; on a trip's page its Group by choices and Fold all); ↑ ↓, Return, Esc; capitals and accents do not count; five a group. Decided by the build: ⌘N also in Your things (its own page) and in the All your things window; off on other pages (the Apple modal rule); on a trip's page Quick open offers only that trip's commands; one Esc closes the panel. Spec 06 §20a, §7b; spec 02 §13b. | "Perfect - please implement: '⌘N opens a new, empty thing's page from anywhere in the app. That's what ⌘N means in Apple's own apps, like a new note in Notes or a new reminder in Reminders. ⌘N currently opens a new window. That would move to ⌥⌘N, Apple's usual alternative. On the iPhone: "New thing" also goes into the menu when you hold the app icon.'" — and "1. ⌘K - yes please". |
 | 28 Oct 2026 | **0.105, ⌘Z undo everywhere — his yes.** "2. ⌘Z - yes please", to "⌘Z undo everywhere (Mac): undo and redo the last change, whatever page it was on." Edit ▸ Undo / Redo (⌘Z / ⇧⌘Z) on the Mac, named for the step ("Undo Tick Passport", "Undo Delete Weekend in the hills"); on the iPhone shake to undo and three fingers, through the window's undo manager — the same steps. A step is everything one change of this device wrote, one press = one step (a thing's or a template's Done is one); 50 steps, in memory, gone at quit, forgotten after a restore, the first import or a restart of the sync. **The rule with the other device:** an undo is a normal change that writes back only what is still as the step left it — field by field; a field changed there since is kept and named ("Partly undone — Passport was changed on your iPhone"); lists by the 0.95 rule; a delete comes back with the same ids; a record deleted there stays deleted. On a page with its own fields ⌘Z (and shake) is the typing's, never the library's. The 6-second Undo, To do's, To buy's and the table's Undo take back the same step as ⌘Z — never twice. Group by and Fold all are views, not steps. No new CloudKit field. Spec 01 §5 "Undo and the other device", spec 06 §20a "Edit ▸ Undo and Redo". | His words, 28 Oct 2026. |
 | 28 Oct 2026 | **0.105, select several lines on the Mac — his yes.** On a trip on the Mac, ⌘-click puts a line in the selection (it is not ticked), ⇧-click selects every line from the one chosen last to this one in the order the list shows them, across its headings, ⌘A every line shown, Esc lets them go; a plain click still ticks one line. Selected lines take the Mac's accent colour. With two or more, a bar above Add a thing: "4 selected", Tick, Untick, Not this time, Move to bag (the trip's bags), Clear — each ONE change; the line's menu on a selected line acts on all. Move to bag changes the lines on this trip only, never the thing. The iPhone is unchanged. Spec 03 "Several lines selected", spec 06 §7b | His words, 28 Oct 2026: "3. Select several lines... - yes please" (the proposal: "Select several lines (Mac): ⇧-click or ⌘-click lines on a trip, then tick, set aside or move to another bag in one go."). Model `LineSelectionTests`; UI `testSeveralLinesAreSelectedOnTheMacAndTickedInOneGo`, `testAShiftClickSelectsTheLinesBetweenAcrossHeadings`, `testMoveToBagMovesEverySelectedLine` — seen red on 0.104 first. |
+| 28 Oct 2026 | **0.105.1, no red "1 missing" under a kit — his words.** Packing with some cameras and drones left at home on purpose, his screenshot of "Camera kit · 3 inside" over "1 missing: Camera Action" in red: "This red text is far too dominant. This is not needed." The line under a kit is gone (`KitLineParts`); a thing taken out shows only struck through in the kit's fold (value "taken out"), and "N inside" already leaves it out. `KitOnLine.missingWords` stays in the model (tests), shown nowhere. Four UI tests now assert no `trip-line-<n>-kit-missing` — red on 0.105, where it was there. |
 
 ## Open questions
 
