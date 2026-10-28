@@ -89,9 +89,17 @@ struct TemplatesScreen: View {
         let areas = TemplatesScreen.activityAreas(model.library.shownTemplates(), model.library)
         let flat = areas.flatMap(\.lists)
         let use = model.library.templateUse(today: Today.local)
+        // Each card's number on the tab, top to bottom (`template-row-<n>`), looked up once.
+        let place = Dictionary(flat.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { a, _ in a })
         KeyboardAwayScroll {
             VStack(alignment: .leading, spacing: 0) {
-                LazyVStack(alignment: .leading, spacing: 8) {
+                // 🪤 NOT lazy (0.104.1). Until then a `LazyVStack` holding, per area, a `LazyVGrid` of the
+                // cards — a lazy list inside a lazy list — and on his Mac (28 Oct 2026, two minutes after a
+                // launch) the tab was laid out without end as a page closed over it: the outer list's
+                // prefetch and the grids' heights set each other off for ever, the main thread at 100 %,
+                // Packing frozen (spec 04, Traps: the endless redraw on the Mac). A tab of his size is a
+                // few dozen cards: everything is built, once, and nothing is estimated.
+                VStack(alignment: .leading, spacing: 8) {
                     // On the Mac the header is pinned in the window's title bar strip
                     // instead (`headerOnTheMac`, below).
                     #if !os(macOS)
@@ -111,24 +119,13 @@ struct TemplatesScreen: View {
                             .padding(.top, 16)
                             .accessibilityIdentifier("templates-area-\(area.testId)")
                         // Two across: more of his lists at a glance, as the web app shows them.
-                        LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)],
-                                  spacing: 8) {
-                            ForEach(area.lists, id: \.id) { list in
-                                Button { opened = .template(list.id) } label: { TemplateCard(list: list, use: use[list.id]) }
-                                    .buttonStyle(.plain)
-                                    .accessibilityIdentifier("template-row-\(flat.firstIndex { $0.id == list.id } ?? 0)")
-                                    #if DEBUG
-                                    // The tests' only way to see the colour its cover is drawn in (0.90).
-                                    .accessibilityValue(Cover.fill(list))
-                                    #endif
-                            }
-                        }
+                        cardRows(area.lists, place: place, use: use)
                     }
                 }
                 // His activity areas, made and changed here (0.89) — at the foot of the tab, after
                 // the last area (0.91, his words: "Please move the activity pill button to the bottom
-                // of the page."). Outside the lazy stack, so it is always built: the Mac builds only
-                // what is on screen, and the pill is often below the window's edge.
+                // of the page."). 20 below the last cards (outside the stack of headings and cards, whose
+                // spacing is 8).
                 areasDoor
                     .padding(.top, 20)
             }
@@ -156,6 +153,30 @@ struct TemplatesScreen: View {
 }
 
 extension TemplatesScreen {
+    /// An area's cards, two across — in plain rows since 0.104.1 (a `LazyVGrid` until then; see `body`),
+    /// drawn as the grid drew them: two columns sharing the width, 8 apart, rows 8 apart, a shorter card
+    /// centred in its row, a last one alone in the left column.
+    func cardRows(_ lists: [PackList], place: [String: Int], use: [String: Library.TemplateUse]) -> some View {
+        let rows = stride(from: 0, to: lists.count, by: 2).map { Array(lists[$0..<min($0 + 2, lists.count)]) }
+        return VStack(alignment: .leading, spacing: 8) {
+            ForEach(rows, id: \.[0].id) { row in
+                HStack(alignment: .center, spacing: 8) {
+                    ForEach(row, id: \.id) { list in
+                        Button { opened = .template(list.id) } label: { TemplateCard(list: list, use: use[list.id]) }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("template-row-\(place[list.id] ?? 0)")
+                            #if DEBUG
+                            // The tests' only way to see the colour its cover is drawn in (0.90).
+                            .accessibilityValue(Cover.fill(list))
+                            #endif
+                    }
+                    // The empty right column of an odd last row.
+                    if row.count == 1 { Color.clear.frame(maxWidth: .infinity, maxHeight: 0) }
+                }
+            }
+        }
+    }
+
     /// "Activity areas" — a quiet violet pill with the pen (0.89): his areas made, renamed, moved
     /// and removed on their own page. At the foot of the tab, after the last area, since 0.91 (his
     /// words, 19 Oct 2026: "Please move the activity pill button to the bottom of the page.");

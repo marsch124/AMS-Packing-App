@@ -848,6 +848,59 @@ enum SampleLibrary {
         return lib
     }
 
+    /// A Templates tab of his size and shape (`-uiTestingManyTemplates`, 0.104.1 — the tab's endless
+    /// redraw on his Mac, 28 Oct 2026): the sample + 63 more templates — four always packed, three by
+    /// transport, 56 in the three built-in areas, three areas of his own and Other Templates (one card to
+    /// eight rows of them) —
+    /// names of one line and of two, 4 to 30 things each (a thing on several templates, as his are),
+    /// and 18 trips built from them over the past year (each card's "Last taken" line). Nothing of his.
+    static func manyTemplates() -> Library {
+        var lib = make()
+        lib.setActivityAreas(Library.factoryAreas + [ActivityArea(id: "area-sea", name: "Sea and sailing"),
+                                                     ActivityArea(id: "area-city", name: "City breaks"),
+                                                     ActivityArea(id: "area-work", name: "Work travel")])
+        // Areas of very different sizes, as his are: one card to eight rows of them.
+        let areas = [("GA", 15), ("WET", 9), ("OE", 2), ("area-sea", 7), ("area-city", 1), ("area-work", 12), ("", 10)]
+            .flatMap { Array(repeating: $0.0, count: $0.1) }
+        let short = ["Golf", "Diving", "Yoga", "Ski", "Cinema", "Sauna", "Kayak", "Office", "Museum", "Climb"]
+        let long = ["Long weekend in a mountain hut with the family", "Winter bath and a coffee by the lake",
+                    "Overnight bike-packing along the coast road", "Conference week with a client dinner",
+                    "Sailing a borrowed boat across the archipelago", "Strength and mobility in the hotel gym"]
+        var pool: [String] = []
+        for n in 1...300 { pool.append(String(format: "Invented thing %03d", n)) }
+        var made: [String] = []
+        for k in areas.indices {
+            let name = k % 3 == 1 ? "\(long[k % long.count]) \(k)" : "\(short[k % short.count]) \(k)"
+            var l = Library.filed(newList(name: name), in: areas[k])
+            l.items = (0..<(4 + (k * 7) % 27)).map { i in newItem(name: pool[(k * 11 + i) % pool.count]) }
+            lib.saveTemplate(l)
+            made.append(l.id)
+        }
+        for k in 0..<4 {
+            var l = newList(name: k == 2 ? "Always with me on every trip, whatever the weather" : "Base \(k)", role: "base")
+            l.items = (0..<(6 + k * 5)).map { i in newItem(name: pool[(200 + k * 9 + i) % pool.count]) }
+            lib.saveTemplate(l)
+        }
+        for (k, way) in TRANSPORTS.enumerated() {
+            var l = newList(name: "By \(way) \(k)", role: "transport", transport: way)
+            l.items = (0..<(5 + k * 4)).map { i in newItem(name: pool[(250 + k * 7 + i) % pool.count]) }
+            lib.saveTemplate(l)
+        }
+        let ids = lib.templates.filter { made.contains($0.id) }.map(\.id)
+        let cal = Calendar(identifier: .gregorian)
+        func day(_ n: Int) -> String {
+            let c = cal.dateComponents([.year, .month, .day], from: cal.date(byAdding: .day, value: n, to: Date())!)
+            return String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!)
+        }
+        for t in 0..<18 {
+            var trip = newEvent(name: "Invented trip \(t + 1)", startDate: day(-360 + t * 19), endDate: day(-357 + t * 19))
+            trip.activities = [ids[(t * 5) % ids.count], ids[(t * 5 + 2) % ids.count]]
+            trip.entries = buildTotalEntries(trip, lib.resolvedTemplates())
+            lib.trips.append(trip)
+        }
+        return lib
+    }
+
     /// A DIFFERENT, smaller invented library, as a backup FILE. Under `-uiTesting`
     /// the restore button reads this instead of opening Apple's file window (which
     /// no test can drive): 2 things where the device holds 10, so a restore that

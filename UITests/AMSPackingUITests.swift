@@ -183,6 +183,137 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(disappears(app, "template-detail", timeout: 5), "the template did not close")
     }
 
+    /// The Templates tab at his size lives on when a page closes over it (0.104.1). His Mac froze on
+    /// 28 Oct 2026, two minutes after a launch: the main thread at 100 %, the tab's lazy list laid out
+    /// again and again while a sheet was closing (spec 04, Traps: the endless redraw on the Mac). Here:
+    /// his size of tab (`-uiTestingManyTemplates`, 66 templates under nine headings), at the top, half
+    /// way down and further — a template opened and closed every way there is (Done untouched, Done
+    /// after a thing was added, Cancel; on the Mac Escape and ⌘S too); the tab to its end and back up a
+    /// short step at a time, opening and closing pages on the way; Refine opened and closed. A frozen app answers no question: the
+    /// test fails on its first look after the close, or runs out of its time.
+    func testTheTemplatesTabLivesOnWhenAPageClosesOverIt() {
+        // One climb by default; `FREEZE_ROUNDS` in the runner's environment asks for more (below).
+        let rounds = max(1, Int(ProcessInfo.processInfo.environment["FREEZE_ROUNDS"] ?? "") ?? 1)
+        executionTimeAllowance = TimeInterval(360 + 120 * rounds)
+        let app = launch("-uiTestingManyTemplates")
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        let first = app.buttons["template-row-0"]
+        XCTAssertTrue(first.waitForExistence(timeout: 10), "no template is listed")
+        guard let list = listHolding(app, first) else { return XCTFail("the templates are in no list") }
+        // The tab as it looks (0.104.1 changed how it is built, not how it looks: the same picture before and after).
+        sleep(1)
+        shot(app, "templates-many-top")
+
+        func scroll(down: Bool, times: Int = 1) {
+            for _ in 0..<times {
+                #if os(macOS)
+                list.scroll(byDeltaX: 0, deltaY: down ? -260 : 260)
+                #else
+                down ? list.swipeUp(velocity: .slow) : list.swipeDown(velocity: .slow)
+                #endif
+                usleep(250_000)
+            }
+        }
+        // A short step up, no glide: the list stops at a new place each time.
+        func nudgeUp() {
+            #if os(macOS)
+            list.scroll(byDeltaX: 0, deltaY: 90)
+            #else
+            let box = list.frame, o = app.coordinate(withNormalizedOffset: .zero)
+            o.withOffset(CGVector(dx: box.midX, dy: box.midY - 60))
+                .press(forDuration: 0.05, thenDragTo: o.withOffset(CGVector(dx: box.midX, dy: box.midY + 60)), withVelocity: .slow, thenHoldForDuration: 0.1)
+            #endif
+            usleep(150_000)
+        }
+        // A card on screen, looked for from the last one found outwards — the list moves a little
+        // between looks, so it is near (asking all 66 every time takes long).
+        var from = 0
+        func cardNear() -> XCUIElement? {
+            for d in 0..<80 {
+                for n in d == 0 ? [from] : [from - d, from + d] where n >= 0 {
+                    let card = app.buttons["template-row-\(n)"]
+                    if card.exists, card.isHittable, onScreen(app, card) { from = n; return card }
+                }
+            }
+            return nil
+        }
+        // The tab still answers: its heading is there, and a card can be found and read.
+        func alive(_ said: String) {
+            XCTAssertTrue(appears(app, "screen-templates", timeout: 15), "the Templates tab stopped answering \(said)")
+            XCTAssertNotNil(cardNear(), "no card on screen \(said)")
+        }
+        enum Close: String { case done, doneChanged, cancel, escape, saveKey }
+        #if os(macOS)
+        let ways: [Close] = [.done, .escape, .doneChanged, .saveKey, .cancel, .done, .escape]
+        #else
+        let ways: [Close] = [.done, .cancel, .doneChanged, .cancel, .done]
+        #endif
+        for (step, way) in ways.enumerated() {
+            if step > 0 { scroll(down: true, times: step == 3 ? 2 : 1) }
+            guard let card = cardNear() else { return XCTFail("no card on screen at step \(step)") }
+            card.tap()
+            XCTAssertTrue(appears(app, "template-detail", timeout: 10), "the template did not open at step \(step)")
+            switch way {
+            case .done: tap(app, id: "template-detail-done")
+            case .cancel: tap(app, id: "template-cancel")
+            case .doneChanged:
+                let field = app.textFields["template-add-name"]
+                XCTAssertTrue(field.waitForExistence(timeout: 5), "no field to add a thing")
+                type("Gaiters \(step)", into: field)
+                tap(app, id: "template-add")
+                hideKeyboard(app)
+                tap(app, id: "template-detail-done")
+            case .escape:
+                sleep(1)
+                app.typeKey(.escape, modifierFlags: [])
+            case .saveKey:
+                sleep(1)
+                app.typeKey("s", modifierFlags: .command)
+            }
+            XCTAssertTrue(disappears(app, "template-detail", timeout: 15), "the template did not close (\(way.rawValue), step \(step))")
+            alive("after \(way.rawValue) at step \(step)")
+        }
+        // Up and down the tab as a hand goes: to its end in big steps, then back up a short step at a time —
+        // on the way back up the iPhone froze on 0.104 (this test, 28 Oct 2026: 100 % in the lazy list's
+        // layout). Once (`FREEZE_ROUNDS` in the runner's environment asks for more: a longer hunt for
+        // the freeze, by hand); the tab must answer all the way.
+        for round in 1...rounds {
+            scroll(down: true, times: 10)
+            alive("at the end of the tab, round \(round)")
+            for step in 1...16 {
+                nudgeUp()
+                XCTAssertTrue(appears(app, "screen-templates", timeout: 15),
+                              "the Templates tab stopped answering on the way up, round \(round), step \(step)")
+                // Now and then a page opened and closed again where the list stands (Escape on the Mac).
+                if step % 8 == 0, let card = cardNear() {
+                    card.tap()
+                    XCTAssertTrue(appears(app, "template-detail", timeout: 10), "the template did not open, round \(round), step \(step)")
+                    #if os(macOS)
+                    sleep(1)
+                    app.typeKey(.escape, modifierFlags: [])
+                    #else
+                    tap(app, id: "template-cancel")
+                    #endif
+                    XCTAssertTrue(disappears(app, "template-detail", timeout: 15), "the template did not close, round \(round), step \(step)")
+                }
+            }
+            scroll(down: false, times: 6)
+        }
+        alive("back at the top")
+        // Then Refine — a page of its own, opened from the tab.
+        let refine = app.buttons["refine-open"]
+        XCTAssertTrue(refine.waitForExistence(timeout: 5), "no way into Refine")
+        bringIntoView(app, refine)
+        refine.tap()
+        XCTAssertTrue(appears(app, "refine-screen", timeout: 10), "Refine did not open")
+        tap(app, id: "refine-done")
+        XCTAssertTrue(disappears(app, "refine-screen", timeout: 15), "Refine did not close")
+        alive("after Refine")
+        tab(app, "home")
+        XCTAssertTrue(appears(app, "screen-home", timeout: 15), "Home did not open after the Templates tab")
+    }
+
     /// An empty device never decides by itself and never plants starter lists:
     /// it shows the two doors, and nothing else.
     func testAnEmptyDeviceShowsTheTwoDoors() {

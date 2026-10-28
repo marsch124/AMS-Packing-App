@@ -95,7 +95,7 @@ magnifier.
   `testAnEmptyDeviceShowsTheTwoDoors` (no `template-row-0`).
 - When the library failed to load: the error text in red (`library-problem`) instead.
 
-### What is on screen (top to bottom), inside a `KeyboardAwayScroll` (a ScrollView that dismisses the keyboard on drag) with a `LazyVStack(spacing: 8)`, side padding 16, bottom 24
+### What is on screen (top to bottom), inside a `KeyboardAwayScroll` (a ScrollView that dismisses the keyboard on drag) with a plain `VStack(spacing: 8)` (a `LazyVStack` until 0.104.1 — Traps, below), side padding 16, bottom 24
 1. **Header** — the shared tab header `ScreenHeader` (spec 06, "The tab header"; 0.67), bottom padding 4 — on the
    Mac pinned in the window's title bar strip, after the window buttons, the page scrolling under it. Its
    first line holds the title and, on the SAME centre line at the right, 8 pt apart, the magnifier and + New;
@@ -128,14 +128,16 @@ magnifier.
      heavy, kerning 0.8, "Much larger headings", his H.13). id `templates-area-<testId>` where testId is `base`,
      `transport`, a built-in's code `GA`, `WET`, `OE` (renamed or not), `own-<n>` for an area he made (n = its
      place in HIS list of areas, 0.89 — his ids are random) or `other`.
-   - A `LazyVGrid` of two flexible columns (spacing 8 both ways) of **cards** (§2). Each card is a plain Button;
+   - The **cards** (§2), two across, in plain rows (`cardRows`, 0.104.1; a `LazyVGrid` of two flexible columns
+     until then — Traps, below), drawn as the grid drew them: two columns sharing the width, 8 apart, rows 8 apart, a
+     shorter card centred in its row, an odd last card alone in the left column. Each card is a plain Button;
      id `template-row-<n>` where n = the template's index in the flattened list of all areas, top to bottom
      (so with the sample library: 0 = Common base, 1 = Hiking, 2 = Swim). Tap → opens `TemplateDetail` (§6).
 4. **Activity areas** (0.89, `areasDoor`, id `templates-areas`): the quiet violet pill with the pen that opens his
    areas (§1a) — **at the foot of the tab, after the last area's cards** (0.91), 20 above it, left-aligned. It sits
-   OUTSIDE the lazy stack of headings and cards (a plain `VStack` holds the `LazyVStack` and then the pill, the side
-   padding 16 and bottom 24 moved onto it), so it is always built: the Mac builds only what is on screen, and the pill is
-   often below the window's edge. Until 0.91 it stood at the head of the headings, under the Refine card and the
+   after the stack of headings and cards (a plain `VStack` holds that stack and then the pill, the side padding 16 and
+   bottom 24 moved onto it). Until 0.104.1 that stack was lazy, and the pill stood outside it so that it was always
+   built: the Mac built only what was on screen, and the pill is often below the window's edge. Until 0.91 it stood at the head of the headings, under the Refine card and the
    small-core news card (2a). His words (19 Oct 2026, the test sheet of 0.89): **"Please move the activity pill button
    to the bottom of the page."**
 - No empty-state text: a ready library with no templates shows the header, the summary "0 templates · …", the
@@ -198,7 +200,35 @@ sheet here can be swiped down, except a template's page while arranging (`intera
   heading, and still opens `areas-detail` (pictures `tmpl91-pill-templates`, day and night). Seen RED with the pill
   planted back at the head: `XCTAssertGreaterThan failed: ("224.0") is not greater than ("608.9999999999999") - the pill
   is not under the last area's heading: pill 224.0, heading 608.9999999999999`.
-- **Not covered:** the "By Transport" and "Other Templates" areas, the exact summary wording on screen.
+- 0.104.1: `testTheTemplatesTabLivesOnWhenAPageClosesOverIt` (both devices) — a tab of his size
+  (`-uiTestingManyTemplates`: 66 templates under nine headings, areas of one card to eight rows of them, names of one
+  and two lines, 18 past trips), at the top, half way down and further: a template opened and closed every way (Done
+  untouched, Done after a thing was added, Cancel; on the Mac Escape and ⌘S too); the tab to its end and back up in
+  short steps, a page opened and closed on the way; Refine opened and closed, then Home — the tab must answer after
+  every close and every step (Traps, below). About 4 minutes on the iPhone simulator.
+- **Not covered:** the "By Transport" and "Other Templates" headings' words (the 0.104.1 sample shows both; no
+  test reads them), the exact summary wording on screen.
+
+### Traps
+- 🪤 **The endless redraw on the Mac (0.104.1, 28 Oct 2026).** His Mac froze two minutes after a launch: no
+  navigation, the main thread at 99 %. A sample of the frozen app: a sheet closing (`SheetBridge … teardown` →
+  AppKit's sheet animation, which runs the run loop itself) and inside it SwiftUI flushing transaction after
+  transaction — `LazyLayoutViewCache.signalPrefetch` → a new transaction → `updateItemPhases` → the lazy list placed
+  again (`LazySubviewPlacements.placeSubviews` → `LazyStack.place` → the area grids measured, `LazyVGridLayout`,
+  `TemplateCard` and `PackList` copied) → `signalPrefetch` again, for ever: the same loop as the trip's endless
+  redraw on iOS (spec 03, 0.96), here on THIS tab. The tab was a `LazyVStack` holding, per area, a `LazyVGrid` of the
+  cards — a lazy list INSIDE a lazy list: each grid's height is an estimate until its cards are built, and building
+  them (the outer list's prefetch) changes it, which moves what the outer list holds and prefetches next. With his
+  library — headings a line high beside grids of one to a dozen rows, cards one or two lines tall — no resting
+  point. Now nothing on the tab is lazy: a `VStack` of headings and plain rows of two cards (`cardRows`), built
+  once, nothing estimated; a tab of his size is a few dozen cards. **Rule for every screen: never a lazy container
+  inside another; a lazy list's rows keep their identity while they stay in place (spec 03).**
+  The freeze needs a moment the tests do not hit at will: with 0.104's tab put back, the iPhone simulator froze once in
+  six runs of the test (scrolling back up the tab, the Mac under heavy load: 100 % for 20 s, then stopped; its sample
+  the same loop — `LazySubviewPlacements` → `LazyVGridLayout` estimates → `updateItemPhases` → `signalPrefetch`), and
+  GitHub's Mac stayed green in three runs (28 Oct 2026). With the fix no run spun. The test stays as the tab's guard;
+  `FREEZE_ROUNDS=<n>` in the test runner's environment makes it climb the tab n times instead of once, for a longer
+  hunt by hand.
 
 ---
 
