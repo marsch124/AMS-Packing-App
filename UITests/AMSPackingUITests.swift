@@ -192,7 +192,9 @@ final class AMSPackingUITests: XCTestCase {
     /// short step at a time, twice; Refine opened and closed. A frozen app answers no question: the
     /// test fails on its first look after the close, or runs out of its time.
     func testTheTemplatesTabLivesOnWhenAPageClosesOverIt() {
-        executionTimeAllowance = 600
+        // Two climbs by default; `FREEZE_ROUNDS` in the runner's environment asks for more (below).
+        let rounds = max(1, Int(ProcessInfo.processInfo.environment["FREEZE_ROUNDS"] ?? "") ?? 2)
+        executionTimeAllowance = TimeInterval(360 + 120 * rounds)
         let app = launch("-uiTestingManyTemplates")
         tab(app, "templates")
         XCTAssertTrue(appears(app, "screen-templates"))
@@ -276,7 +278,6 @@ final class AMSPackingUITests: XCTestCase {
         // on the way back up the iPhone froze on 0.104 (this test, 28 Oct 2026: 100 % in the lazy list's
         // layout). Twice (`FREEZE_ROUNDS` in the runner's environment asks for more: a longer hunt for
         // the freeze, by hand); the tab must answer all the way.
-        let rounds = max(1, Int(ProcessInfo.processInfo.environment["FREEZE_ROUNDS"] ?? "") ?? 2)
         for round in 1...rounds {
             scroll(down: true, times: 10)
             alive("at the end of the tab, round \(round)")
