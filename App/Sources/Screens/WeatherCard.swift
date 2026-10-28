@@ -127,7 +127,9 @@ struct WeatherCard: View {
                     .accessibilityIdentifier("weather-trouble")
             }
         }
-        .padding(12)
+        // 12 all round until 0.104 (his arrows of 28 Oct 2026: a tad tighter) — 8 above and below on
+        // the Mac, 10 on the iPhone; the field and Weather keep their height (`Metrics.compact`).
+        .padding(.horizontal, Metrics.cardSide).padding(.vertical, Metrics.cardInset)
         .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
         .accessibilityElement(children: .contain)

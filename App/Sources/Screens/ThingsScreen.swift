@@ -1018,7 +1018,7 @@ struct ThingEditor: View {
                 .lineLimit(1...6)
                 .textFieldStyle(.plain)
                 .font(.system(.body)).foregroundStyle(Theme.ink)
-                .padding(.horizontal, 12).padding(.vertical, 11).frame(minHeight: Metrics.tap)
+                .padding(.horizontal, 12).padding(.vertical, Metrics.notesInset).frame(minHeight: Metrics.tap)
                 .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(at == .careNotes ? AppSection.care.color : Theme.line,
                                                                    lineWidth: at == .careNotes ? 2 : 1))
@@ -1171,13 +1171,15 @@ struct ThingEditor: View {
     }
 
     /// Notes grow downwards: a note written on site lands on a line of its own under
-    /// what the thing already said (3 Oct 2026), and one line ran them together.
+    /// what the thing already said (3 Oct 2026), and one line ran them together. One line is as
+    /// tall as Name on the Mac (0.104, his arrow of 28 Oct 2026: 11 above and below its words made
+    /// it 38 to Name's 26 — `Metrics.notesInset`); the iPhone keeps its 44.
     private var notesField: some View {
         TextField("Anything worth remembering", text: $draft.note, axis: .vertical)
             .lineLimit(1...8)
             .textFieldStyle(.plain)
             .font(.system(.body)).foregroundStyle(Theme.ink)
-            .padding(.horizontal, 12).padding(.vertical, 11).frame(minHeight: Metrics.tap)
+            .padding(.horizontal, 12).padding(.vertical, Metrics.notesInset).frame(minHeight: Metrics.tap)
             .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(at == .notes ? AppSection.care.color : Theme.line,
                                                                lineWidth: at == .notes ? 2 : 1))

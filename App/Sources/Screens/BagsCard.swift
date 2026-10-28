@@ -69,7 +69,8 @@ struct BagsCard: View {
                                 .foregroundStyle(Theme.ink)
                             Text("Bags").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink)
                         }
-                        .frame(minHeight: 28).contentShape(Rectangle())
+                        // 28 on both until 0.104: 24 on the Mac now (`Metrics.cardLine`), the iPhone's 28 kept.
+                        .frame(minHeight: min(Metrics.cardLine, 28)).contentShape(Rectangle())
                     }
                     .buttonStyle(.plain).focusEffectDisabled()
                     .accessibilityIdentifier("bags-toggle")
@@ -81,7 +82,7 @@ struct BagsCard: View {
                                 Circle().stroke(Theme.muted, lineWidth: 1.4).frame(width: 18, height: 18)
                                 Text("i").font(.system(.caption, design: .serif, weight: .semibold)).foregroundStyle(Theme.muted)
                             }
-                            .frame(width: 32, height: 28).contentShape(Rectangle())
+                            .frame(width: 32, height: min(Metrics.cardLine, 28)).contentShape(Rectangle())
                         }
                         .buttonStyle(.plain).focusEffectDisabled()
                         .accessibilityIdentifier("bags-key-open")
@@ -175,8 +176,9 @@ struct BagsCard: View {
                     }
                 }
             }
-            // Folded: one slim line.
-            .padding(.horizontal, 14).padding(.vertical, unfolded ? 14 : 6)
+            // Folded: one slim line — 4 above and below it (6 until 0.104, his arrows of 28 Oct 2026: "a
+            // tad" tighter; 14 at the sides and under an open card then, `Metrics.cardSide`/`cardInset` now).
+            .padding(.horizontal, Metrics.cardSide).padding(.vertical, unfolded ? Metrics.cardInset : 4)
             .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
             .overlay(RoundedRectangle(cornerRadius: 12)
                 .stroke(bags.contains(where: \.over) ? AppSection.actions.color : Theme.line, lineWidth: 1))

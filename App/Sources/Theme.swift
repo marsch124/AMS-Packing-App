@@ -106,6 +106,32 @@ enum Metrics {
     static let glyph: CGFloat = 20
     static let lineButton: CGFloat = 40
     #endif
+
+    // A tad tighter (0.104) — his six arrows on two Mac screenshots (28 Oct 2026): "It uses too much
+    // screen real estate. Could you compress this a tad?" The cards at the top of a trip (Before you
+    // go, the weather, the Bags card), the loop strip's pills and a thing page's Notes and photo
+    // buttons. Until 0.104 a card kept 12–14 inside (14 under an open one), the cards stood 10–14
+    // apart, the loop's pills were 28 on both and Notes 11 above and below its words. Only the room
+    // around things shrank: the words keep Apple's sizes, and on the iPhone nothing that takes a tap
+    // got smaller — where a pill looks slimmer there, the room that takes the tap is as before.
+    #if os(macOS)
+    static let cardInset: CGFloat = 8     // inside a card, above and below what it holds
+    static let cardGap: CGFloat = 4       // from one card to the next, over the list's own 4
+    static let cardLine: CGFloat = 24     // a card's own line: Before you go's heading, the Bags fold
+    static let loopPill: CGFloat = 22     // a step of the loop strip, the pill drawn
+    static let loopReach: CGFloat = 1     // above and below it, still taking the tap
+    static let notesInset: CGFloat = 5    // above and below the words of Notes: one line is as tall as Name
+    static let photoButton: CGFloat = 26  // Choose a photo, Choose a file… (38 until 0.104)
+    #else
+    static let cardInset: CGFloat = 10
+    static let cardGap: CGFloat = 6
+    static let cardLine: CGFloat = 36     // Before you go's heading keeps a fingertip's tap (the Bags fold its 28)
+    static let loopPill: CGFloat = 24
+    static let loopReach: CGFloat = 2     // so the strip takes a tap 28 high, as it did
+    static let notesInset: CGFloat = 11   // Notes stays 44 high: a field a fingertip finds
+    static let photoButton: CGFloat = 38
+    #endif
+    static let cardSide: CGFloat = 12     // inside a card, left and right (14 on Before you go and Bags until 0.104)
 }
 
 extension View {

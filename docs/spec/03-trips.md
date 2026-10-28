@@ -1148,7 +1148,8 @@ words on the line's top, off Done's centre). An `HStack(alignment: .center, spac
   lines (scaling to 85 % first). Nothing left: "All packed" in Footnote semibold, the done heading's readable green
   (#227147 by day, #2f9e63 at night), then " · N to charge" while something is still to charge. Never "0 left".
 
-**Loop strip** (`LoopDoor`, id `trip-loop`, value = the step's name) — see "The loop".
+**Loop strip** (`LoopDoor`, id `trip-loop`, value = the step's name) — see "The loop". 6 under it (10 until 0.104,
+his arrows of 28 Oct 2026: "a tad" tighter); the Stations row keeps 4 under it (8).
 
 **Packing Stations row** ("Packing day" until 0.81; 0.79, his yes of 13 Oct 2026; spec 07 part 17) — only while the
 trip is at Pack (the strip's own reading) and not opened from a place's code: right under the strip, fixed above the
@@ -1217,10 +1218,13 @@ left, the choice beside it) are kept.
    at Pack with nothing packed yet, and one of its parts has something: what to buy and get ready ahead, a tap
    opens its sheet. Top padding 10. Own section below, "Before you start".
 1. **Before you go** card (0.77: ONE card where two stood — Check before you go, and To charge since 0.75; only
-   when one of its parts has something) — own section below. Top padding 10, as the weather card under it.
-2. **Weather card** (always) — own section below.
-3. **Bags card** (only when some bag has lines; FOLDED to one line by default since 0.74) — own section below.
-4. **On site door** (only once On site has begun) — see "On site".
+   when one of its parts has something) — own section below. Top padding `Metrics.cardGap` (4 on the Mac, 6 on the
+   iPhone, over the stack's 4: the cards stand 8 / 10 apart — 0.104, his arrows of 28 Oct 2026; 10 until then), as
+   every card under it.
+2. **Weather card** (always) — own section below. Top padding `cardGap` (10 until 0.104).
+3. **Bags card** (only when some bag has lines; FOLDED to one line by default since 0.74) — own section below. Top
+   padding `cardGap` (6 until 0.104).
+4. **On site door** (only once On site has begun) — see "On site". Top padding `cardGap` (6 until 0.104).
 4a. **The Group by row** (above; "Sorting" until 0.101), then — opened on a place — the place's chip, the debug door-check list (tests
    only), and "Only what is still unticked" with Show all (a tapped door check). Until 0.74 all of these sat above
    the scroll area, under the loop strip.
@@ -2086,8 +2090,12 @@ used: `cabin` = `cabinCheck(tripId:)`, `dates` = `dateCheck(tripId:todayISO:)`, 
 - `tone` = red if `red`, else orange while `left` > 0, else green. `countWords` = "<left>", or "All set".
 
 ### What is on screen
-Card (padding 14 — folded, 6 above and below, so its one line is about as slim as the Bags card's; corner 12,
-`Theme.card`, 1.2 pt border in the card's tone), id **`trip-beforego`** (a container).
+Card (12 at the sides, 4 above the header line, `Metrics.cardInset` under an open card — 8 on the Mac, 10 on the
+iPhone; folded 4 above and below, so its one line is as slim as the Bags card's — 32 on the Mac, 44 on the iPhone.
+Until 0.104 (his arrows of 28 Oct 2026, "a tad" tighter): 14 at the sides, 6 above, 14 under an open card; corner 12,
+`Theme.card`, 1.2 pt border in the card's tone), id **`trip-beforego`** (a container). The header line and the
+chevron's square are `Metrics.cardLine` (24 on the Mac, 36 on the iPhone; `Metrics.tap` until 0.104); the parts stand
+4 apart (6 until 0.104).
 The tone's colours: red `AppSection.actions.color`, orange `AppSection.care.color`, green `AppSection.events.color`.
 
 **The header** (one line, 8 apart): "Before you go" (Subheadline semibold ink) and ONE count capsule — `countWords`
@@ -2256,7 +2264,7 @@ gear that weather calls for which is not on the trip yet — each with one press
 "the same two calls the web app makes". A trip past the forecast's reach is not asked at all and the card says when
 its forecast comes (0.75).
 
-### What is on screen (card, padding 12, corner 12, id `weather-card`)
+### What is on screen (card, padding 12 sideways and `Metrics.cardInset` above and below — 8 on the Mac, 10 on the iPhone; 12 all round until 0.104, his arrows of 28 Oct 2026 — corner 12, id `weather-card`)
 **Without a forecast:** a field "Where is this trip?" (16 medium; prefilled with the trip's
 `destination`; Return looks it up), id `weather-place`; **Weather** (15 bold white on green; "Looking…"
 while busy), id `weather-look`, never disabled; after a press with a blank field "Type a place first."
@@ -2427,8 +2435,10 @@ angles").
 
 ### What is on screen (card id `bags-card`; corner 12; border red when any bag is over)
 **Folded to ONE line by default** (0.74, his ask of 12 Oct 2026: the overview "is good but takes too much space"):
-only the header line shows, padding 14 sideways and 6 above and below; a tap on the fold (or anywhere else on the
-line) opens the card — padding 14 all round, as before — and a second folds it. Open or folded is remembered on the
+only the header line shows, padding 12 sideways and 4 above and below, the fold `min(Metrics.cardLine, 28)` high — 24
+on the Mac, 28 on the iPhone, so the folded card is 32 / 36 (0.104, his arrows of 28 Oct 2026: padding 14 sideways, 6
+above and below and the fold 28 until then, 40 on both); a tap on the fold (or anywhere else on the line) opens the
+card — padding 12 sideways and `Metrics.cardInset` above and below (14 all round until 0.104) — and a second folds it. Open or folded is remembered on the
 device in AppStorage **`ams.trip.bags`** (default folded; the same for every trip; cleared at launch under the
 tests, like `ams.view`). Until 0.74 the card was always open.
 - Header: the **fold** — a button (id `bags-toggle`; label "Open the bags" / "Fold the bags"; value "folded" /
@@ -2691,8 +2701,10 @@ on Refine — always Refine; value = the step's name; label, since 0.101, what i
 Plan. You are here: Pack. Ahead: On site, Review, Refine." — a part with no step left out, so at Plan "The loop. You
 are here: Plan. Ahead: …", at Refine "The loop. Done: Plan, Pack, On site, Review. You are here: Refine."; until 0.101
 just "The loop") showing the five names with small drawn chevrons between them, each step's own mark
-(`StepMark`, 13 pt; until 0.77 the tab's mark), semibold words, min height 28, each step in its own tint (Plan and
-Refine violet, Pack, On site and Review green).
+(`StepMark`, 13 pt; until 0.77 the tab's mark), semibold words, min height `Metrics.loopPill` — 22 on the Mac, 24 on
+the iPhone, with `Metrics.loopReach` (1 / 2) above and below still taking the tap, so the strip is 24 / 28 high (0.104,
+his arrows of 28 Oct 2026: the pills 28 on both until then); the chevrons drawn on 24 and centred in the pill's height;
+each step in its own tint (Plan and Refine violet, Pack, On site and Review green).
 
 **0.101 — the Stations' looks** (his words, 26 Oct 2026: "The upper 'pack pill' should have the same colour
 shading as the lower Station: Pack as they are ongoing. The full colour means Done."). ONE rule for the strip and

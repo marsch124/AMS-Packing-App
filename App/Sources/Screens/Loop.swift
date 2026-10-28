@@ -290,7 +290,8 @@ struct LoopDoor: View {
                     // screenshot, 3 Oct 2026).
                     let x = (fit.arrow - 5) / 2
                     SVGPath.path("M\(x) 7l5 5-5 5").stroke(style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round))
-                        .frame(width: fit.arrow, height: 24).foregroundStyle(Theme.muted)
+                        .frame(width: fit.arrow, height: 24).frame(height: Metrics.loopPill)   // drawn on 24, centred in the pill's height
+                        .foregroundStyle(Theme.muted)
                 }
                 let stage = step.stage(at: here)
                 HStack(spacing: 4) {
@@ -301,7 +302,9 @@ struct LoopDoor: View {
                         .lineLimit(1).fixedSize()
                 }
                     .foregroundStyle(stage == .done ? Color.white : step.words(scheme))
-                    .padding(.horizontal, fit.pad).frame(minHeight: 28)
+                    // `Metrics.loopPill` (0.104, his arrows of 28 Oct 2026: 28 on both until then — 22 on
+                    // the Mac now, 24 on the iPhone, where `loopReach` keeps the strip's tap 28 high).
+                    .padding(.horizontal, fit.pad).frame(minHeight: Metrics.loopPill)
                     // The Stations' looks (0.101): done full, here a light shading — over a solid card,
                     // so it stands out on the green of an all-packed trip too (night mode, 2026-09-27) —
                     // ahead the card itself.
@@ -323,6 +326,7 @@ struct LoopDoor: View {
             // No "round again" arrow after Refine: it read as a reload button (his
             // screenshot, 2026-09-28). The loop itself is in the picture a tap opens.
         }
+        .padding(.vertical, Metrics.loopReach)
         .fixedSize()
     }
 }
