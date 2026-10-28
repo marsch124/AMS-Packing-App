@@ -35,6 +35,8 @@ public enum KeyGuide {
         public static let right = Key("\u{2192}", "Right arrow")
         /// Any letter keys: "type its first letters".
         public static let letters = Key("A\u{2013}Z", "letters")
+        /// A click of the mouse or trackpad, with the keys before it held (0.105): ⌘-click, ⇧-click.
+        public static let click = Key("Click", "click")
         public static let comma = Key(",", "comma")
         public static let period = Key(".", "period")
         /// A letter or a digit, drawn upper-case: "S", "1".
@@ -161,6 +163,17 @@ public enum KeyGuide {
             Row("Next field", [chord(.tab)]),
             Row("Previous field", [chord(.shift, .tab)]),
             Row("Save from any field but Notes", [chord(.return)], note: "In Notes, Return starts a new line."),
+        ]),
+        // Several lines selected on a trip (0.105, his yes of 28 Oct 2026), the Finder's and Mail's keys.
+        Card(id: "trip", title: "A trip\u{2019}s list", reach: .macOnly,
+              line: "Select several lines, then Tick, Untick, Not this time or Move to bag in the bar under the list, or right-click one of them. A plain click still ticks one line.",
+              rows: [
+            Row("Select a line, or let it go", [chord(.command, .click)], note: "It is not ticked."),
+            Row("Select the lines between", [chord(.shift, .click)],
+                note: "From the line chosen last to this one, as the list shows them \u{2014} across its headings."),
+            Row("Select every line shown", [cmd("a")], note: "Not the lines under a folded heading."),
+            Row("Tick the selected lines", [chord(.space)], note: "When all are ticked, Space unticks them."),
+            Row("Clear the selection", [chord(.escape)], note: "With nothing selected, Esc closes the trip."),
         ]),
         Card(id: "lists", title: "Lists and drop-downs", reach: .macOnly,
               line: "On a thing\u{2019}s page, with the field lit.", rows: [
