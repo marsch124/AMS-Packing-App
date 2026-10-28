@@ -189,7 +189,7 @@ final class AMSPackingUITests: XCTestCase {
     /// his size of tab (`-uiTestingManyTemplates`, 66 templates under nine headings), at the top, half
     /// way down and further — a template opened and closed every way there is (Done untouched, Done
     /// after a thing was added, Cancel; on the Mac Escape and ⌘S too); the tab to its end and back up a
-    /// step at a time, three times; Refine opened and closed. A frozen app answers no question: the
+    /// short step at a time, twice; Refine opened and closed. A frozen app answers no question: the
     /// test fails on its first look after the close, or runs out of its time.
     func testTheTemplatesTabLivesOnWhenAPageClosesOverIt() {
         executionTimeAllowance = 600
@@ -199,6 +199,9 @@ final class AMSPackingUITests: XCTestCase {
         let first = app.buttons["template-row-0"]
         XCTAssertTrue(first.waitForExistence(timeout: 10), "no template is listed")
         guard let list = listHolding(app, first) else { return XCTFail("the templates are in no list") }
+        // The tab as it looks (0.104.1 changed how it is built, not how it looks: the same picture before and after).
+        sleep(1)
+        shot(app, "templates-many-top")
 
         func scroll(down: Bool, times: Int = 1) {
             for _ in 0..<times {
@@ -210,20 +213,33 @@ final class AMSPackingUITests: XCTestCase {
                 usleep(250_000)
             }
         }
-        // The first card on screen, from card `from` on (the tab only goes down between looks, so each
-        // look starts where the last one found a card).
+        // A short step up, no glide: the list stops at a new place each time.
+        func nudgeUp() {
+            #if os(macOS)
+            list.scroll(byDeltaX: 0, deltaY: 90)
+            #else
+            let box = list.frame, o = app.coordinate(withNormalizedOffset: .zero)
+            o.withOffset(CGVector(dx: box.midX, dy: box.midY - 60))
+                .press(forDuration: 0.05, thenDragTo: o.withOffset(CGVector(dx: box.midX, dy: box.midY + 60)), withVelocity: .slow, thenHoldForDuration: 0.1)
+            #endif
+            usleep(150_000)
+        }
+        // A card on screen, looked for from the last one found outwards — the list moves a little
+        // between looks, so it is near (asking all 66 every time takes long).
         var from = 0
-        func shownCard() -> XCUIElement? {
-            for n in from..<80 {
-                let card = app.buttons["template-row-\(n)"]
-                if card.exists, card.isHittable, onScreen(app, card) { from = n; return card }
+        func cardNear() -> XCUIElement? {
+            for d in 0..<80 {
+                for n in d == 0 ? [from] : [from - d, from + d] where n >= 0 {
+                    let card = app.buttons["template-row-\(n)"]
+                    if card.exists, card.isHittable, onScreen(app, card) { from = n; return card }
+                }
             }
             return nil
         }
         // The tab still answers: its heading is there, and a card can be found and read.
         func alive(_ said: String) {
             XCTAssertTrue(appears(app, "screen-templates", timeout: 15), "the Templates tab stopped answering \(said)")
-            XCTAssertNotNil(shownCard(), "no card on screen \(said)")
+            XCTAssertNotNil(cardNear(), "no card on screen \(said)")
         }
         enum Close: String { case done, doneChanged, cancel, escape, saveKey }
         #if os(macOS)
@@ -233,7 +249,7 @@ final class AMSPackingUITests: XCTestCase {
         #endif
         for (step, way) in ways.enumerated() {
             if step > 0 { scroll(down: true, times: step == 3 ? 2 : 1) }
-            guard let card = shownCard() else { return XCTFail("no card on screen at step \(step)") }
+            guard let card = cardNear() else { return XCTFail("no card on screen at step \(step)") }
             card.tap()
             XCTAssertTrue(appears(app, "template-detail", timeout: 10), "the template did not open at step \(step)")
             switch way {
@@ -256,18 +272,32 @@ final class AMSPackingUITests: XCTestCase {
             XCTAssertTrue(disappears(app, "template-detail", timeout: 15), "the template did not close (\(way.rawValue), step \(step))")
             alive("after \(way.rawValue) at step \(step)")
         }
-        // Up and down the tab as a hand goes: to its end in big steps, then back up a step at a time — on
-        // the way back up the iPhone froze on 0.104 (this test, 28 Oct 2026: 100 % in the lazy list's layout).
-        // Three times; the tab must answer all the way.
-        for round in 1...3 {
+        // Up and down the tab as a hand goes: to its end in big steps, then back up a short step at a time —
+        // on the way back up the iPhone froze on 0.104 (this test, 28 Oct 2026: 100 % in the lazy list's
+        // layout). Twice (`FREEZE_ROUNDS` in the runner's environment asks for more: a longer hunt for
+        // the freeze, by hand); the tab must answer all the way.
+        let rounds = max(1, Int(ProcessInfo.processInfo.environment["FREEZE_ROUNDS"] ?? "") ?? 2)
+        for round in 1...rounds {
             scroll(down: true, times: 10)
             alive("at the end of the tab, round \(round)")
-            for step in 1...12 {
-                scroll(down: false)
+            for step in 1...24 {
+                nudgeUp()
                 XCTAssertTrue(appears(app, "screen-templates", timeout: 15),
                               "the Templates tab stopped answering on the way up, round \(round), step \(step)")
+                // Now and then a page opened and closed again where the list stands (Escape on the Mac).
+                if step % 6 == 0, let card = cardNear() {
+                    card.tap()
+                    XCTAssertTrue(appears(app, "template-detail", timeout: 10), "the template did not open, round \(round), step \(step)")
+                    #if os(macOS)
+                    sleep(1)
+                    app.typeKey(.escape, modifierFlags: [])
+                    #else
+                    tap(app, id: "template-cancel")
+                    #endif
+                    XCTAssertTrue(disappears(app, "template-detail", timeout: 15), "the template did not close, round \(round), step \(step)")
+                }
             }
-            from = 0
+            scroll(down: false, times: 6)
         }
         alive("back at the top")
         // Then Refine — a page of its own, opened from the tab.

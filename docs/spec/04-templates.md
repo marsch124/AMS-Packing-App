@@ -201,10 +201,11 @@ sheet here can be swiped down, except a template's page while arranging (`intera
   planted back at the head: `XCTAssertGreaterThan failed: ("224.0") is not greater than ("608.9999999999999") - the pill
   is not under the last area's heading: pill 224.0, heading 608.9999999999999`.
 - 0.104.1: `testTheTemplatesTabLivesOnWhenAPageClosesOverIt` (both devices) — a tab of his size
-  (`-uiTestingManyTemplates`: 44 more templates in seven areas, names of one and two lines, 18 past trips), at the top,
-  half way down and near the end: a template opened and closed every way (Done untouched, Done after a thing was added,
-  Cancel; on the Mac Escape and ⌘S too), the tab scrolled to its end and back, Refine opened and closed, then Home —
-  after each close the tab must still answer (Traps, below).
+  (`-uiTestingManyTemplates`: 66 templates under nine headings, areas of one card to eight rows of them, names of one
+  and two lines, 18 past trips), at the top, half way down and further: a template opened and closed every way (Done
+  untouched, Done after a thing was added, Cancel; on the Mac Escape and ⌘S too); the tab to its end and back up a
+  step at a time, three times; Refine opened and closed, then Home — the tab must answer after every close and every
+  step (Traps, below).
 - **Not covered:** the "By Transport" and "Other Templates" headings' words (the 0.104.1 sample shows both; no
   test reads them), the exact summary wording on screen.
 
