@@ -278,13 +278,13 @@ struct ThingRememberPart: View {
             Text(other.name).font(.system(.subheadline, weight: .semibold)).foregroundStyle(tint).lineLimit(1)
                 .accessibilityIdentifier("thing-with-\(n)")
             Button { draft.with.removeAll { $0 == other.id } } label: {
-                ClearMark().frame(width: 18, height: 18).frame(width: Metrics.chip, height: Metrics.chip).contentShape(Rectangle())
+                ClearMark().frame(width: Metrics.mark, height: Metrics.mark).frame(width: Metrics.chip, height: Metrics.chip).contentShape(Rectangle())
             }
             .buttonStyle(.plain).focusEffectDisabled()
             .accessibilityIdentifier("thing-with-\(n)-remove")
             .accessibilityLabel("Take \(other.name) off Also pack")
         }
-        .padding(.leading, Metrics.cardSide)
+        .padding(.leading, Metrics.cardSide).padding(.trailing, Metrics.cardGap / 2)
         .frame(minHeight: Metrics.chip)
         .overlay(Capsule().stroke(tint, lineWidth: 1.2))
     }

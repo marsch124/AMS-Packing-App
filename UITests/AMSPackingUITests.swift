@@ -15920,7 +15920,9 @@ final class AMSPackingUITests: XCTestCase {
     /// this device, for every thing; a tap opens it again. A switch pressed in it is held until Save
     /// (Cancel keeps nothing), and the page's general note is one small line at its very foot.
     func testBeforeATripIsOneFrameInHisOrderThatFolds() {
-        let app = launch("-uiTestingThingReminders")
+        // Pictures `before-a-trip-open` / `-folded`; the Mac's night: `TEST_RUNNER_NIGHT=1`.
+        let night = ProcessInfo.processInfo.environment["NIGHT"] == "1" ? ["-AppleInterfaceStyle", "Dark"] : []
+        let app = launch("-uiTestingThingReminders", night)
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
         openThing(app, "Camera")
         func el(_ id: String) -> XCUIElement { app.descendants(matching: .any).matching(identifier: id).firstMatch }

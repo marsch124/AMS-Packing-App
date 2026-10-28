@@ -1086,16 +1086,20 @@ struct ThingEditor: View {
     /// under everything: "The trip warns before it runs out — a document (Documents & money) six months
     /// ahead." With a date: how far away it is, then the quick spans, on the lines under it.
     @ViewBuilder private var validUntil: some View {
+        // The hint is laid out first (`layoutPriority`): it keeps its one line, the date field gives way.
         let hint = Text(BeforeATrip.validUntilHint(category: draft.category))
             .font(.system(.caption)).foregroundStyle(Theme.muted)
             .fixedSize(horizontal: false, vertical: true)
+            .layoutPriority(1)
             .accessibilityIdentifier("thing-expiry-hint")
         #if os(macOS)
         // The Mac (0.68): the date is TYPED — "2027-06-30", "30/6 27", "+6m", "+1y" — in a field of its
-        // own, where the date picker stood; Add a date or Remove the date beside it.
+        // own, where the date picker stood; Add a date or Remove the date beside it. In the frame (0.104)
+        // the field is 230 wide where there is room and narrower where there is not (a sheet at its
+        // narrowest: "Add a date" was squeezed onto three lines).
         HStack(spacing: Metrics.cardSide) {
-            expiryField.frame(width: 230)
-            if draft.expiry.isEmpty { addDate } else { removeDate }
+            expiryField.frame(minWidth: 150, maxWidth: 230)
+            Group { if draft.expiry.isEmpty { addDate } else { removeDate } }.fixedSize()
             hint
             Spacer(minLength: 0)
         }
@@ -1108,7 +1112,7 @@ struct ThingEditor: View {
         #else
         HStack(spacing: Metrics.cardSide) {
             if draft.expiry.isEmpty {
-                addDate
+                addDate.fixedSize()
             } else {
                 DatePicker("", selection: Binding(get: { ThingEditor.date(draft.expiry) ?? Date() },
                                                   set: { draft.expiry = ThingEditor.ymd($0) }),
