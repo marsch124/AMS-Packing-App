@@ -938,7 +938,20 @@ test — and VoiceOver — lost it.
 
 ## A thing's page (`ThingEditor`, in ThingsScreen.swift)
 
-**Remember with it and Goes with (0.101, spec 07 part 21 — his yes to the picture of 26 Oct 2026).** Right under Photos
+**Before a trip (0.104 — his mix of sketches A and C, 28 Oct 2026).** He saw three sketches of a frame — A, one frame,
+a label and its controls per row; B, a frame in two parts; C, folded to one line — and chose "A mix of A and folded as
+C", in his order: "'Battery' first; 'Goes with' as second (but change the text 'Goes with' to 'Also pack' so that I
+understand better); 'Remember' as third; 'On a plane' as fourth; 'Valid until' as the last property in the frame." And
+before that: "I would like these things in a frame at the top of the item detail list, not the absolute top, but
+somewhere up there … compressed and in a frame so that it keeps together. Moreover, I would like the two lines under
+'Valid Until' to be much more compressed. The two explanation notes take far too much real estate. Maybe take away
+the line break?" So since 0.104 the five parts are ONE frame right after Name and Notes (item 3b below); their own
+headings further down are gone, the explanation lines under Remember, Goes with and Valid until with them, and the
+page's general note is one small line at its very foot (item 18). The page's order is now Name, Notes, Before a trip,
+Photos, Kind of thing, … Care.
+
+**Remember with it and Goes with (0.101, spec 07 part 21 — his yes to the picture of 26 Oct 2026; since 0.104 the rows
+Remember and Also pack of Before a trip, item 3b).** Right under Photos
 (on a thing, not a bag or a template's reminder; `ThingRememberPart` in ThingRemember.swift, held in a `RememberDraft`
 like the kit part's `KitDraft`): **Remember with it** — the thing's short reminders, each with a When (lines
 `thing-remind-<n>`, grip ≡ / the Mac's ↑ ↓, a press opens words, When, Done, Remove reminder; the foot Add a reminder,
@@ -1000,8 +1013,9 @@ apart; a field 6 pt under its heading):
    rows in their order; only a note that is not blank and not the thing's own note (both trimmed); one note said
    twice on one template once. Read only: a row's note is changed on the template. Nothing when there is none.
 3a. **Photos** (0.90 — his ask of 19 Oct 2026: "A photo or two for each item") — band "Photos"
-   (`thing-heading-photos`), right under Notes: with the name and the notes, what tells this thing from another, so
-   it is the first thing seen (decided by the build; not further down by Brand and Colour). `ThingPhotos`
+   (`thing-heading-photos`), right under Before a trip (item 3b; right under Notes until 0.104): with the name and the
+   notes, what tells this thing from another, so it is near the top (decided by the build; not further down by Brand
+   and Colour). `ThingPhotos`
    (Screens/BagPhoto.swift), only on a thing that is THERE — not on a new thing's page (⌘N, Mac), since a photo is
    kept at once and needs a thing to sit on; Save makes it, and its page then has Photos.
    - Each photo (in the order taken): an 80 pt square, corners 8, a 1 pt `line` edge, cut to fill — a button
@@ -1033,6 +1047,75 @@ apart; a field 6 pt under its heading):
    - The same photos as a BAG's own (spec 07 part 18 A): a bag's thing page shows and takes the very photos its bag
      page does.
    - On the Mac the keys (Tab, ⌘J) do not reach Photos: they are clicked.
+3b. **Before a trip** (0.104 — his mix of sketches A and C, see above; drawn on the page right after Notes, before
+   Photos — `beforeATrip` in ThingsScreen.swift; the frame, its rows and the pills in ThingRemember.swift:
+   `BeforeATripFrame`, `BeforeATripRow`, `ChipToggle`; the folded line's words in PackingLibrary/ThingBeforeTrip.swift,
+   `BeforeATrip`). On every thing's page, a bag's own and a to-do's too (they have no Also pack and no Remember).
+   - **The frame** (`thing-before-frame`, a container): a card — card colour, corner 12, a 1.2-pt border in the page's
+     orange (Care) — as Before you go's on a trip; inside, `Metrics.cardSide` at the sides, `Metrics.cardGap` above,
+     `Metrics.cardInset` below (folded `cardGap`) — the cards' shared tokens (spec 06 §21), so a change of the cards'
+     room reaches it too.
+   - **Its title line** (at least `Metrics.cardLine` tall): "Before a trip" (Headline, orange; `thing-before-title`, a
+     header), folded the summary after it, and at the right the chevron (`thing-before-fold`, a button, its square
+     `cardLine`; ⌄ open, › folded; label "Fold Before a trip" / "Show Before a trip", value "open" / "folded"). A tap on
+     the chevron OR anywhere on the line folds or opens the frame (0.2 s). The line is not a button round its words: on
+     the Mac a button folds its words into its own, and the summary is read on its own.
+   - **Folded** (sketch C): the frame is that ONE line — "Before a trip", the summary (`thing-before-summary`, Footnote
+     muted, one line, shrinking to 85 % before it is cut with …) and the chevron. The summary says what the PAGE holds
+     (saved or not), in the frame's order, joined by " · ": "Battery" (it has a battery) · "Also pack Charger" (one
+     thing; two or more "Also pack 2 things") · "1 reminder" / "2 reminders" · "Liquid" · "Not in the cabin" · "until 30
+     Jun 2027" ("ran out 3 Oct 2026" once the date is past) — or "Nothing set" (`BeforeATrip.summary`).
+   - **Kept on this device, for every thing** (`ams.thing.before.folded`, AppStorage; the UI tests clear it at launch);
+     open until he folds it.
+   - **The rows** (open), one each, a hairline (`Theme.line`, 1 pt) above every row but the first; each a short label on
+     the left (Subheadline ink, one line; every label as wide as the widest, `BeforeLabelWidth`, so the controls start on
+     one line; level with the first line of controls, `Metrics.chip` tall; a header; its id the old heading's) and the
+     controls on the right, `Metrics.cardSide` from it; `Metrics.cardGap` above and below each row:
+     1. **Battery** (`thing-heading-battery`): one pill "Charge before a trip" with the drawn battery mark
+        (`ToChargeCard.battery`, 16 pt) — `thing-battery`. What it was: the switch "Has a battery — charge before a
+        trip" (0.75, spec 07 part 15; item 15a below).
+     2. **Also pack** (`thing-heading-with`; "Goes with" until 0.104, his word: "so that I understand better") — the
+        things that come along (spec 07 part 21): their chips (name + ✕, `thing-with-<n>`, `thing-with-<n>-remove`) and
+        "+ Add" (`thing-with-add`; "Close" while open — "Add a thing" / "Close the list" until 0.104) at the end of the
+        same wrapping row; the list under it (`thing-with-picker`: Find a thing on the page's background colour, eight of
+        his things). No line under it (0.101: "When the camera goes on a trip, these come along as their own lines …" —
+        How it works says it). Container `thing-with`. Not on a bag's page or a to-do's.
+     3. **Remember** (`thing-heading-remember`; "Remember with it" until 0.104) — each reminder ONE line, its words ·
+        its When in the step's colour (Subheadline, the When semibold; two lines at most; `thing-remind-<n>`, value the
+        When) with its grip ≡ when there are two or more; a press opens it in place as before (words, When, ↑ ↓ on the
+        Mac, Done, Remove reminder). Then "+ Add" (`thing-remind-new`, "Close" while open): it opens the add row — Add a
+        reminder (`thing-remind-add-name`) and Add (`thing-remind-add`) on one line, When (`thing-remind-add-when`) under
+        it — which stays open for the next until "Close"; until 0.104 the add row was always there. No line under it
+        (0.101: "Shows on trips where the camera is packed …" — How it works says it). Container `thing-remember`.
+     4. **On a plane** (`thing-heading-plane`): two pills, "Liquid" (`thing-liquid`) and "Not in the cabin"
+        (`thing-restricted`; VoiceOver "Not allowed in the cabin", the switch's words until 0.104 — the pill says it as
+        sketch A did), wrapping when the row is narrow. What they were: item 15 below.
+     5. **Valid until** (`thing-heading-valid`), compact (his "much more compressed … take away the line break"): the
+        date — "Add a date" (no date) or the iPhone's date picker / the Mac's typed field with "Add a date" or "Remove
+        the date" beside it — and ON THE SAME LINE its hint (`thing-expiry-hint`, Caption muted,
+        `BeforeATrip.validUntilHint`): "warns 6 months ahead" for a thing whose kind is Documents & money
+        (`DOCUMENTS_CATEGORY`, judged `DOCUMENT_MONTHS_LEFT` past the trip), "warns before it runs out" for anything
+        else. With a date, one wrapping row under it: how far away (`thing-expiry-distance`, Subheadline bold — Title 3
+        until 0.104; red once past), the five quick pills (Footnote, `Metrics.chip` tall), and on the iPhone "Remove the
+        date" at its end. The Mac's "Not a date …" line stays under the date. Gone: the line "The trip warns before it
+        runs out — a document (Documents & money) six months ahead." What else it does: item 16 below.
+   - **A pill** (`ChipToggle`): Subheadline semibold in a capsule `Metrics.chip` tall, `Metrics.cardSide` at its sides,
+     a 1.4-pt orange ring; ON = filled orange, white words (and mark); OFF = orange words on nothing — never grey, day
+     and night. To VoiceOver and the UI tests it is still the switch it was (`accessibilityRepresentation` of a Toggle):
+     the same id, a switch on the iPhone and a check box on the Mac, its value on or off. On the Mac the keys' ring sits
+     round the pill (a capsule), and a click on it moves the page's focus there.
+   - **Held until Save** as every field (0.98's Apple way): the pills write the page's draft, Also pack and Remember the
+     `RememberDraft`; Cancel keeps nothing, and a change makes a swipe down ask first. Folding is not a change.
+   - **The Mac's keys**: Tab walks Battery, Liquid, Not in the cabin and Valid until right after Notes (Keyboard (Mac)
+     below); folded, Tab goes past them (Notes → Kind of thing), ⌘J still finds them by name and opens the frame; folded
+     by a click while the keys were in it, Tab goes on from Kind of thing (Shift-Tab: Notes).
+   - **Tests**: UI `testBeforeATripIsOneFrameInHisOrderThatFolds` (`-uiTestingThingReminders`, the Camera: the frame
+     after Notes and before Photos, the five rows in his order inside it, "Also pack", the hint on the date's line and
+     short, the page's note one line under Delete; folded: "2 reminders" and "Also pack 2 things", no rows, the summary
+     on the fold's line; Cancel → the Map opens folded, "Nothing set"; opened, the battery and Liquid pressed → "Battery
+     … Liquid"; Cancel → neither kept, the frame open; Mac: folded, Tab from Notes to Kind of thing) — seen RED on
+     0.103: "the thing's page has no Before a trip frame". Model `ThingBeforeTripTests` (nothing set; everything in the
+     frame's order; one thing named, more counted; a past date ran out; the hint by the kind of thing).
 4. **Kind of thing** — drop-down (0.64; band `thing-category-title`, field `thing-category`, list
    `thing-category-list`): one row per kind of thing — since 0.69 his own list, `Library.categories()` (the app's
    twelve `CATEGORIES` until he changes one; `thing-category-0` … `-11`; Electronics is `-7`); single
@@ -1238,17 +1321,21 @@ apart; a field 6 pt under its heading):
     (365), "Every 2 years" (730) (`thing-care-0`…`-5`; an interval of his own, e.g. 45 from the web app, adds the row
     "Every 45 days"); under the field a growing field "What to do, e.g. Wax the leather" (`thing-care-notes`, 1–6
     lines, 18 medium) — the care notes.
-15. **On a plane** — band (`thing-heading-plane`); two switches (orange tint): "Liquid" (`thing-liquid`) and "Not allowed in the
+15. **On a plane** — since 0.104 a row of Before a trip (item 3b): two pills, the ids as below. Until 0.104: band
+   (`thing-heading-plane`); two switches (orange tint): "Liquid" (`thing-liquid`) and "Not allowed in the
    cabin" (`thing-restricted`), Callout semibold — their words only since 0.64 (his word, 6 Oct 2026: "Delete the
    explanations for liquid and not allowed in the cabin"; they said "In the cabin: 100 ml at most, in the clear bag."
    and "A knife, tools, gas — it goes in the hold.").
 15a. **Battery** (0.75, spec 07 part 15 — his ask of 13 Oct 2026, "Add a tick box for each item: Contains battery")
-   — band "Battery" (`thing-heading-battery`); one switch (orange tint), `thing-battery`: the drawn battery mark
+   — since 0.104 the first row of Before a trip (item 3b), one pill "Charge before a trip". Until 0.104: band "Battery"
+   (`thing-heading-battery`); one switch (orange tint), `thing-battery`: the drawn battery mark
    (`ToChargeCard.battery`, 18 pt, orange) and "Has a battery — charge before a trip" (Callout semibold ink). Reads
    and writes the thing's `battery` extra key (true, or absent — never false); NOT the web app's `charging` flag (the
    table's Charges column, which a charging cable carries too). A thing with a battery is on a trip's **To charge**
    (the last part of Before you go since 0.77) from the day before the trip (spec 03).
-16. **Valid until** — band (`thing-heading-valid`):
+16. **Valid until** — since 0.104 the last row of Before a trip (item 3b: the hint on the date's line, the distance
+   Subheadline bold, the pills Footnote, the long line below gone). What it does, as before — until 0.104 under its band
+   (`thing-heading-valid`):
    - No date: the pill "Add a date" (`thing-expiry-add`; 15 bold orange, orange 1.4 outline, min height 36) →
      sets the date to TODAY.
    - With a date: a compact date picker (`thing-expiry`) and "Remove the date" (`thing-expiry-clear`, 15
@@ -1257,7 +1344,8 @@ apart; a field 6 pt under its heading):
      (`thing-expiry-quick-0` … `-4`): "+1 month", "+6 months", "+1 year", "+5 years", "+10 years", each setting the
      date to `addMonths(today, 1/6/12/60/120)`; the pill equal to the current date is filled orange with white
      bold words and the selected trait.
-   - Always: "The trip warns before it runs out — a document (Documents & money) six months ahead." (14 muted).
+   - Always (until 0.104): "The trip warns before it runs out — a document (Documents & money) six months ahead." (14
+     muted) — since 0.104 the short hint beside the date (item 3b).
    - **Mac (0.68)**: the date is TYPED, in a field where the date picker stood (`thing-expiry`, 230 wide, Body with
      even digits, placeholder "2027-06-30, 30/6 27 or +6m"), on one line with "Add a date" (no date) or "Remove the
      date"; the distance and the quick pills under it as on the iPhone. What he types is read when he leaves the
@@ -1267,14 +1355,19 @@ apart; a field 6 pt under its heading):
      it (`thing-expiry-problem`), and Save refuses until it is right. The field follows the date when a button sets it.
 17. When a save was refused: the problem in red (`thing-problem`, 15 semibold): "A thing needs a name." or "You
     already have a thing called that."
-18. "A change here reaches every template it is on. Past trips keep what they were packed with." (14 muted).
+18. The page's general note — since 0.104 ONE small line at the very foot, after Delete thing: "A change reaches all its
+    templates · past trips stay as packed" (Caption muted, one line, shrinking to 80 % before it would wrap;
+    `thing-foot-note`). Until 0.104 it stood over Duplicate in two lines: "A change here reaches every template it is
+    on. Past trips keep what they were packed with." (14 muted).
 (The order is his, 6 Oct 2026, release 0.64: Kind of thing after Notes (since 0.90 after Photos, item 3a), Whose it is under it, On these templates
 moved up, When with Usually packed in, Condition under Colour, On a plane and Valid until at the foot — Battery
-between them since 0.75.
-UI `testAThingsPageReadsInHisOrderAndKeptAtHomeIsChosen` reads every heading's place.)
+between them since 0.75; since 0.104 (his order of 28 Oct 2026) Battery, Also pack, Remember, On a plane and Valid until
+in Before a trip right after Notes, Photos under it, Care last.
+UI `testAThingsPageReadsInHisOrderAndKeptAtHomeIsChosen` reads every heading's place: Name, Notes, the five rows,
+Photos, Kind of thing … Care.)
 18b. **Duplicate this thing** (0.92 — his yes of 19 Oct 2026 to "Duplicate a thing: the same as Duplicate bag, for any
-    thing — handy for near-copies like a second charger or a spare cable"): after the footnote of item 18, before
-    Delete — calm and outlined exactly as a bag's page's Duplicate (A bag's page, 6b): a full-width button at least 56
+    thing — handy for near-copies like a second charger or a spare cable"): after Care (and the refusal of item 17),
+    before Delete (until 0.104 after the note of item 18, which is now under Delete) — calm and outlined exactly as a bag's page's Duplicate (A bag's page, 6b): a full-width button at least 56
     tall, a 1.4-pt Care orange ring, corner 12, "Duplicate this thing" (Body semibold orange) over "Its details and
     templates — not its photos or trips" (Footnote muted, centred); id `thing-duplicate`. Absent on a bag's own thing
     page (Its details — a bag is duplicated on its page, onto Your bags) and on a thing being made (⌘N, Mac).
@@ -1480,7 +1573,8 @@ focus too: into a text field (the focus follows `typing`), on a drop-down's fiel
 switch (a tap gesture beside its own). A text field left for nothing (a click on empty space) takes the ring away.
 
 **The order Tab walks** (`fieldOrder()`; Shift-Tab back; round from the last to the first and back): Name · Notes ·
-Kind of thing · Whose it is (always since 0.73; until then when anyone was named) · On these templates (when he has any) · the Section of each template
+(0.104, Before a trip, while it is open — item 3b) Has a battery (`thing-battery`, scroll id `key-battery`) · Liquid ·
+Not allowed in the cabin (scroll id `key-plane`) · Valid until (scroll id `key-expiry`) · Kind of thing · Whose it is (always since 0.73; until then when anyone was named) · On these templates (when he has any) · the Section of each template
 lit, in the pills' order (one lit by the keys comes in at once; one unlit goes) · **Only on some trips** (0.75; item 7,
 where the rows sit — until 0.75 Tab went past them): Season · Context (only while the page shows it: the thing on a
 workout template, or a Context already said — a Context row gone while in focus: Tab goes on to Transport, Shift-Tab
@@ -1492,8 +1586,10 @@ in his order (0.73; `kitOut(id)` then `kitRemove(id)`, scroll id `key-kit-row-<i
 its ✕; Add from your things; while its list is open, Find a thing (0.73, `kitFind`, a text field, scroll id
 `key-kit-find`); and, when it holds something, Check before each trip — each ringed by `ThingKitPart(ringed:)`
 (`KitDraft.picking`, so a newly loaded thing starts closed) · Brand · Colour · Condition · Care · What to do (Care's
-notes) · Liquid · Not allowed in the cabin · Has a battery (0.75, `thing-battery`, scroll id `key-battery`) · Valid
-until. The list's rows are not Tab stops: ↑ ↓ in Find a thing
+notes) — the last (until 0.104 Liquid, Not allowed in the cabin, Has a battery and Valid until followed it). Before a
+trip folded: its four are left out (Notes → Kind of thing); ⌘J (`fieldOrder(all: true)`) still finds them and opens
+the frame (`land`); one of them in focus when a click folds the frame: Tab goes on from Kind of thing, Shift-Tab to
+Notes. Also pack and Remember are not Tab stops (0.101). The list's rows are not Tab stops: ↑ ↓ in Find a thing
 light them. A kit field gone from the order (a row ✕'d by a click, the list closed by a click) → Tab goes on from
 Add from your things; ⌘↓ ⌘↑ to a thing without that row → its kit part's first field. Never: Cancel, Save, the date's buttons, Delete thing. The page opens with the focus in Name, the cursor at the
 END of the name. The field reached by the KEYS is scrolled into sight (`ScrollViewReader`, ids `ThingEditor.scrollKey`); a
@@ -1638,8 +1734,8 @@ years has → nil); the day must exist in its month; anything else nil.
 **Tests.** UI, Mac only (each skipped on the iPhone — "The keys of a thing's page are the Mac's"), every one seen red
 with a fault planted first (0.68): `testTheThingPageTabsThroughEveryFieldInOrder` (the Map: opens in Name with the
 cursor at the end — " case" makes "Map case"; Tab through all 21 stops in the order above — Season, Transport and Food
-after its Section since 0.75 — and round to Name; Shift-Tab
-round to Valid until and back; typing lands in Notes and Brand; Esc still cancels), `testADropDownPicksAsHeTypesAndOpensWithSpace`
+after its Section since 0.75, Before a trip's four after Notes since 0.104 — and round to Name; Shift-Tab
+round to the care notes and back to Care; Tab to Has a battery and Space switches it; typing lands in Notes and Brand; Esc still cancels), `testADropDownPicksAsHeTypesAndOpensWithSpace`
 ("e" → Electronics with the list closed; "rink" → Food & drink, inside a word; "food" → Food & drink; Space opens; ↓ ↓ Return → Pharmacy / meds, the page
 still open; ↓ opens, Esc closes the list only and keeps the choice; Tab → Whose it is, "r" → Robin; saved and kept),
 `testKeptAtHomeMakesANewPlaceFromTheKeys` ("hall" → Hall closet, closed; "Workbench" → the offer, Hall closet still chosen, Return makes it; saved;
@@ -3155,6 +3251,7 @@ removing, ticking, finding a reminder gone); the no-access and failure messages;
 | `ams.spotlight.on` | Bool true | Show my things in Spotlight (0.92, spec 06 §3d). |
 | `ams.spotlight.indexed` | [String: String] | The fingerprint of each thing handed to this device's Spotlight, by thing id (0.92). |
 | `ams.spotlight.generation` | String "" | The mark of the last hand-over, also kept in the index as its client state (0.92). |
+| `ams.thing.before.folded` | Bool false | Before a trip on a thing's page is folded to its one line (0.104, item 3b) — for every thing. |
 
 They live in this device's UserDefaults: they do not sync, are not in a backup, and a fresh device starts with
 the defaults. Everything else in this area is library data (records → SwiftData → iCloud, docs/store.md).

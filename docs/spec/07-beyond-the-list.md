@@ -34,7 +34,7 @@ this chapter holds the parts that span several screens and the decisions behind 
 | 18. Lost luggage — C. The Lost bag page (and his details for the desk) | 0.80 | built (branch work/lostbag080) |
 | 19. Before you start — what to buy and get ready, in one place | 0.82 | built (branch work/beforestart082) |
 | 20. Progress you can see — green groups and what's left | 0.82 | built (branch work/progress082) |
-| 21. Reminders on things — Remember with it, Goes with | 0.101 | built (branch work/remind101) |
+| 21. Reminders on things — Remember, Also pack (Remember with it, Goes with until 0.104) | 0.101 | built (branch work/remind101); in Before a trip since 0.104 |
 
 Parts 1–6 are specified in their screens' chapters by the version that builds them; their summaries here point
 there. Parts 7–10 are specified in full below (part 8 from the code since 0.70).
@@ -3846,7 +3846,11 @@ left is not under the count"). Green again without them, day and night.
 
 ---
 
-## 21. Reminders on things — Remember with it, Goes with
+## 21. Reminders on things — Remember, Also pack
+
+(Named "Remember with it" and "Goes with" until 0.104 — his word, 28 Oct 2026: "change the text 'Goes with' to 'Also
+pack' so that I understand better". Since 0.104 both are rows of the frame **Before a trip** on a thing's page, spec 05
+item 3b; the trip's violet "with Camera" mark keeps its words.)
 
 His yes to the picture, 26 Oct 2026 ("build it"): three phone drawings — a thing's page (Camera), a trip while
 packing, To do a week before the trip — with **A · Remember with it** ("short notes on a thing, each with a time …
@@ -3856,11 +3860,15 @@ them"). Built from the code of 0.101; where the picture left a choice open, the 
 
 ### What he sees
 
-- **On a thing's page**, right under Photos (the picture's place: under Notes, above the rest), two blocks
-  (`ThingRememberPart`, App/Sources/Screens/ThingRemember.swift; neither on a bag or a template's reminder):
-  - **Remember with it** (`thing-remember`; heading `thing-heading-remember`). Each reminder a line (`thing-remind-<n>`,
+- **On a thing's page** — since 0.104 the 2nd and 3rd rows of Before a trip (spec 05 item 3b: Battery, **Also pack**,
+  **Remember**, On a plane, Valid until), its label on the left, each block's controls on the right; until 0.104 two
+  blocks of their own right under Photos (the picture's place: under Notes, above the rest), "Remember with it" first
+  (`ThingRememberPart(part:)`, App/Sources/Screens/ThingRemember.swift; neither on a bag or a template's reminder). As
+  0.101 built them, with what 0.104 changed in brackets:
+  - **Remember** (`thing-remember`; its label `thing-heading-remember`; "Remember with it" until 0.104). Each reminder a line (`thing-remind-<n>`,
     value = its When's label): its words, on the right its When in the step's own colour; with two or more a grip ≡ at
-    its left (`thing-remind-<n>-grip`, hold and drag, as a template's reminders). A press opens it in place: its words
+    its left (`thing-remind-<n>-grip`, hold and drag, as a template's reminders) [0.104: one line, "its words · its
+    When", Subheadline]. A press opens it in place: its words
     (`thing-remind-name`; "A reminder needs words." / "This thing has that reminder already." under it,
     `thing-remind-name-needs`), **When** (`thing-remind-when`, his steps), ↑ ↓ on the Mac (`thing-remind-up` / `-down`),
     **Done** (`thing-remind-done`, the page's orange, never grey) and **Remove reminder** (`thing-remind-remove`) —
@@ -3868,13 +3876,16 @@ them"). Built from the code of 0.101; where the picture left a choice open, the 
     **Add a reminder** (`thing-remind-add-name`) and **Add** (`thing-remind-add`; "Type the reminder first." /
     "This thing has that reminder already.", `thing-remind-add-needs`), then **When** (`thing-remind-add-when`; a new
     reminder starts at the last one's When, else the step one day ahead, else the step a new thing gets — as on a
-    template). Under it, muted: "Shows on trips where the camera is packed — in To do at its time, and under its line
-    when you tick it."
-  - **Goes with** (`thing-with`; heading `thing-heading-with`): a chip per thing (its name `thing-with-<n>`, its ✕
-    `thing-with-<n>-remove` beside it, never inside a button); **Add a thing** (`thing-with-add`, "Close the list"
-    while open) opens Find a thing (`thing-with-search`) and his things A–Z, eight at a time (`thing-with-pick-<n>`;
+    template) [0.104: the foot only after "+ Add" (`thing-remind-new`, "Close" while open), and it stays open for the
+    next until Close]. Under it, muted: "Shows on trips where the camera is packed — in To do at its time, and under its
+    line when you tick it." [gone in 0.104 — How it works says it].
+  - **Also pack** (`thing-with`; its label `thing-heading-with`; "Goes with" until 0.104): a chip per thing (its name
+    `thing-with-<n>`, its ✕ `thing-with-<n>-remove` beside it, never inside a button, labelled "Take <name> off Also
+    pack"); **Add a thing** (`thing-with-add`, "Close the list" while open) [0.104: "+ Add" / "Close", at the end of the
+    chips' row] opens Find a thing (`thing-with-search`) and his things A–Z, eight at a time (`thing-with-pick-<n>`;
     not itself, not a bag, not a template's reminder, not one chosen already). Under it, muted: "When the camera goes on
-    a trip, these come along as their own lines, each in its own bag and place."
+    a trip, these come along as their own lines, each in its own bag and place." [gone in 0.104 — How it works says
+    it].
   - Both are the page's like every field: nothing is stored before **Save**; **Cancel** keeps nothing (0.98's Apple
     way); a change makes a swipe down ask first (`thingChanged` counts them). Not in the Mac's keys' walk (Tab) — reached
     by the mouse, like the photos.
@@ -4113,6 +4124,7 @@ set aside"). Pictures `remind-thing-page`, `remind-thing-page-changed`, `remind-
 | 27 Oct 2026 | **0.103, Keyboard shortcuts in How it works:** "103 - make the list visually pleasing and easy to read for a human." A part of its own, last in the guide (also Help ▸ Keyboard Shortcuts on the Mac): a line at the top (the Mac first; on an iPhone or iPad with a keyboard the same keys work where a card says so), then seven cards — On any page, Go to, Search, Editing a list or a page, A thing's page, Lists and drop-downs, The Mac's windows — each row the action on the left and its keys on the right as small key caps (⌘ S, Esc, ⌘ 1), Apple's text styles, the app's tokens, day and night. Written from the code and kept in the model (`KeyGuide`, so the cards, the search and VoiceOver say the same words; VoiceOver reads "Command S", never a symbol); found by How it works' search by key names, symbols and actions. Spec 06 §7b | His words. Model `KeyGuideTests` (planted faults seen red), UI `testHowItWorksHasAKeyboardShortcutsTopic`, `testHelpOpensTheKeyboardShortcutsTopic`. |
 | 27 Oct 2026 | **0.103, Group by Whose it is — his idea: pack what we share on my own.** "When I am in packing mode, I sometimes want to pack on my own without my wife, even if she is going on the trip. I would like to pack everything that we share on my own, so that when she comes home, I have already packed a lot of things. Could we add that to the group by? Just to be clear, it is the property 'Whose it is'." A seventh choice at the end of Group by, **Whose it is** (id `whose`, row `trip-view-6`): the trip's lines under the owner of each THING — Your choices' owners in their order (A–Z), the owners no list holds after them, **Both have one** (the app's own words for no owner) last; so the shared things are ONE heading to pack alone and tick whole (`Library.linesByWhose`, PackingLibrary/TripByWhose.swift; spec 03 "Sorting and grouping"). A line carries no owner of its own, so the owner is read from the thing as it is now. Everything else as under the other choices (folds, rings, Fold all, Take a break's groups; the trip's green, no per-person colours). The web model's `groupBy` is untouched (parity 211/211) |
 | 27 Oct 2026 | **0.103, Shared at the top of Group by Whose it is — his correction:** "Not 'Both have one' we are talking about 'Shared'" (the things the two of them share are the owner *Shared*; *Both have one* means each has his or her own), then "Yes, Shared at the top": `linesByWhose` puts the owner Shared first, wherever Your choices or A–Z would; Both have one stays last. Model test `testSharedIsTheFirstHeadingWhereverItStandsInTheList` (red before: `Shared is not at the top`). |
+| 28 Oct 2026 | **0.104, Before a trip — his mix of A and C.** One frame on a thing's page right after Name and Notes, before Photos (spec 05 item 3b): a card in the page's orange, its title line "Before a trip" with a chevron; open, five rows in his order — Battery (a pill "Charge before a trip" with the battery mark), **Also pack** (Goes with renamed: chips, ✕, + Add), Remember (each reminder one line, words · When; + Add opens the add row), On a plane (pills Liquid, Not in the cabin), Valid until (the date with a short hint on the same line — "warns 6 months ahead" for a document, "warns before it runs out" otherwise; how far away and the quick pills under it) — a short label left, the controls right, hairlines between. Folded, ONE line: "Before a trip" and what is set ("Battery · Also pack Charger · 1 reminder · Liquid · until 30 Jun 2027", "Also pack 2 things" for more than one, "Nothing set"); kept on this device for every thing, open until he folds it. The switches are pills that VoiceOver and the tests still read as switches; everything held until Save, Cancel keeps nothing. The three explanation lines (under Remember, Goes with and Valid until) are gone — How it works says them; the page's note is one caption line at its very foot. Mac: the four are Tab stops right after Notes, skipped while folded; ⌘J opens it. The trip's violet "with Camera" mark is unchanged. Decided by the build: the chevron at the right of the title line (as Before you go's), not at its left as sketch C drew it; "Not in the cabin" on the pill as sketch A had it (VoiceOver keeps "Not allowed in the cabin"); more than one thing counted, not named, so the folded line stays one line on an iPhone. | He saw sketches A (one frame, label + control per row), B (a frame in two parts) and C (folded to one line): "A mix of A and folded as C." "'Battery' first; 'Goes with' as second (but change the text 'Goes with' to 'Also pack' so that I understand better); 'Remember' as third; 'On a plane' as fourth; 'Valid until' as the last property in the frame." Earlier: "I would like these things in a frame at the top of the item detail list, not the absolute top, but somewhere up there … compressed and in a frame so that it keeps together. Moreover, I would like the two lines under 'Valid Until' to be much more compressed. The two explanation notes take far too much real estate. Maybe take away the line break?" |
 
 ## Open questions
 
