@@ -210,16 +210,16 @@ struct SyncCard: View {
     #if DEBUG
     /// The tests' only way to see when the connection restarted, to the second (debug builds): "restarts 1
     /// · hung 1761634561 · at 1761634567" — the invented hang's start (`TestHang`) and the last restart.
-    /// An element of its own: on the Mac a text's value IS its words.
+    /// A text of its own, in no colour and a point high: on the Mac a text's value IS its words (so not a
+    /// value on `sync-healed`), and an empty shape is not in the Mac's tree at all (GitHub's Mac, 28 Oct).
     private struct HealedRecord: View {
         @ObservedObject var healer: SyncHealer
         var body: some View {
             let hung = TestHang.since.map { String(Int($0.timeIntervalSince1970)) } ?? "-"
             let at = healer.restarts.last.map { String(Int($0.at.timeIntervalSince1970)) } ?? "-"
-            Color.clear.frame(width: 1, height: 1)
-                .accessibilityElement()
-                .accessibilityLabel("restart record")
-                .accessibilityValue("restarts \(healer.restarts.count) \u{00B7} hung \(hung) \u{00B7} at \(at)")
+            Text("restarts \(healer.restarts.count) \u{00B7} hung \(hung) \u{00B7} at \(at)")
+                .font(.system(size: 1)).foregroundStyle(.clear)
+                .frame(height: 1)
                 .accessibilityIdentifier("sync-heal-record")
         }
     }

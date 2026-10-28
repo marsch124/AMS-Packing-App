@@ -751,9 +751,10 @@ until then).
   Pressed: `SyncHealer.press` — at once, or once the open page is closed; the card looks again when the restart is
   done (`SyncWatch.restarted`). Copy details for Claude adds "Restarts of the connection (0.104), newest first:" and
   one line per restart kept ("  restarted the connection <ISO> (receiving stuck|sending stuck|Restart sync pressed)",
-  "— DID NOT TAKE" when it did not). DEBUG builds only: `sync-heal-record`, a 1-pt element whose value is "restarts
+  "— DID NOT TAKE" when it did not). DEBUG builds only: `sync-heal-record`, a text 1 pt high in no colour saying "restarts
   <n> · hung <epoch s of the tests' invented hang> · at <epoch s of the last restart>" — the tests' one way to see
-  when, to the second (on the Mac a text's value is its words, so not on `sync-healed`). Day and night: the app's
+  when, to the second (on the Mac a text's value is its words, so not a value on `sync-healed`; an empty shape with a
+  value is not in the Mac's tree at all — GitHub's Mac, 28 Oct 2026). Day and night: the app's
   tokens only. Tests: spec 01 §8. Pictures `sync104-stuck`, `sync104-restarted`, `sync104-home-line` (iPhone and
   Mac, day and night).
 - Header (before 0.101's dot): **"iCloud sync"** (18 bold) and a state pill (13 heavy white, id `sync-state`; `SyncCheck.state`): **"Off"**

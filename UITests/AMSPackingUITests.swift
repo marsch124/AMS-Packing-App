@@ -4927,8 +4927,8 @@ final class AMSPackingUITests: XCTestCase {
     /// The tests' record of the last restart of the connection (debug builds, `sync-heal-record`): how many,
     /// when the invented receive began that never ends, and when the connection restarted — to the second.
     private func healRecord(_ app: XCUIApplication) -> (count: Int, hung: Int?, at: Int?) {
-        let e = app.descendants(matching: .any)["sync-heal-record"]
-        guard e.exists, let v = e.value as? String else { return (0, nil, nil) }
+        let v = words(app.staticTexts["sync-heal-record"])
+        guard !v.isEmpty else { return (0, nil, nil) }
         let parts = v.components(separatedBy: " \u{00B7} ")
         func number(_ i: Int, _ name: String) -> Int? {
             i < parts.count ? Int(parts[i].replacingOccurrences(of: name + " ", with: "")) : nil
