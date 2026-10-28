@@ -1766,8 +1766,9 @@ final class SelectionKeys: ObservableObject {
 
     /// Under the UI tests, on a selected line's marker: what the keys would meet — for a failure's words.
     var said: String {
-        let first = window.map { String(describing: type(of: $0.firstResponder as Any)) } ?? "-"
-        return "active \(active) window \(window != nil) key \(window?.isKeyWindow == true) first \(first)"
+        let first = window?.firstResponder.map { String(describing: type(of: $0)) } ?? "-"
+        let key = NSApp.keyWindow.map { String(describing: type(of: $0)) } ?? "none"
+        return "active \(active) window \(window != nil) key \(window?.isKeyWindow == true) first \(first) keyWindow \(key) same \(NSApp.keyWindow === window)"
     }
 
     /// A selected line's tint and the bar's ring: the accent colour he chose in System Settings — and with
