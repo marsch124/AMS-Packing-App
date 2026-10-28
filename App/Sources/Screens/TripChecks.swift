@@ -60,7 +60,8 @@ struct BeforeYouGoCard: View {
             // open card — `Metrics.cardSide` and `cardInset` now, as the weather's and the Bags card's.
             .padding(.horizontal, Metrics.cardSide).padding(.top, 4).padding(.bottom, folded ? 4 : Metrics.cardInset)
             .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(tint, lineWidth: 1.2))
+            // The border takes no click (0.104, as the Bags card's): folded, the card is 32 high on the Mac.
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(tint, lineWidth: 1.2).allowsHitTesting(false))
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("trip-beforego")
         }

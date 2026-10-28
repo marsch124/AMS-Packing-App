@@ -180,8 +180,11 @@ struct BagsCard: View {
             // tad" tighter; 14 at the sides and under an open card then, `Metrics.cardSide`/`cardInset` now).
             .padding(.horizontal, Metrics.cardSide).padding(.vertical, unfolded ? Metrics.cardInset : 4)
             .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+            // The border takes no click (0.104): on the Mac a ring of corner 12 round a card under ~37
+            // high took the clicks meant for the fold — the folded line, 32 high, no longer opened.
             .overlay(RoundedRectangle(cornerRadius: 12)
-                .stroke(bags.contains(where: \.over) ? AppSection.actions.color : Theme.line, lineWidth: 1))
+                .stroke(bags.contains(where: \.over) ? AppSection.actions.color : Theme.line, lineWidth: 1)
+                .allowsHitTesting(false))
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("bags-card")
             .sheet(item: $lost) { open in LostBagScreen(tripId: tripId, bag: open.bag).environmentObject(model) }

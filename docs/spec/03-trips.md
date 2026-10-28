@@ -2438,7 +2438,9 @@ angles").
 only the header line shows, padding 12 sideways and 4 above and below, the fold `min(Metrics.cardLine, 28)` high — 24
 on the Mac, 28 on the iPhone, so the folded card is 32 / 36 (0.104, his arrows of 28 Oct 2026: padding 14 sideways, 6
 above and below and the fold 28 until then, 40 on both); a tap on the fold (or anywhere else on the line) opens the
-card — padding 12 sideways and `Metrics.cardInset` above and below (14 all round until 0.104) — and a second folds it. Open or folded is remembered on the
+card — padding 12 sideways and `Metrics.cardInset` above and below (14 all round until 0.104) — and a second folds it.
+Its border (and Before you go's) takes no click (`allowsHitTesting(false)`, 0.104): on the Mac the ring round a card
+under about 37 high took the clicks meant for the fold — the folded line no longer opened (found by the Mac UI tests). Open or folded is remembered on the
 device in AppStorage **`ams.trip.bags`** (default folded; the same for every trip; cleared at launch under the
 tests, like `ams.view`). Until 0.74 the card was always open.
 - Header: the **fold** — a button (id `bags-toggle`; label "Open the bags" / "Fold the bags"; value "folded" /
