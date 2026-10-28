@@ -176,6 +176,12 @@ final class PackingMacDelegate: NSObject, NSApplicationDelegate {
     /// Every sheet lets the app quit; ⌘Q asks first while a page holds a change (`QuitGuard`).
     func applicationDidFinishLaunching(_ notification: Notification) {
         QuitGuard.start()
+        // Night pictures under the UI tests (TEST_RUNNER_NIGHT=1 → `-AppleInterfaceStyle Dark`): the argument alone
+        // left the app light on GitHub's Mac (0.105's probe, the "-night" pictures), so the app asks for dark itself.
+        let args = ProcessInfo.processInfo.arguments
+        if AMSPackingApp.testing, let n = args.firstIndex(of: "-AppleInterfaceStyle"), n + 1 < args.count, args[n + 1] == "Dark" {
+            NSApp.appearance = NSAppearance(named: .darkAqua)
+        }
     }
 
     /// Right-click (or hold) the Dock icon while the app runs: every grab list, in Home's order,

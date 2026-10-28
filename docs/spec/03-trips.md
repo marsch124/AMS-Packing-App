@@ -1477,7 +1477,9 @@ multi-select is not a small step — and he asked for the Mac). The rules live i
   (`NSApp.currentEvent.modifierFlags`); a ⌘- or ⇧-click puts away a field's keyboard focus (`makeFirstResponder(nil)`),
   so Space and Esc are the selection's.
 - **Looks:** a selected line has a tint of the Mac's **accent colour** (System Settings' choice, `controlAccentColor`
-  — what the Finder's and Mail's selected rows are made of) at 20 % by day, 34 % at night, under the whole row (the
+  — what the Finder's and Mail's selected rows are made of; with Multicolor, where none is chosen, the Finder's blue,
+  `systemBlue` — the app's own accent there is the trip's green, the colour of a packed line and of Pack's light, and
+  GitHub's Mac showed a selected line looking packed; `SelectionKeys.colour`) at 20 % by day, 34 % at night, under the whole row (the
   line, a kit's arrow, ⊘), a rounded rectangle (corner 6) 6 points past the row each side — a tint, so the tick's
   colours and the words stay as they are. It hangs on the row itself, OUTSIDE both keys (see the endless redraw, below):
   selecting never makes a new row. For the tests, a selected row carries a 4 × 4 element at its foot,
@@ -1511,9 +1513,13 @@ multi-select is not a small step — and he asked for the Mac). The rules live i
   stay that line's own; **Tick 4 things** (or **Untick 4 things** when every selected line not set aside is ticked;
   switched off when all are set aside) and **Not this time for 4 things** / **Take 4 things this time** act on all
   of them, as the bar does. The ids are the line's (`trip-line-<n>-menu-tick`, `-menu-aside`).
-- **Keys** (hidden buttons, as ⌘S's behind Done — `selectionKeys`): ⌘A selects every line shown; with a selection,
-  **Space** ticks it (unticks it when all are ticked) and **Esc** clears it. In a field being typed in, ⌘A selects the
-  field's words and Space types a space, as anywhere. Keyboard shortcuts in How it works has them on the card "A
+- **Keys:** ⌘A selects every line shown (a hidden button, as ⌘S's behind Done — `selectionKeys`; in a field being
+  typed in, the field's words). With a selection, **Space** ticks it (unticks it when all are ticked) and **Esc**
+  clears it — read by a key monitor before the window sees them, and taken (`SelectionKeys`, TripScreen.swift): only in
+  the trip's own window (`WindowReader`) while it is in front, never while a field is typed in (Space types a space,
+  Esc is the field's), never with ⌘ ⌥ ⌃ ⇧ held. 🪤 First built as hidden shortcuts: on GitHub's Mac (28 Oct 2026)
+  Space ticked the selection AND reached the button that had the keyboard's focus — the next Esc closed the trip
+  ("the trip closed"); a monitor that takes the key leaves nothing for a focused button. Keyboard shortcuts in How it works has them on the card "A
   trip's list" (spec 06 §7b).
 - Tests: model `LineSelectionTests` (3: ⌘-click / ⇧-click in the list's order with the range's end moving, ⌘A, Esc,
   a folded heading's lines leaving; Tick / Untick / Not this time on exactly the lines given; Move to bag on this

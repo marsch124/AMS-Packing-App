@@ -69,6 +69,10 @@ struct TripScreen: View {
     /// plain click lets them go. 2 or more bring the bar above "Add a thing" (`selectionBar`). Never part of a
     /// row's key — the selection's tint hangs on the row itself, as Pack's light does (spec 03, the endless redraw).
     @State private var picked = LineSelection()
+    #if os(macOS)
+    /// Space and Esc while lines are selected, read before anything else in the trip's window sees them (0.105).
+    @StateObject private var selectKeys = SelectionKeys()
+    #endif
     /// The clock the loop's step and the On site door are read by (0.75): read when the trip
     /// opens, again at the next moment the trip turns by the clock alone (`Library.clockTurns`:
     /// it sets off at the time he leaves, or goes to Review) and whenever the app comes back to
@@ -623,7 +627,7 @@ struct TripScreen: View {
                                     // stay readable, day and night.
                                     if picked.contains(line.id) {
                                         RoundedRectangle(cornerRadius: 6)
-                                            .fill(Color(nsColor: .controlAccentColor).opacity(scheme == .dark ? 0.34 : 0.20))
+                                            .fill(SelectionKeys.colour.opacity(scheme == .dark ? 0.34 : 0.20))
                                             .padding(.horizontal, -6)
                                             .accessibilityHidden(true)
                                     }
@@ -784,7 +788,16 @@ struct TripScreen: View {
         }
         .onAppear { if placeFilter != nil { view = "stored" } }
         #if os(macOS)
-        .background { selectionKeys(chosen, order: order) }
+        .background { selectionKeys(order: order) }
+        .background { WindowReader { selectKeys.window = $0 } }
+        .onAppear { selectKeys.start() }
+        .onDisappear { selectKeys.stop() }
+        .onChange(of: picked.isEmpty, initial: true) { _, none in selectKeys.active = !none }
+        .onChange(of: selectKeys.space) { _, _ in
+            let open = chosen.filter { !isSetAside($0) }
+            tickSelection(open.contains { !$0.checked }, chosen)
+        }
+        .onChange(of: selectKeys.escape) { _, _ in picked.clear() }
         #endif
         // Only lines still shown stay selected: a heading folded, another grouping, a line gone (0.105).
         .onChange(of: order) { _, shown in
@@ -956,26 +969,13 @@ struct TripScreen: View {
         return editor
     }
 
-    /// ⌘A selects every line shown, Space ticks the selection (or unticks it, all ticked), Esc lets it go —
-    /// hidden buttons, as ⌘S's behind Done (Keys.swift); Done gives up Escape meanwhile. In a field being typed
-    /// in, ⌘A selects its words and Space types a space, as anywhere.
-    private func selectionKeys(_ chosen: [Item], order: [String]) -> some View {
-        ZStack {
-            Button("Select all lines") {
-                if let field = typing { field.selectAll(nil) } else { picked.selectAll(order) }
-            }
-            .keyboardShortcut("a", modifiers: .command)
-            if !picked.isEmpty {
-                Button("Tick the selected lines") {
-                    if let field = typing { field.insertText(" ", replacementRange: field.selectedRange()); return }
-                    let open = chosen.filter { !isSetAside($0) }
-                    tickSelection(open.contains { !$0.checked }, chosen)
-                }
-                .keyboardShortcut(.space, modifiers: [])
-                Button("Clear the selection") { picked.clear() }
-                    .keyboardShortcut(.cancelAction)
-            }
+    /// ⌘A selects every line shown — a hidden button, as ⌘S's behind Done (Keys.swift); in a field being typed in,
+    /// its words, as anywhere. Space and Esc are `SelectionKeys`'s.
+    private func selectionKeys(order: [String]) -> some View {
+        Button("Select all lines") {
+            if let field = typing { field.selectAll(nil) } else { picked.selectAll(order) }
         }
+        .keyboardShortcut("a", modifiers: .command)
         .buttonStyle(.plain)
         .opacity(0).allowsHitTesting(false).accessibilityHidden(true)
     }
@@ -1020,8 +1020,8 @@ struct TripScreen: View {
                     HStack(spacing: 4) {
                         Text("Move to bag")
                         SVGPath.path("M7 10l5 5 5-5")
-                            .stroke(style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-                            .frame(width: 12, height: 12)
+                            .stroke(style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
+                            .onGrid(12)
                     }
                     .font(.system(.subheadline, weight: .semibold)).lineLimit(1).fixedSize()
                     .foregroundStyle(tint)
@@ -1040,7 +1040,7 @@ struct TripScreen: View {
         }
         .padding(.horizontal, 12).padding(.vertical, 6)
         .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(nsColor: .controlAccentColor).opacity(0.55), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(SelectionKeys.colour.opacity(0.55), lineWidth: 1))
         .padding(.horizontal, 16).padding(.top, 8)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("trip-select-bar")
@@ -1721,3 +1721,41 @@ struct Tick: Shape {
         return SVGPath.path("M8.5 12.2l2.4 2.4 4.6-5").applying(CGAffineTransform(scaleX: k, y: k))
     }
 }
+
+#if os(macOS)
+/// Space and Esc on a trip with lines selected (0.105): Space ticks them (unticks them, all ticked), Esc lets them
+/// go. Read by a key monitor BEFORE the window sees them, and taken: as hidden shortcuts they also reached the
+/// button that had the keyboard's focus — GitHub's Mac probe, 28 Oct 2026: Space ticked the selection and the
+/// next Esc closed the trip. Only in the trip's own window while it is in front, never while a field is typed in
+/// (Space types a space there), and never with ⌘, ⌥, ⌃ or ⇧ held.
+final class SelectionKeys: ObservableObject {
+    @Published var space = 0
+    @Published var escape = 0
+    /// Lines are selected on this window's trip.
+    var active = false
+    weak var window: NSWindow?
+    private let monitor = KeyMonitor()
+
+    func start() { monitor.start { [weak self] event in self?.take(event) ?? event } }
+    func stop() { monitor.stop() }
+
+    private func take(_ event: NSEvent) -> NSEvent? {
+        guard active, let window, event.window === window, window.isKeyWindow,
+              event.modifierFlags.intersection([.command, .option, .control, .shift]).isEmpty else { return event }
+        if let field = window.firstResponder as? NSTextView, field.isEditable { return event }
+        switch event.keyCode {
+        case 49: space += 1; return nil          // Space
+        case 53: escape += 1; return nil         // Esc
+        default: return event
+        }
+    }
+
+    /// A selected line's tint and the bar's ring: the accent colour he chose in System Settings — and with
+    /// Multicolor (none chosen) the Finder's blue: the app's own accent there is the trip's green, the colour of a
+    /// packed line and of Pack's light.
+    static var colour: Color {
+        UserDefaults.standard.object(forKey: "AppleAccentColor") == nil
+            ? Color(nsColor: .systemBlue) : Color(nsColor: .controlAccentColor)
+    }
+}
+#endif

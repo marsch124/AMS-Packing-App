@@ -12695,6 +12695,12 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(count) == "7 selected" }, "⌘A did not select every line: '\(words(count))'")
         app.typeKey(" ", modifierFlags: [])
         XCTAssertTrue(waitUntil { (progress.value as? String) == "all packed" }, "Space did not tick the selection: '\(words(progress))'")
+        // Space is the selection's alone: it pressed no other button (GitHub's Mac, 28 Oct 2026: the Esc after it
+        // closed the trip).
+        sleep(1)
+        XCTAssertEqual(words(count), "7 selected", "Space dropped the selection")
+        XCTAssertEqual(progress.value as? String, "all packed", "Space also pressed another button")
+        XCTAssertNotNil(find(app, "trip-detail"), "Space closed the trip")
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(waitUntil { !bar.exists }, "Esc did not clear the selection after ⌘A")
         XCTAssertNotNil(find(app, "trip-detail"), "the trip closed")
