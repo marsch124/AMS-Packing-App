@@ -1747,6 +1747,12 @@ the field takes what the word leaves). The Group by list is a popover on both.
   and refused: on a 244-line trip each key typed took about 0.7 s (the lazy list: mostly under 0.1 s, the same with the fix).
   Test: `testATickedTripStillAnswersWithTheKeyboardUp` (red on 0.95: "Test exceeded execution time allowance of
   5 minutes", the app hung at 100 %).
+- 🪤 **The same loop on the Mac, on the Templates tab (0.104.1, 28 Oct 2026)** — his Mac frozen two minutes after a
+  launch, as a page closed over the tab: there a lazy grid of cards sat INSIDE the lazy list of headings, and the
+  grids' estimated heights and the list's prefetch set each other off for ever (spec 04 §1, Traps). The tab is not
+  lazy any more. Second rule, for every screen: **never a lazy container inside another.** The trip's list holds no
+  lazy container in its rows (checked 28 Oct 2026, every `LazyVStack` of the app: Trips, Your things, Care, the
+  Events list, the table, the review, the guide, a template's page).
 
 ---
 

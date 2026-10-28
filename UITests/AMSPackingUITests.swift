@@ -210,11 +210,13 @@ final class AMSPackingUITests: XCTestCase {
                 usleep(250_000)
             }
         }
-        // The first card wholly on screen, from row `from` on.
-        func shownCard(from: Int = 0) -> XCUIElement? {
+        // The first card on screen, from card `from` on (the tab only goes down between looks, so each
+        // look starts where the last one found a card).
+        var from = 0
+        func shownCard() -> XCUIElement? {
             for n in from..<60 {
                 let card = app.buttons["template-row-\(n)"]
-                if card.exists, onScreen(app, card) { return card }
+                if card.exists, card.isHittable, onScreen(app, card) { from = n; return card }
             }
             return nil
         }
@@ -258,6 +260,7 @@ final class AMSPackingUITests: XCTestCase {
         scroll(down: true, times: 12)
         alive("at the end of the tab")
         scroll(down: false, times: 16)
+        from = 0
         alive("back at the top")
         let refine = app.buttons["refine-open"]
         XCTAssertTrue(refine.waitForExistence(timeout: 5), "no way into Refine")
