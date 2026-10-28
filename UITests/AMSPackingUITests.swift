@@ -15799,6 +15799,122 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { !app.buttons["bag-0"].exists }, "a second tap did not fold the Bags card")
     }
 
+    // MARK: - 0.104: a tad tighter (his six arrows on two Mac screenshots, 28 Oct 2026)
+
+    /// His words (28 Oct 2026), six arrows on a trip's top and a thing's page on the Mac: "It uses too
+    /// much screen real estate. Could you compress this a tad?" A trip's top: the loop strip's pills
+    /// (`Metrics.loopPill`), Before you go, the weather card and the folded Bags card a tad tighter inside
+    /// (`cardInset`, `cardSide`, `cardLine`) and nearer one another (`cardGap`). The words keep their sizes,
+    /// and on the iPhone nothing that takes a tap got smaller. Pictures `tight-trip`, day and night (the
+    /// Mac's night: `TEST_RUNNER_NIGHT=1`).
+    func testATripsTopIsATadTighter() {
+        continueAfterFailure = true
+        let night = ProcessInfo.processInfo.environment["NIGHT"] == "1" ? ["-AppleInterfaceStyle", "Dark"] : []
+        let app = launch("-uiTestingBattery", ["-batteryToDo", "-clockAt", "14:00:00"] + night)
+        openKitTrip(app)
+        #if os(macOS)
+        let inset: CGFloat = 8, gap: CGFloat = 8, line: CGFloat = 24, strip: CGFloat = 24, bagsLine: CGFloat = 24
+        #else
+        let inset: CGFloat = 10, gap: CGFloat = 10, line: CGFloat = 36, strip: CGFloat = 28, bagsLine: CGFloat = 28
+        #endif
+        let loop = app.buttons["trip-loop"]
+        XCTAssertTrue(loop.waitForExistence(timeout: 5), "no loop strip on the trip")
+        let ids = ["trip-beforego", "weather-card", "bags-card"]
+        for id in ids { XCTAssertTrue(appears(app, id, timeout: 5), "no \(id) on the trip") }
+        guard let card = find(app, "trip-beforego"), let weather = find(app, "weather-card"),
+              let bags = find(app, "bags-card") else { return }
+        _ = waitUntil { self.settled(bags) }
+        shot(app, "tight-trip-top")
+
+        // 1. The loop strip: 28 high on both until 0.104 — 24 on the Mac now (its pills 22), the iPhone's
+        //    tap still 28 (its pills 24).
+        XCTAssertLessThanOrEqual(loop.frame.height, strip + 0.5, "the loop strip is \(loop.frame.height) high")
+        XCTAssertGreaterThanOrEqual(loop.frame.height, strip - 0.5, "the loop strip takes a tap only \(loop.frame.height) high")
+
+        // 2. Before you go: 4 above its heading line, the parts 4 under it, 12 at the sides, `inset` at the foot.
+        //    (A card's frame takes in half its border, 0.5–0.6: hence the 1.5 over.)
+        let parts = ["trip-beforego-part-flags", "trip-beforego-part-todo", "trip-beforego-part-charge"].compactMap { find(app, $0) }
+        XCTAssertFalse(parts.isEmpty, "Before you go is folded or empty")
+        if let first = parts.first, let last = parts.last {
+            let top = first.frame.minY - card.frame.minY, side = first.frame.minX - card.frame.minX
+            let foot = card.frame.maxY - last.frame.maxY
+            XCTAssertLessThanOrEqual(top, 4 + line + 4 + 1.5, "Before you go's first part is \(top) under its top")
+            XCTAssertLessThanOrEqual(side, 13, "Before you go keeps \(side) at its side")
+            XCTAssertLessThanOrEqual(foot, inset + 1.5, "Before you go keeps \(foot) under its last part")
+        }
+        let fold = app.buttons["trip-beforego-fold"]
+        if fold.exists { XCTAssertGreaterThanOrEqual(fold.frame.height, line - 0.5, "Before you go's chevron takes a tap \(fold.frame.height) high") }
+
+        // 3. The weather card: `inset` above what it holds (12 until 0.104) — read off the Weather button (or the
+        //    forecast's line): a text field's own frame is only its words on the Mac.
+        let look = app.buttons["weather-look"]
+        let said = app.descendants(matching: .any).matching(identifier: "weather-line").firstMatch
+        let held = look.exists ? look : said
+        if held.exists {
+            let top = held.frame.minY - weather.frame.minY
+            XCTAssertLessThanOrEqual(top, inset + 1, "the weather card keeps \(top) above what it holds")
+        } else {
+            XCTFail("the weather card holds neither its Weather button nor its line")
+        }
+
+        // 4. The Bags card, folded: one slim line — 40 high on both until 0.104.
+        XCTAssertLessThanOrEqual(bags.frame.height, 4 + bagsLine + 4 + 1.5, "the folded Bags card is \(bags.frame.height) high")
+        let toggle = app.buttons["bags-toggle"]
+        if toggle.exists { XCTAssertGreaterThanOrEqual(toggle.frame.height, bagsLine - 0.5, "the Bags fold takes a tap \(toggle.frame.height) high") }
+
+        // Between the cards: `gap` (14 and 10 until 0.104).
+        let gaps = [weather.frame.minY - card.frame.maxY, bags.frame.minY - weather.frame.maxY]
+        for (n, g) in gaps.enumerated() {
+            XCTAssertGreaterThanOrEqual(g, 2, "card \(n + 1) runs into the one above it: \(g)")
+            XCTAssertLessThanOrEqual(g, gap + 0.5, "card \(n + 1) stands \(g) under the one above it")
+        }
+        print("TIGHT trip: loop \(loop.frame.height), beforego \(card.frame), weather \(weather.frame), bags \(bags.frame), gaps \(gaps)")
+    }
+
+    /// A thing's page, his arrows 5 and 6 (28 Oct 2026): on the Mac a line of Notes is as tall as Name
+    /// (`Metrics.notesInset`; 38 to Name's 26 until 0.104) and Choose a photo / Choose a file… as tall as
+    /// the fields (`Metrics.photoButton`; 38 until then). The iPhone keeps them as they were: Notes 44,
+    /// the photo buttons 38 — what a fingertip finds. Pictures `tight-thing`, day and night. Notes is
+    /// measured from heading to heading: a growing field tells only the height of its words.
+    func testAThingsPageIsATadTighter() {
+        continueAfterFailure = true
+        let night = ProcessInfo.processInfo.environment["NIGHT"] == "1" ? ["-AppleInterfaceStyle", "Dark"] : []
+        let app = launch("-uiTesting", night)
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        func any(_ id: String) -> XCUIElement { app.descendants(matching: .any).matching(identifier: id).firstMatch }
+        let name = any("thing-name"), notes = any("thing-notes")
+        let toName = any("thing-heading-name"), toNotes = any("thing-heading-notes"), toPhotos = any("thing-heading-photos")
+        let photo = app.buttons["thing-photo"], file = app.buttons["thing-photo-file"]
+        for (e, id) in [(name, "Name"), (notes, "Notes"), (toName, "Name's heading"), (toNotes, "Notes' heading"),
+                        (toPhotos, "Photos' heading"), (photo, "Choose a photo"), (file, "Choose a file…")] {
+            XCTAssertTrue(e.waitForExistence(timeout: 5), "the thing's page has no \(id)")
+        }
+        guard name.exists, notes.exists, toName.exists, toNotes.exists, toPhotos.exists, photo.exists, file.exists else { return }
+        XCTAssertFalse(any("thing-row-note-0").exists, "the sample's first thing has a template's note: Notes is more than one line")
+        _ = waitUntil { self.settled(file) }
+        shot(app, "tight-thing")
+        // Heading to heading: the same band and spacing, then the field — Name's, or Notes' one line.
+        let nameBlock = toNotes.frame.minY - toName.frame.minY, notesBlock = toPhotos.frame.minY - toNotes.frame.minY
+        print("TIGHT thing: name \(name.frame.height), blocks \(nameBlock) / \(notesBlock), photo \(photo.frame.height), file \(file.frame.height)")
+        #if os(macOS)
+        XCTAssertLessThanOrEqual(notesBlock, nameBlock + 2.5, "one line of Notes takes \(notesBlock) heading to heading, Name \(nameBlock)")
+        // As tall as a field, `Metrics.tap` (26): a text field's own frame is only its words on the Mac.
+        for (e, id) in [(photo, "Choose a photo"), (file, "Choose a file…")] {
+            XCTAssertLessThanOrEqual(e.frame.height, 28, "\(id) is \(e.frame.height) high")
+            XCTAssertGreaterThanOrEqual(e.frame.height, 24, "\(id) is squashed: \(e.frame.height)")
+        }
+        #else
+        XCTAssertGreaterThanOrEqual(notesBlock, nameBlock + 7.5, "Notes is no longer 44 high: \(notesBlock) heading to heading, Name \(nameBlock)")
+        for (e, id) in [(photo, "Choose a photo"), (file, "Choose a file…")] {
+            XCTAssertGreaterThanOrEqual(e.frame.height, 37.5, "\(id) takes a tap only \(e.frame.height) high")
+        }
+        #endif
+    }
+
     /// The Sorting row directly above the list it sorts (his ask, 12 Oct 2026: it sat far
     /// above, "disconnected from it"): under the cards (the weather, the bags), and the
     /// first heading right under it.

@@ -333,14 +333,15 @@ struct TripScreen: View {
             // Where this trip stands in the loop (his picture, 2026-09-27); a tap shows it whole.
             LoopDoor(here: step)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16).padding(.top, -6).padding(.bottom, 10)
+                // 6 under it (10 until 0.104, his arrows of 28 Oct 2026: a tad tighter).
+                .padding(.horizontal, 16).padding(.top, -6).padding(.bottom, 6)
             // The Packing day (0.79, his yes of 13 Oct 2026; spec 07 part 17): the Pack step's stations,
             // right under the strip, while the trip is being packed — not on a place's view.
             if step == .pack, placeFilter == nil, let day = model.library.packingDay(tripId: tripId) {
                 PackingDayRow(day: day, tripId: tripId) { station in
                     if station == .pack { toList += 1 } else { daySheet = DayOpen(station: station) }
                 }
-                .padding(.horizontal, 16).padding(.top, -2).padding(.bottom, 8)
+                .padding(.horizontal, 16).padding(.top, -2).padding(.bottom, 4)   // 8 until 0.104
                 .sheet(item: $daySheet) { open in
                     PackingDaySheet(tripId: tripId, start: open.station, byItself: open.byItself, appeared: { dayAppeared = true }) {
                         // After the sheet has gone: the list is on this screen.
@@ -371,17 +372,19 @@ struct TripScreen: View {
                 // Before you go (0.77, his yes of 13 Oct 2026): first, and only when something
                 // needs him — ONE card for what would stop him at the airport (his ideas 4 and 5),
                 // the reminders due and To charge (spec 07 part 15), which were two cards.
+                // The cards stand `Metrics.cardGap` apart over the stack's 4 — 8 on the Mac, 10 on the
+                // iPhone (0.104, his arrows: 14 and 10 until then).
                 BeforeYouGoCard(tripId: trip.id) { checking = CheckedThing(id: $0) }.environmentObject(model)
-                    .padding(.top, 10).padding(.horizontal, 16)
+                    .padding(.top, Metrics.cardGap).padding(.horizontal, 16)
                 WeatherCard(tripId: trip.id).environmentObject(model)
-                    .padding(.top, 10).padding(.horizontal, 16)
+                    .padding(.top, Metrics.cardGap).padding(.horizontal, 16)
                 BagsCard(tripId: trip.id).environmentObject(model)
-                    .padding(.top, 6).padding(.horizontal, 16)
+                    .padding(.top, Metrics.cardGap).padding(.horizontal, 16)
                 // On site (their field test, 3 Oct 2026; Pack to go home, his idea 13, is in
                 // it now): once the trip has begun, or something was bought on site.
                 if model.library.onSiteBegun(tripId: trip.id, today: Today.iso(clock), time: Today.time(of: clock)) {
                     onSiteDoor(trip)
-                        .padding(.top, 6).padding(.horizontal, 16)
+                        .padding(.top, Metrics.cardGap).padding(.horizontal, 16)
                 }
                 }
                 // The sorting, DIRECTLY above the list it sorts (0.74, his ask of 12 Oct 2026:

@@ -36,7 +36,7 @@ struct BeforeYouGoCard: View {
         if !card.isEmpty {
             let tint = BeforeYouGoCard.color(card.tone)
             let folded = TripFolds.beforeYouGoFolded(foldedRaw, trip: tripId, allSet: card.allSet)
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 4) {      // 6 until 0.104
                 header(card, tint: tint, folded: folded)
                 if !folded {
                     if !card.cabin.isEmpty || !card.dates.isEmpty {
@@ -55,10 +55,13 @@ struct BeforeYouGoCard: View {
                 }
             }
             // Folded, one line as slim as the Bags card's: the chevron's square is tap room enough.
-            // Open, the header line is the chevron's square too: 6 above it, as folded.
-            .padding(.horizontal, 14).padding(.top, 6).padding(.bottom, folded ? 6 : 14)
+            // Open, the header line is the chevron's square too: 4 above it, as folded. A tad tighter
+            // (0.104, his arrows of 28 Oct 2026): 14 at the sides and 6 above until then, 14 under an
+            // open card — `Metrics.cardSide` and `cardInset` now, as the weather's and the Bags card's.
+            .padding(.horizontal, Metrics.cardSide).padding(.top, 4).padding(.bottom, folded ? 4 : Metrics.cardInset)
             .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(tint, lineWidth: 1.2))
+            // The border takes no click (0.104, as the Bags card's): folded, the card is 32 high on the Mac.
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(tint, lineWidth: 1.2).allowsHitTesting(false))
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("trip-beforego")
         }
@@ -89,14 +92,14 @@ struct BeforeYouGoCard: View {
                 SVGPath.path(folded ? "M9 6l6 6-6 6" : "M6 9l6 6 6-6")
                     .stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
                     .frame(width: 22, height: 22).foregroundStyle(Theme.muted)
-                    .frame(width: Metrics.tap, height: Metrics.tap).contentShape(Rectangle())
+                    .frame(width: Metrics.cardLine, height: Metrics.cardLine).contentShape(Rectangle())
             }
             .buttonStyle(.plain).focusEffectDisabled()
             .accessibilityLabel(folded ? "Show Before you go" : "Fold Before you go")
             .accessibilityValue(folded ? "folded" : "open")
             .accessibilityIdentifier("trip-beforego-fold")
         }
-        .frame(minHeight: Metrics.tap)
+        .frame(minHeight: Metrics.cardLine)      // `Metrics.tap` until 0.104: 24 on the Mac now, the iPhone's 36 kept
         .contentShape(Rectangle())
         .onTapGesture { fold(card) }
     }

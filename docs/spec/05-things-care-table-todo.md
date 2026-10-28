@@ -993,7 +993,9 @@ apart; a field 6 pt under its heading):
 2. **Name** — heading band "Name" (`thing-heading-name`); field (`thing-name`, 18 medium, min height 46, card,
    radius 10, 1 pt line), placeholder "Name".
 3. **Notes** — band "Notes" (`thing-heading-notes`); a vertically growing field (`thing-notes`), placeholder
-   "Anything worth remembering", 1 to 8 lines, 18 medium, min height 46. (A note written on site lands on a line
+   "Anything worth remembering", 1 to 8 lines, 18 medium, min height 46; `Metrics.notesInset` above and below its words
+   (5 on the Mac, so one line is as tall as Name, 26; 11 on the iPhone, 44 — 0.104, his arrow of 28 Oct 2026: 11 on
+   both until then, 38 on the Mac). Care's "What to do" field the same. (A note written on site lands on a line
    of its own under the old text.) Under it (0.62), one line per note a template keeps for this thing on its own
    row: "Note on the <template> template: <note>" (0.88; was "On the <template> template: …") (15 medium muted, wraps, `thing-row-note-N`), from
    `Library.rowNotes(itemId:)` (RowNotes.swift) — the templates in their order (the bag list left out), then the
@@ -1017,7 +1019,8 @@ apart; a field 6 pt under its heading):
      took away while the question stood takes the question with it.
    - Under them: while it has room (`takesThingPhoto`: fewer than `THING_PHOTOS_MAX` = 2 photo ids, as stored — one
      still on its way from the other device counts — and fewer than the web model's MAX_PHOTOS = 5 entries), the
-     photo pills (`PhotoTakers`, the bag photos' own, here in Care orange, in a row that wraps): on the iPhone "Take a
+     photo pills (`PhotoTakers`, the bag photos' own, here in Care orange, in a row that wraps; `Metrics.photoButton`
+     high — 26 on the Mac, as tall as a field, 38 on the iPhone; 38 on both until 0.104, his arrow of 28 Oct 2026): on the iPhone "Take a
      photo" (`thing-photo`, only when it has a camera) and "Choose a photo" (`thing-photo-pick`, the photo library); on
      the Mac only Choose; and since 0.91 on both **"Choose a file…"** (`thing-photo-file`) — a picture kept in a folder
      or a screenshot (his words on 0.90's test sheet: "I would like the possibility to be able to choose a screenshot or
