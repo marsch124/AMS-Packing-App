@@ -17306,9 +17306,11 @@ final class AMSPackingUITests: XCTestCase {
     /// for any n — not one per line, which on a loaded runner took longer than the light stays.
     private func packLight(_ app: XCUIApplication) -> Int? {
         let flash = NSPredicate(format: "identifier BEGINSWITH 'trip-flash-'")
+        // Read through a snapshot, which throws instead of failing: the light can fade between "exists" and
+        // reading its id — a hard "No matches found" while waiting for it to fade (GitHub, 0.105's full run).
         for query in [app.otherElements, app.groups] {
             let e = query.matching(flash).firstMatch
-            if e.exists, let n = Int(e.identifier.dropFirst("trip-flash-".count)) { return n }
+            if e.exists, let shot = try? e.snapshot(), let n = Int(shot.identifier.dropFirst("trip-flash-".count)) { return n }
         }
         return nil
     }
