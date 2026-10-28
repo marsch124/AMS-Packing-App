@@ -227,8 +227,10 @@ struct PhotoTakers: View {
     }
 
     private func pillLabel(_ title: String) -> some View {
+        // 38 on both until 0.104 (his arrow of 28 Oct 2026, a thing's page on the Mac): `Metrics.photoButton`,
+        // on the Mac as tall as its fields (26), the iPhone's 38 kept.
         Text(title).font(.system(.subheadline, weight: .semibold)).foregroundStyle(tint)
-            .padding(.horizontal, 12).frame(minHeight: 38)
+            .padding(.horizontal, 12).frame(minHeight: Metrics.photoButton)
             .overlay(Capsule().stroke(tint, lineWidth: 1.4))
             .contentShape(Capsule())
     }

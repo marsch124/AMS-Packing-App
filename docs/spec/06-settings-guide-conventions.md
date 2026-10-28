@@ -2380,6 +2380,26 @@ space between the lines … Change this dramatically, not only a bit."
 | `glyph` | 20 | 16 | ✕, ⊘/↻, the fold arrow and the washtub on a line (22–24) |
 | `lineButton` | 40 | 30 | the width that takes a press on ✕, ⊘ or a heading's tick-all; its height is the line's (40 × 40 or 40 × 36) |
 
+**A tad tighter** (0.104) — his six arrows on two Mac screenshots, a trip's top and a thing's page (28 Oct 2026): "It
+uses too much screen real estate. Could you compress this a tad?" Only the room around things shrank: the words keep
+Apple's sizes, and on the iPhone nothing that takes a tap got smaller — where a pill looks slimmer there, the room that
+takes the tap is as before (`loopReach`).
+
+| Name | iPhone | Mac | Used for (until 0.104) |
+|---|---|---|---|
+| `cardInset` | 10 | 8 | inside a card at a trip's top, above and below what it holds: the weather card all round (12); Before you go and the Bags card under an open card (14) |
+| `cardSide` | 12 | 12 | inside those cards, left and right (Before you go and Bags 14, the weather 12) |
+| `cardGap` | 6 | 4 | from one card to the next at a trip's top, over the stack's own 4 — so 10 / 8 apart (Before you go and the weather 10 + 4, the Bags card and On site 6 + 4) |
+| `cardLine` | 36 | 24 | a card's own line: Before you go's heading and its chevron's square (`tap`); the Bags fold takes `min(cardLine, 28)` — 28 / 24 (28 on both) |
+| `loopPill` | 24 | 22 | a step of the loop strip, the pill drawn (28 on both); its chevron is drawn on 24 and centred in it |
+| `loopReach` | 2 | 1 | above and below the loop strip's pills, still taking its tap: the strip is 28 / 24 high (28 on both) |
+| `notesInset` | 11 | 5 | above and below the words of Notes and Care's "What to do" on a thing's page: one line is as tall as Name on the Mac, 26 (38); the iPhone keeps 44 |
+| `photoButton` | 38 | 26 | Take a photo, Choose a photo, Choose a file… (`PhotoTakers`: a thing's page, a bag's page, the Stations' photos, the lost-bag page) — on the Mac as tall as a field (38 on both) |
+
+The folded Before you go is then as slim as the folded Bags card on the Mac — 4 + 24 + 4 = 32 (38 and 40 before); on the
+iPhone 44 and 36 (48 and 40). Around the strip: 6 under the loop strip (10), 4 under the Stations row (8). Before you go
+keeps 4 above its heading and 4 between its parts (6 and 6).
+
 `onGrid(size)` (a `View` extension in Theme.swift) shows a mark drawn on the 24-point grid at `size`: framed at 24 so it
 stays in the middle, then scaled — framed smaller, a 24-grid drawing hangs off-centre. `TickCircle(on:, tint:, ring:)`
 (TripScreen.swift) is the one round tick of every such line: a 1.6-pt ring in the tint (or `ring`, the hairline colour
