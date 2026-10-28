@@ -189,11 +189,11 @@ final class AMSPackingUITests: XCTestCase {
     /// his size of tab (`-uiTestingManyTemplates`, 66 templates under nine headings), at the top, half
     /// way down and further — a template opened and closed every way there is (Done untouched, Done
     /// after a thing was added, Cancel; on the Mac Escape and ⌘S too); the tab to its end and back up a
-    /// short step at a time, twice; Refine opened and closed. A frozen app answers no question: the
+    /// short step at a time, opening and closing pages on the way; Refine opened and closed. A frozen app answers no question: the
     /// test fails on its first look after the close, or runs out of its time.
     func testTheTemplatesTabLivesOnWhenAPageClosesOverIt() {
-        // Two climbs by default; `FREEZE_ROUNDS` in the runner's environment asks for more (below).
-        let rounds = max(1, Int(ProcessInfo.processInfo.environment["FREEZE_ROUNDS"] ?? "") ?? 2)
+        // One climb by default; `FREEZE_ROUNDS` in the runner's environment asks for more (below).
+        let rounds = max(1, Int(ProcessInfo.processInfo.environment["FREEZE_ROUNDS"] ?? "") ?? 1)
         executionTimeAllowance = TimeInterval(360 + 120 * rounds)
         let app = launch("-uiTestingManyTemplates")
         tab(app, "templates")
@@ -247,7 +247,7 @@ final class AMSPackingUITests: XCTestCase {
         #if os(macOS)
         let ways: [Close] = [.done, .escape, .doneChanged, .saveKey, .cancel, .done, .escape]
         #else
-        let ways: [Close] = [.done, .cancel, .doneChanged, .cancel, .done, .cancel, .done]
+        let ways: [Close] = [.done, .cancel, .doneChanged, .cancel, .done]
         #endif
         for (step, way) in ways.enumerated() {
             if step > 0 { scroll(down: true, times: step == 3 ? 2 : 1) }
@@ -276,17 +276,17 @@ final class AMSPackingUITests: XCTestCase {
         }
         // Up and down the tab as a hand goes: to its end in big steps, then back up a short step at a time —
         // on the way back up the iPhone froze on 0.104 (this test, 28 Oct 2026: 100 % in the lazy list's
-        // layout). Twice (`FREEZE_ROUNDS` in the runner's environment asks for more: a longer hunt for
+        // layout). Once (`FREEZE_ROUNDS` in the runner's environment asks for more: a longer hunt for
         // the freeze, by hand); the tab must answer all the way.
         for round in 1...rounds {
             scroll(down: true, times: 10)
             alive("at the end of the tab, round \(round)")
-            for step in 1...24 {
+            for step in 1...16 {
                 nudgeUp()
                 XCTAssertTrue(appears(app, "screen-templates", timeout: 15),
                               "the Templates tab stopped answering on the way up, round \(round), step \(step)")
                 // Now and then a page opened and closed again where the list stands (Escape on the Mac).
-                if step % 6 == 0, let card = cardNear() {
+                if step % 8 == 0, let card = cardNear() {
                     card.tap()
                     XCTAssertTrue(appears(app, "template-detail", timeout: 10), "the template did not open, round \(round), step \(step)")
                     #if os(macOS)

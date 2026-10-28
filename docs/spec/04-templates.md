@@ -203,9 +203,9 @@ sheet here can be swiped down, except a template's page while arranging (`intera
 - 0.104.1: `testTheTemplatesTabLivesOnWhenAPageClosesOverIt` (both devices) — a tab of his size
   (`-uiTestingManyTemplates`: 66 templates under nine headings, areas of one card to eight rows of them, names of one
   and two lines, 18 past trips), at the top, half way down and further: a template opened and closed every way (Done
-  untouched, Done after a thing was added, Cancel; on the Mac Escape and ⌘S too); the tab to its end and back up a
-  step at a time, three times; Refine opened and closed, then Home — the tab must answer after every close and every
-  step (Traps, below).
+  untouched, Done after a thing was added, Cancel; on the Mac Escape and ⌘S too); the tab to its end and back up in
+  short steps, a page opened and closed on the way; Refine opened and closed, then Home — the tab must answer after
+  every close and every step (Traps, below). About 4 minutes on the iPhone simulator.
 - **Not covered:** the "By Transport" and "Other Templates" headings' words (the 0.104.1 sample shows both; no
   test reads them), the exact summary wording on screen.
 
@@ -223,6 +223,12 @@ sheet here can be swiped down, except a template's page while arranging (`intera
   point. Now nothing on the tab is lazy: a `VStack` of headings and plain rows of two cards (`cardRows`), built
   once, nothing estimated; a tab of his size is a few dozen cards. **Rule for every screen: never a lazy container
   inside another; a lazy list's rows keep their identity while they stay in place (spec 03).**
+  The freeze needs a moment the tests do not hit at will: with 0.104's tab put back, the iPhone simulator froze once in
+  six runs of the test (scrolling back up the tab, the Mac under heavy load: 100 % for 20 s, then stopped; its sample
+  the same loop — `LazySubviewPlacements` → `LazyVGridLayout` estimates → `updateItemPhases` → `signalPrefetch`), and
+  GitHub's Mac stayed green in three runs (28 Oct 2026). With the fix no run spun. The test stays as the tab's guard;
+  `FREEZE_ROUNDS=<n>` in the test runner's environment makes it climb the tab n times instead of once, for a longer
+  hunt by hand.
 
 ---
 
