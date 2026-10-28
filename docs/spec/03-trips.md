@@ -1715,8 +1715,9 @@ menu; pictures `trip-menu-0-tooltip` (Mac), `trip-menu-1-open`, `trip-menu-2-not
 whole screen on the Mac — a menu and a bubble are windows of their own). Seen RED on 0.103: "the line's menu
 offers no Show note".
 **Not covered by any test:** the gradient sweep/Reduce Motion; the done moment's spring (an animation); the
-placeholder for a vanished trip; a stored sorting that is none of the five; the Mac's tooltip on a line (looked at
-in the picture only — a tooltip is not in the tree); the menu's Tick and Not this time (each one line calling
+placeholder for a vanished trip; a stored sorting that is none of the five; the Mac's tooltip on a line (a tooltip is not
+in the tree, and on GitHub's Mac the tests' hover showed none in the picture `trip-menu-0-tooltip` — to be looked
+at by hand); the menu's Tick and Not this time (each one line calling
 what the tap and ⊘ call).
 
 ### iPhone vs Mac
