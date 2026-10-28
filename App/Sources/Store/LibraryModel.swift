@@ -504,7 +504,7 @@ extension LibraryModel {
             // A test must start from the same screen every time: the columns he has
             // chosen, the sort and the direction are remembered on the device, and
             // one test's choice would otherwise decide the next test's grid.
-            for key in ["ams.table.columns", "ams.table.widths", "ams.table.sort", "ams.table.down", "ams.table.then", "ams.table.filters", ThingsTable.batteryArrivedKey, "ams.care.view", BagsScreen.sortKey, "ams.view", "ams.trip.folded", BagsCard.openKey, HomeScreen.moreKey, "ams.template.grouping", "ams.pick.grouping", "ams.pick.folded", PackingReminders.onKey, TripMessages.onKey, SettingsScreen.savedKey, GrabQuickActions.openedKey, StationPicks.storageKey, SyncHealer.key] {
+            for key in ["ams.table.columns", "ams.table.widths", "ams.table.sort", "ams.table.down", "ams.table.then", "ams.table.filters", ThingsTable.batteryArrivedKey, "ams.care.view", BagsScreen.sortKey, "ams.view", "ams.trip.folded", BagsCard.openKey, HomeScreen.moreKey, "ams.template.grouping", "ams.pick.grouping", "ams.pick.folded", PackingReminders.onKey, TripMessages.onKey, SettingsScreen.savedKey, GrabQuickActions.openedKey, StationPicks.storageKey, SyncHealer.key, BeforeATripFold.key] {
                 UserDefaults.standard.removeObject(forKey: key)
             }
             // -tableChosenBefore (0.86): columns he chose before the Battery column came —

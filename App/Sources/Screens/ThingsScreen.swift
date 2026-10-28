@@ -381,6 +381,8 @@ struct ThingEditor: View {
     /// Its own "Only on some trips" (0.73, spec 07 part 14): every template it is on follows
     /// it unless that template's row sets its own — kept until Save.
     @State private var limits = TripLimits()
+    /// Before a trip folded to its one line (0.104) — this device's, for every thing.
+    @AppStorage(BeforeATripFold.key) private var beforeFolded = false
 
     var body: some View {
         let templates = self.templates
@@ -430,15 +432,16 @@ struct ThingEditor: View {
                         rowNotes
                     }
                     .keyed(.notes)
-                    // Photos right under Notes (0.90 — his ask of 19 Oct 2026: "A photo or two for
-                    // each item"): with the name and the notes, what tells this thing from another.
+                    // Before a trip (0.104 — his mix of sketches A and C, 28 Oct 2026): "these things in a
+                    // frame at the top of the item detail list, not the absolute top … compressed and in a
+                    // frame so that it keeps together" — right after Name and Notes, in his order.
+                    beforeATrip
+                    // Photos (0.90 — his ask of 19 Oct 2026: "A photo or two for each item"): with the
+                    // name and the notes, what tells this thing from another; under Before a trip since 0.104.
                     // Kept as soon as taken, so only on a thing that is there (not one ⌘N is making).
                     if let id = shown {
                         labelled("Photos") { ThingPhotos(thingId: id).environmentObject(model).id(id) }
                     }
-                    // Remember with it and Goes with (0.101, his yes to the picture of 26 Oct 2026).
-                    ThingRememberPart(thingId: current, name: draft.name, draft: $remember,
-                                      steps: drop("phases", chosen: draft.phase, words: "your \u{201C}When\u{201D} steps").options)
                     // The order is his (6 Oct 2026): what it is and whose, the templates it is on,
                     // where it lives and goes and when, the details, and last what a flight and a
                     // date ask of it.
@@ -555,56 +558,21 @@ struct ThingEditor: View {
                              tools: wear.tools, ring: ring(.condition)) { draft.condition = $0 }
                         .keyed(.condition)
                     careFields
-                    // On a plane, and Valid until — what Check before you go reads (his ideas 4 and 5).
-                    VStack(alignment: .leading, spacing: 8) {
-                        HeadingBand(title: "On a plane", id: "thing-heading-plane")
-                        Toggle(isOn: $draft.liquid) { flagWords("Liquid") }
-                            .tint(AppSection.care.color)
-                            #if os(macOS)
-                            .focusRing(at == .liquid)
-                            .simultaneousGesture(TapGesture().onEnded { land(.liquid, quiet: true) })
-                            #endif
-                            .accessibilityIdentifier("thing-liquid")
-                        Toggle(isOn: $draft.restricted) { flagWords("Not allowed in the cabin") }
-                            .tint(AppSection.care.color)
-                            #if os(macOS)
-                            .focusRing(at == .restricted)
-                            .simultaneousGesture(TapGesture().onEnded { land(.restricted, quiet: true) })
-                            #endif
-                            .accessibilityIdentifier("thing-restricted")
-                    }
-                    .keyed(.liquid)
-                    // Has a battery (0.75, spec 07 part 15 — his ask of 13 Oct 2026: "Add a tick box for
-                    // each item: Contains battery"): a trip lists it on To charge from the day before.
-                    // Its own key, not the web app's Charging flag (which a charging cable carries too).
-                    VStack(alignment: .leading, spacing: 8) {
-                        HeadingBand(title: "Battery", id: "thing-heading-battery")
-                        Toggle(isOn: Binding(get: { Library.hasBattery(draft) }, set: { Library.setBattery(&draft, $0) })) {
-                            HStack(spacing: 8) {
-                                IconMark(path: ToChargeCard.battery, size: 18).foregroundStyle(AppSection.care.color)
-                                    .accessibilityHidden(true)
-                                flagWords("Has a battery \u{2014} charge before a trip")
-                            }
-                        }
-                            .tint(AppSection.care.color)
-                            #if os(macOS)
-                            .focusRing(at == .battery)
-                            .simultaneousGesture(TapGesture().onEnded { land(.battery, quiet: true) })
-                            #endif
-                            .accessibilityIdentifier("thing-battery")
-                    }
-                    .keyed(.battery)
-                    labelled("Valid until") { validUntil }
-                        .keyed(.expiry)
                     if !problem.isEmpty {
                         Text(problem).font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.actions.color)
                             .accessibilityIdentifier("thing-problem")
                     }
-                    Text("A change here reaches every template it is on. Past trips keep what they were packed with.")
-                        .font(.system(.footnote)).foregroundStyle(Theme.muted)
                     // Duplicate (0.92, his yes of 19 Oct 2026): near the end, calm, before Delete — as on a bag's page.
                     duplicateThing
                     deleteThing
+                    // The page's one general note, one small line at its very foot (0.104 — his words, 28 Oct
+                    // 2026: "The two explanation notes take far too much real estate"); two lines over Duplicate
+                    // until then: "A change here reaches every template it is on. Past trips keep what they
+                    // were packed with."
+                    Text("A change reaches all its templates \u{00B7} past trips stay as packed")
+                        .font(.system(.caption)).foregroundStyle(Theme.muted)
+                        .lineLimit(1).minimumScaleFactor(0.8)
+                        .accessibilityIdentifier("thing-foot-note")
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
             }
@@ -1043,45 +1011,120 @@ struct ThingEditor: View {
         return (options, now.isEmpty ? "" : (same ?? current))
     }
 
-    /// A passport, an ID card, sun cream, medicine: the trip warns before it runs out.
-    @ViewBuilder private var validUntil: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            #if os(macOS)
-            // The Mac (0.68): the date is TYPED — "2027-06-30", "30/6 27", "+6m", "+1y" —
-            // in a field of its own, where the date picker stood; Add a date, Remove the
-            // date and the quick spans stay as they were.
-            HStack(spacing: 12) {
-                expiryField.frame(width: 230)
-                if draft.expiry.isEmpty { addDate } else { removeDate }
-                Spacer(minLength: 0)
+    /// Before a trip (0.104 — his mix of sketches A and C, 28 Oct 2026, and his order: "'Battery'
+    /// first; 'Goes with' as second (but change the text 'Goes with' to 'Also pack' so that I
+    /// understand better); 'Remember' as third; 'On a plane' as fourth; 'Valid until' as the last").
+    /// One row each, the label beside its controls; the ids of the headings they were (`thing-heading-…`)
+    /// and of their controls kept. A bag's own page and a to-do have no Also pack and no Remember.
+    private var beforeATrip: some View {
+        BeforeATripFrame(folded: $beforeFolded, summary: beforeSummary) {
+            // Has a battery (0.75, spec 07 part 15 — his ask of 13 Oct 2026: "Add a tick box for each
+            // item: Contains battery"): a trip lists it on To charge from the day before. Its own key,
+            // not the web app's Charging flag (which a charging cable carries too).
+            BeforeATripRow(label: "Battery", id: "thing-heading-battery", first: true) {
+                ChipToggle(title: "Charge before a trip", spoken: "Has a battery \u{2014} charge before a trip",
+                           mark: ToChargeCard.battery,
+                           isOn: Binding(get: { Library.hasBattery(draft) }, set: { Library.setBattery(&draft, $0) }))
+                    .focusRing(at == .battery, radius: Metrics.chip / 2)
+                    #if os(macOS)
+                    .simultaneousGesture(TapGesture().onEnded { land(.battery, quiet: true) })
+                    #endif
+                    .accessibilityIdentifier("thing-battery")
             }
-            if !expiryProblem.isEmpty {
-                Text(expiryProblem).font(.system(.subheadline, weight: .semibold))
-                    .foregroundStyle(AppSection.actions.color)
-                    .accessibilityIdentifier("thing-expiry-problem")
-            }
-            if !draft.expiry.isEmpty { expiryDistance; quickSpans }
-            #else
-            if draft.expiry.isEmpty {
-                addDate
-            } else {
-                HStack(spacing: 12) {
-                    DatePicker("", selection: Binding(get: { ThingEditor.date(draft.expiry) ?? Date() },
-                                                      set: { draft.expiry = ThingEditor.ymd($0) }),
-                               displayedComponents: .date)
-                        .labelsHidden()
-                        .accessibilityIdentifier("thing-expiry")
-                    Spacer(minLength: 8)
-                    removeDate
+            .keyed(.battery)
+            // Also pack and Remember (0.101, his yes to the picture of 26 Oct 2026; "Goes with" and
+            // "Remember with it" until 0.104). Not in the Mac's Tab walk.
+            if !remember.none {
+                let steps = drop("phases", chosen: draft.phase, words: "your \u{201C}When\u{201D} steps").options
+                BeforeATripRow(label: "Also pack", id: "thing-heading-with") {
+                    ThingRememberPart(part: .alsoPack, thingId: current, draft: $remember, steps: steps)
                 }
-                expiryDistance
-                quickSpans
+                BeforeATripRow(label: "Remember", id: "thing-heading-remember") {
+                    ThingRememberPart(part: .remember, thingId: current, draft: $remember, steps: steps)
+                }
             }
-            #endif
-            Text("The trip warns before it runs out \u{2014} a document (Documents & money) six months ahead.")
-                .font(.system(.footnote)).foregroundStyle(Theme.muted)
-                .fixedSize(horizontal: false, vertical: true)
+            // On a plane — what Check before you go reads (his idea 4). Their words only (his word,
+            // 6 Oct 2026: "Delete the explanations for liquid and not allowed in the cabin"); the pill
+            // says "Not in the cabin" as sketch A did, VoiceOver the whole.
+            BeforeATripRow(label: "On a plane", id: "thing-heading-plane") {
+                FlowRow(spacing: Metrics.cardGap) {
+                    ChipToggle(title: "Liquid", isOn: $draft.liquid)
+                        .focusRing(at == .liquid, radius: Metrics.chip / 2)
+                        #if os(macOS)
+                        .simultaneousGesture(TapGesture().onEnded { land(.liquid, quiet: true) })
+                        #endif
+                        .accessibilityIdentifier("thing-liquid")
+                    ChipToggle(title: "Not in the cabin", spoken: "Not allowed in the cabin", isOn: $draft.restricted)
+                        .focusRing(at == .restricted, radius: Metrics.chip / 2)
+                        #if os(macOS)
+                        .simultaneousGesture(TapGesture().onEnded { land(.restricted, quiet: true) })
+                        #endif
+                        .accessibilityIdentifier("thing-restricted")
+                }
+            }
+            .keyed(.liquid)
+            // Valid until (his idea 5): the date, its hint on the same line (0.104: "Maybe take away the
+            // line break?"), then how far away it is and the quick spans.
+            BeforeATripRow(label: "Valid until", id: "thing-heading-valid") { validUntil }
+                .keyed(.expiry)
         }
+    }
+
+    /// Folded, the one line of Before a trip: what the page holds now, saved or not (0.104).
+    private var beforeSummary: String {
+        let names = remember.none ? [] : remember.with.compactMap { id in model.library.items.first { $0.id == id }?.name }
+        return BeforeATrip.summary(battery: Library.hasBattery(draft), alsoPack: names,
+                                   reminders: remember.none ? 0 : remember.reminders.count,
+                                   liquid: draft.liquid, notInCabin: draft.restricted,
+                                   validUntil: draft.expiry, today: Today.local)
+    }
+
+    /// A passport, an ID card, sun cream, medicine: the trip warns before it runs out. Compact since
+    /// 0.104 (his words, 28 Oct 2026: "I would like the two lines under 'Valid Until' to be much more
+    /// compressed"): the date and its short hint on ONE line — "warns 6 months ahead" for a document,
+    /// "warns before it runs out" otherwise (`BeforeATrip.validUntilHint`); until then a line of its own
+    /// under everything: "The trip warns before it runs out — a document (Documents & money) six months
+    /// ahead." With a date: how far away it is, then the quick spans, on the lines under it.
+    @ViewBuilder private var validUntil: some View {
+        // The hint is laid out first (`layoutPriority`): it keeps its one line, the date field gives way.
+        let hint = Text(BeforeATrip.validUntilHint(category: draft.category))
+            .font(.system(.caption)).foregroundStyle(Theme.muted)
+            .fixedSize(horizontal: false, vertical: true)
+            .layoutPriority(1)
+            .accessibilityIdentifier("thing-expiry-hint")
+        #if os(macOS)
+        // The Mac (0.68): the date is TYPED — "2027-06-30", "30/6 27", "+6m", "+1y" — in a field of its
+        // own, where the date picker stood; Add a date or Remove the date beside it. In the frame (0.104)
+        // the field is 230 wide where there is room and down to 120 where there is not (the sheet is 520
+        // wide: "Add a date" was squeezed onto three lines, the hint onto two).
+        HStack(spacing: Metrics.cardGap * 2) {
+            expiryField.frame(minWidth: 120, maxWidth: 230)
+            Group { if draft.expiry.isEmpty { addDate } else { removeDate } }.fixedSize()
+            hint
+            Spacer(minLength: 0)
+        }
+        if !expiryProblem.isEmpty {
+            Text(expiryProblem).font(.system(.subheadline, weight: .semibold))
+                .foregroundStyle(AppSection.actions.color)
+                .accessibilityIdentifier("thing-expiry-problem")
+        }
+        if !draft.expiry.isEmpty { quickSpans(remove: false) }
+        #else
+        HStack(spacing: Metrics.cardSide) {
+            if draft.expiry.isEmpty {
+                addDate.fixedSize()
+            } else {
+                DatePicker("", selection: Binding(get: { ThingEditor.date(draft.expiry) ?? Date() },
+                                                  set: { draft.expiry = ThingEditor.ymd($0) }),
+                           displayedComponents: .date)
+                    .labelsHidden()
+                    .accessibilityIdentifier("thing-expiry")
+            }
+            hint
+            Spacer(minLength: 0)
+        }
+        if !draft.expiry.isEmpty { quickSpans(remove: true) }
+        #endif
     }
 
     /// Pill-sized, under a heading that is bigger (field test, 3 Oct 2026).
@@ -1104,30 +1147,32 @@ struct ThingEditor: View {
     }
 
     /// How far away it is, in words, as the date changes — their field test (Oct 2026):
-    /// "It didn't say 10 days. You have to calculate that yourself." Large, and red once
-    /// it has run out. A text of its own, outside any button, so the Mac does not fold it
-    /// away.
+    /// "It didn't say 10 days. You have to calculate that yourself." Bold, and red once it has run
+    /// out (Title 3 until 0.104; Subheadline bold in the compact frame). A text of its own, outside any
+    /// button, so the Mac does not fold it away.
     private var expiryDistance: some View {
         let today = Today.local
         return Text(distanceWords(from: today, to: draft.expiry))
-            .font(.system(.title3, weight: .bold))
+            .font(.system(.subheadline, weight: .bold))
             .foregroundStyle((daysBetween(today, draft.expiry) ?? 0) < 0 ? AppSection.actions.color : Theme.ink)
             .accessibilityIdentifier("thing-expiry-distance")
     }
 
-    /// The usual spans in one tap, counted from today; the date above still picks an
-    /// exact day. The one matching the date is filled in.
-    private var quickSpans: some View {
+    /// How far away, then the usual spans in one tap, counted from today (the date above still picks
+    /// an exact day; the one matching the date is filled in) — one wrapping row since 0.104; on the
+    /// iPhone "Remove the date" at its end (on the Mac it is beside the typed date).
+    private func quickSpans(remove: Bool) -> some View {
         let today = Today.local
-        return FlowRow(spacing: 8) {
+        return FlowRow(spacing: Metrics.cardGap) {
+            expiryDistance.frame(minHeight: Metrics.chip)
             ForEach(Array(ThingEditor.quickSpans.enumerated()), id: \.offset) { n, span in
                 let on = draft.expiry == addMonths(today, span.months)
                 Button { draft.expiry = addMonths(today, span.months) } label: {
                     Text(span.label)
-                        .font(.system(.subheadline, weight: on ? .semibold : .regular).monospacedDigit())
+                        .font(.system(.footnote, weight: on ? .semibold : .regular).monospacedDigit())
                         .foregroundStyle(on ? Color.white : AppSection.care.color)
-                        .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
-                        .background(Capsule().fill(on ? AppSection.care.color : Theme.bg))
+                        .padding(.horizontal, Metrics.cardSide).frame(minHeight: Metrics.chip)
+                        .background(Capsule().fill(on ? AppSection.care.color : Color.clear))
                         .overlay(Capsule().stroke(AppSection.care.color, lineWidth: 1.4))
                         .contentShape(Capsule())
                 }
@@ -1135,6 +1180,7 @@ struct ThingEditor: View {
                 .accessibilityIdentifier("thing-expiry-quick-\(n)")
                 .accessibilityAddTraits(on ? .isSelected : [])
             }
+            if remove { removeDate.frame(minHeight: Metrics.chip) }
         }
     }
 
@@ -1143,12 +1189,6 @@ struct ThingEditor: View {
     static let quickSpans: [(label: String, months: Int)] = [
         ("+1 month", 1), ("+6 months", 6), ("+1 year", 12), ("+5 years", 60), ("+10 years", 120),
     ]
-
-    /// A switch's words — no explanation under them (his word, 6 Oct 2026: "Delete the
-    /// explanations for liquid and not allowed in the cabin").
-    private func flagWords(_ title: String) -> some View {
-        Text(title).font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.ink)
-    }
 
     private static func formatter() -> DateFormatter {
         let f = DateFormatter()
@@ -1441,9 +1481,25 @@ extension ThingEditor {
         }
     }
 
-    /// Every field, in his reading order — the order Tab walks.
-    fileprivate func fieldOrder() -> [ThingField] {
-        var out: [ThingField] = [.name, .notes, .category]
+    /// Before a trip's fields (0.104), in its order: Battery, On a plane's two, Valid until (Also pack
+    /// and Remember are not in the walk).
+    static let beforeFields: [ThingField] = [.battery, .liquid, .restricted, .expiry]
+
+    /// Before a trip folded, as this device keeps it NOW — read from the defaults themselves: the
+    /// keys' monitor holds a copy of the page, whose @AppStorage still said "open" after a fold
+    /// (GitHub's Mac, 28 Oct 2026: Tab from Notes went on to Has a battery while it was folded).
+    fileprivate static var beforeFoldedNow: Bool {
+        get { UserDefaults.standard.bool(forKey: BeforeATripFold.key) }
+        set { UserDefaults.standard.set(newValue, forKey: BeforeATripFold.key) }
+    }
+
+    /// Every field, in his reading order — the order Tab walks. Before a trip's come right after Notes
+    /// (0.104) — while it is folded Tab goes past them; `all` (⌘J) names them folded too, and landing
+    /// on one opens it.
+    fileprivate func fieldOrder(all: Bool = false) -> [ThingField] {
+        var out: [ThingField] = [.name, .notes]
+        if all || !ThingEditor.beforeFoldedNow { out += ThingEditor.beforeFields }
+        out.append(.category)
         out.append(.owner)                                                               // always (0.73)
         let templates = self.templates
         if !templates.isEmpty { out.append(.templates) }
@@ -1464,7 +1520,7 @@ extension ThingEditor {
                 if !kit.contents.isEmpty { out.append(.kitCheck) }
             }
         }
-        out += [.brand, .colour, .condition, .care, .careNotes, .liquid, .restricted, .battery, .expiry]
+        out += [.brand, .colour, .condition, .care, .careNotes]
         return out
     }
 
@@ -1637,7 +1693,7 @@ extension ThingEditor {
     fileprivate func jumpMatches() -> [ThingField] {
         let q = jumpText.trimmingCharacters(in: .whitespaces).lowercased()
         guard !q.isEmpty else { return [] }
-        let order = fieldOrder()
+        let order = fieldOrder(all: true)
         let names = order.map { fieldName($0).lowercased() }
         let starts = order.indices.filter { i in
             names[i].hasPrefix(q) || names[i].split(whereSeparator: { !$0.isLetter && !$0.isNumber }).contains { $0.hasPrefix(q) }
@@ -1653,6 +1709,8 @@ extension ThingEditor {
     /// at the end, so nothing is lost). `whole: false` puts the cursor at the end.
     fileprivate func land(_ f: ThingField?, whole: Bool = true, quiet: Bool = false) {
         if at == .expiry, f != .expiry { readExpiry() }
+        // A field of Before a trip reached while it is folded (⌘J): the frame opens (0.104).
+        if let f, ThingEditor.beforeFields.contains(f), ThingEditor.beforeFoldedNow { ThingEditor.beforeFoldedNow = false }
         keyHome.quiet = quiet && f != at
         keyNote = ""
         at = f
@@ -1701,6 +1759,9 @@ extension ThingEditor {
             land(order[dir > 0 ? k : max(k - 1, 0)])
         } else if case .limit = at, let k = order.firstIndex(of: .limit(.transports)) {
             // Context gone (its workout template turned off): on from where it stood (0.75).
+            land(order[dir > 0 ? k : max(k - 1, 0)])
+        } else if let at, ThingEditor.beforeFields.contains(at), let k = order.firstIndex(of: .category) {
+            // Before a trip folded by a click while the keys were in it (0.104): on from where it stood.
             land(order[dir > 0 ? k : max(k - 1, 0)])
         } else if at?.isKit == true, let k = order.firstIndex(where: { $0 == .kitAdd || $0 == .kitTakenOut }) {
             // A kit row gone (✕ clicked) or the list closed by a click: on from Add (0.73).

@@ -34,7 +34,7 @@ this chapter holds the parts that span several screens and the decisions behind 
 | 18. Lost luggage — C. The Lost bag page (and his details for the desk) | 0.80 | built (branch work/lostbag080) |
 | 19. Before you start — what to buy and get ready, in one place | 0.82 | built (branch work/beforestart082) |
 | 20. Progress you can see — green groups and what's left | 0.82 | built (branch work/progress082) |
-| 21. Reminders on things — Remember with it, Goes with | 0.101 | built (branch work/remind101) |
+| 21. Reminders on things — Remember, Also pack (Remember with it, Goes with until 0.104) | 0.101 | built (branch work/remind101); in Before a trip since 0.104 |
 
 Parts 1–6 are specified in their screens' chapters by the version that builds them; their summaries here point
 there. Parts 7–10 are specified in full below (part 8 from the code since 0.70).
@@ -1685,7 +1685,9 @@ Headlamp's battery was not kept: 'Has a battery 2'"; the filter not applied → 
 things'"; a charge tap that also ticks the line → "charging the power bank packed something: '1/8'". The Mac:
 `testTheThingPageTabsThroughEveryFieldInOrder` walks Has a battery between Not allowed in the cabin and Valid until,
 Shift-Tab from Valid until lands on it and Space switches it on; `testAThingsPageReadsInHisOrderAndKeptAtHomeIsChosen`
-reads the Battery band between On a plane and Valid until. On GitHub's Mac (a probe running just these four): with Has a
+reads the Battery band between On a plane and Valid until. (Since 0.104 Has a battery is the first row of Before a trip,
+spec 05 item 3b: Tab reaches it right after Notes, Tab to it and Space switches it; the order test reads it first in
+the frame.) On GitHub's Mac (a probe running just these four): with Has a
 battery left out of the Tab order, red — "Tab did not go on to thing-battery"; without the fault, all four green, and the
 two battery tests green again (pictures of the Mac look, day).
 
@@ -3846,7 +3848,11 @@ left is not under the count"). Green again without them, day and night.
 
 ---
 
-## 21. Reminders on things — Remember with it, Goes with
+## 21. Reminders on things — Remember, Also pack
+
+(Named "Remember with it" and "Goes with" until 0.104 — his word, 28 Oct 2026: "change the text 'Goes with' to 'Also
+pack' so that I understand better". Since 0.104 both are rows of the frame **Before a trip** on a thing's page, spec 05
+item 3b; the trip's violet "with Camera" mark keeps its words.)
 
 His yes to the picture, 26 Oct 2026 ("build it"): three phone drawings — a thing's page (Camera), a trip while
 packing, To do a week before the trip — with **A · Remember with it** ("short notes on a thing, each with a time …
@@ -3856,11 +3862,15 @@ them"). Built from the code of 0.101; where the picture left a choice open, the 
 
 ### What he sees
 
-- **On a thing's page**, right under Photos (the picture's place: under Notes, above the rest), two blocks
-  (`ThingRememberPart`, App/Sources/Screens/ThingRemember.swift; neither on a bag or a template's reminder):
-  - **Remember with it** (`thing-remember`; heading `thing-heading-remember`). Each reminder a line (`thing-remind-<n>`,
+- **On a thing's page** — since 0.104 the 2nd and 3rd rows of Before a trip (spec 05 item 3b: Battery, **Also pack**,
+  **Remember**, On a plane, Valid until), its label on the left, each block's controls on the right; until 0.104 two
+  blocks of their own right under Photos (the picture's place: under Notes, above the rest), "Remember with it" first
+  (`ThingRememberPart(part:)`, App/Sources/Screens/ThingRemember.swift; neither on a bag or a template's reminder). As
+  0.101 built them, with what 0.104 changed in brackets:
+  - **Remember** (`thing-remember`; its label `thing-heading-remember`; "Remember with it" until 0.104). Each reminder a line (`thing-remind-<n>`,
     value = its When's label): its words, on the right its When in the step's own colour; with two or more a grip ≡ at
-    its left (`thing-remind-<n>-grip`, hold and drag, as a template's reminders). A press opens it in place: its words
+    its left (`thing-remind-<n>-grip`, hold and drag, as a template's reminders) [0.104: one line, "its words · its
+    When", Subheadline]. A press opens it in place: its words
     (`thing-remind-name`; "A reminder needs words." / "This thing has that reminder already." under it,
     `thing-remind-name-needs`), **When** (`thing-remind-when`, his steps), ↑ ↓ on the Mac (`thing-remind-up` / `-down`),
     **Done** (`thing-remind-done`, the page's orange, never grey) and **Remove reminder** (`thing-remind-remove`) —
@@ -3868,13 +3878,16 @@ them"). Built from the code of 0.101; where the picture left a choice open, the 
     **Add a reminder** (`thing-remind-add-name`) and **Add** (`thing-remind-add`; "Type the reminder first." /
     "This thing has that reminder already.", `thing-remind-add-needs`), then **When** (`thing-remind-add-when`; a new
     reminder starts at the last one's When, else the step one day ahead, else the step a new thing gets — as on a
-    template). Under it, muted: "Shows on trips where the camera is packed — in To do at its time, and under its line
-    when you tick it."
-  - **Goes with** (`thing-with`; heading `thing-heading-with`): a chip per thing (its name `thing-with-<n>`, its ✕
-    `thing-with-<n>-remove` beside it, never inside a button); **Add a thing** (`thing-with-add`, "Close the list"
-    while open) opens Find a thing (`thing-with-search`) and his things A–Z, eight at a time (`thing-with-pick-<n>`;
+    template) [0.104: the foot only after "+ Add" (`thing-remind-new`, "Close" while open), and it stays open for the
+    next until Close]. Under it, muted: "Shows on trips where the camera is packed — in To do at its time, and under its
+    line when you tick it." [gone in 0.104 — How it works says it].
+  - **Also pack** (`thing-with`; its label `thing-heading-with`; "Goes with" until 0.104): a chip per thing (its name
+    `thing-with-<n>`, its ✕ `thing-with-<n>-remove` beside it, never inside a button, labelled "Take <name> off Also
+    pack"); **Add a thing** (`thing-with-add`, "Close the list" while open) [0.104: "+ Add" / "Close", at the end of the
+    chips' row] opens Find a thing (`thing-with-search`) and his things A–Z, eight at a time (`thing-with-pick-<n>`;
     not itself, not a bag, not a template's reminder, not one chosen already). Under it, muted: "When the camera goes on
-    a trip, these come along as their own lines, each in its own bag and place."
+    a trip, these come along as their own lines, each in its own bag and place." [gone in 0.104 — How it works says
+    it].
   - Both are the page's like every field: nothing is stored before **Save**; **Cancel** keeps nothing (0.98's Apple
     way); a change makes a swipe down ask first (`thingChanged` counts them). Not in the Mac's keys' walk (Tab) — reached
     by the mouse, like the photos.
@@ -4116,6 +4129,7 @@ set aside"). Pictures `remind-thing-page`, `remind-thing-page-changed`, `remind-
 | 28 Oct 2026 | **0.104, receiving that hangs heals itself — his ask "can we harden this?"** Twice on his Mac (21 Oct on 0.96, 28 Oct on 0.103) nothing more was received after a launch until he quit Packing and opened it again. Found in the Mac's log of 28 Oct: TestFlight had opened the build behind his windows, the system held its first send back as background work — not a byte sent in 387 s — and iCloud's side of the store, one exchange at a time, turned every later request away; reopened in front, it fetched in 2 s. No cause inside the app. Now the app restarts its own connection to iCloud — the store closed and opened again in place, never two at once — when an exchange has had no end for 5 minutes, or, begun while the app was not in front, 1 minute after it came to the front; only in front, never while a page holds changes not confirmed with Done or a save is under way, 3 times an hour at most; each restart noted on the device. The card and Home's dot say it ("Receiving was stuck — restarted the connection at 07:51"); Stuck, the card offers **Restart sync**. And no `-uiTesting…` argument can reach his store any more. Spec 01 §4 and §8, spec 06 §4 | His words, 28 Oct 2026, on the second hang. Model `SyncHealTests`, `StoreConnectionTests`; UI `testAStuckSyncOffersRestartSyncWhichMendsIt`, `testAReceiveThatHangsIsRestartedByItself`, `testTheRestartWaitsWhileAPageHoldsAChange` — each seen red first. Proof that it mends his hang: his Mac, over the coming days. |
 | 28 Oct 2026 | **0.104, a line's menu: Show note, Open thing — his ask.** "During my packing, I sometimes don't understand what the English word means, so I would need to have a way to see the notes for an item. I can't click the item (in order to show notes) because that would check the radio button indicating that the item is packed. Would it be possible to create a right-click function and then show various things, such as show notes, open item, etc.?" Apple's way: a context menu on every line of the trip's list — right-click on the Mac, a press held on the iPhone; a tap still ticks. Four entries, always the same: Show note (No note, switched off, when nothing is written), Open thing (the thing's page over the trip, back to it; off for a line typed on the trip), Tick / Untick, Not this time / Take it this time. Show note is a bubble pointing at the line, on the iPhone too: the Swedish name (the build's addition — the plainest answer to "what does the English word mean"), the thing's note, its templates' notes, the line's note on this trip, its note for the way home, each under a small label. On the Mac the pointer resting on a line shows the same as its tooltip. Not on Pack to go home, whose lines already have Note and Open. No "Where is it?" entry: From where and Search answer that, and the menu stays short | His words, 28 Oct 2026, with a picture of a trip on the Mac grouped by Whose it is. Spec 03 "A line's menu"; model `LineNotesTests`, UI `testALinesMenuShowsItsNoteAndOpensItsThing`, seen RED on 0.103. |
 | 28 Oct 2026 | **0.104, a tad tighter — his six arrows:** "Check both the screenshots and the six arrows indicating where there is too much padding. It uses too much screen real estate. Could you compress this a tad?" (two Mac screenshots: a trip's top, a thing's page). The loop strip's pills 22 on the Mac, 24 on the iPhone (28; the iPhone's strip still takes a tap 28 high); 6 under the strip (10), 4 under the Stations row (8); Before you go, the weather card and the Bags card 12 at the sides, 8 / 10 above and below (12–14), the folded Bags card and Before you go 32 on the Mac (40, 38); the cards 8 / 10 apart (10–14); on a thing's page one line of Notes as tall as Name on the Mac (26; 38) and Choose a photo / Choose a file… 26 there (38). New `Metrics` tokens `cardInset`, `cardSide`, `cardGap`, `cardLine`, `loopPill`, `loopReach`, `notesInset`, `photoButton` (spec 06 §21); the iPhone keeps every tap area it had (Notes 44, the photo buttons 38) | His words and arrows. |
+| 28 Oct 2026 | **0.104, Before a trip — his mix of A and C.** One frame on a thing's page right after Name and Notes, before Photos (spec 05 item 3b): a card in the page's orange, its title line "Before a trip" with a chevron; open, five rows in his order — Battery (a pill "Charge before a trip" with the battery mark), **Also pack** (Goes with renamed: chips, ✕, + Add), Remember (each reminder one line, words · When; + Add opens the add row), On a plane (pills Liquid, Not in the cabin), Valid until (the date with a short hint on the same line — "warns 6 months ahead" for a document, "warns before it runs out" otherwise; how far away and the quick pills under it) — a short label left, the controls right, hairlines between. Folded, ONE line: "Before a trip" and what is set ("Battery · Also pack Charger · 1 reminder · Liquid · until 30 Jun 2027", "Also pack 2 things" for more than one, "Nothing set"); kept on this device for every thing, open until he folds it. The switches are pills that VoiceOver and the tests still read as switches; everything held until Save, Cancel keeps nothing. The three explanation lines (under Remember, Goes with and Valid until) are gone — How it works says them; the page's note is one caption line at its very foot. Mac: the four are Tab stops right after Notes, skipped while folded; ⌘J opens it. The trip's violet "with Camera" mark is unchanged. Decided by the build: the chevron at the right of the title line (as Before you go's), not at its left as sketch C drew it; "Not in the cabin" on the pill as sketch A had it (VoiceOver keeps "Not allowed in the cabin"); more than one thing counted, not named, so the folded line stays one line on an iPhone. | He saw sketches A (one frame, label + control per row), B (a frame in two parts) and C (folded to one line): "A mix of A and folded as C." "'Battery' first; 'Goes with' as second (but change the text 'Goes with' to 'Also pack' so that I understand better); 'Remember' as third; 'On a plane' as fourth; 'Valid until' as the last property in the frame." Earlier: "I would like these things in a frame at the top of the item detail list, not the absolute top, but somewhere up there … compressed and in a frame so that it keeps together. Moreover, I would like the two lines under 'Valid Until' to be much more compressed. The two explanation notes take far too much real estate. Maybe take away the line break?" |
 
 ## Open questions
 

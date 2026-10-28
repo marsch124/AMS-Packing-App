@@ -4,11 +4,11 @@ import PackingLibrary
 
 // Reminders on things (0.101, spec 07 part 21 — his yes to the picture, 26 Oct 2026: "build it").
 // Kept out of ThingEditor and TripScreen, as the kit part is: the page holds a `RememberDraft`,
-// shows `ThingRememberPart` under Photos and saves it in its Save — nothing is stored before Save,
-// and Cancel leaves the thing as it was. The trip shows `RemindLeftMark` / `WithMark` in a line
-// and `ThingRemindersUnder` below a ticked one.
+// shows `ThingRememberPart` (since 0.104 two rows of the frame Before a trip, also here) and saves
+// it in its Save — nothing is stored before Save, and Cancel leaves the thing as it was. The trip
+// shows `RemindLeftMark` / `WithMark` in a line and `ThingRemindersUnder` below a ticked one.
 
-/// "Remember with it" and "Goes with" as the page holds them, until Save.
+/// "Remember" and "Also pack" (until 0.104 "Remember with it" and "Goes with") as the page holds them, until Save.
 struct RememberDraft: Equatable {
     /// A bag or a template's reminder: neither block.
     var none = true
@@ -37,11 +37,12 @@ struct RememberDraft: Equatable {
     }
 }
 
-/// On a thing's page: A "Remember with it" and B "Goes with".
+/// On a thing's page, inside Before a trip (0.104): A "Remember" (until 0.104 "Remember with it")
+/// or B "Also pack" (until 0.104 "Goes with") — the controls of one row; the row's label is the frame's.
 struct ThingRememberPart: View {
+    enum Part { case remember, alsoPack }
+    let part: Part
     let thingId: String
-    /// The thing's name as the page has it ("the camera").
-    let name: String
     @Binding var draft: RememberDraft
     /// His "When" steps, as the page's When list shows them.
     let steps: [(value: String, label: String)]
@@ -52,7 +53,9 @@ struct ThingRememberPart: View {
     @State private var open: String?
     @State private var words = ""
     @State private var wordsNeeds = ""
-    /// The foot: a new reminder and its When ("" = the one it would get).
+    /// The add row (0.104: shown only after "+ Add" — compact until then): a new reminder and its
+    /// When ("" = the one it would get).
+    @State private var adding = false
     @State private var newWords = ""
     @State private var newWhen = ""
     @State private var addNeeds = ""
@@ -64,40 +67,45 @@ struct ThingRememberPart: View {
     @State private var query = ""
 
     private var tint: Color { AppSection.care.color }
-    /// "the camera" — a name's capital lowered only where it starts an ordinary word ("the USB-C cable", "the iPhone").
-    private var thing: String {
-        let n = jsTrim(name)
-        guard let first = n.first else { return "this thing" }
-        let second = n.dropFirst().first
-        let plain = first.isUppercase && (second.map { $0.isLowercase } ?? true)
-        return "the " + (plain ? first.lowercased() + n.dropFirst() : n)
-    }
 
     var body: some View {
         if draft.none {
             EmptyView()
         } else {
-            VStack(alignment: .leading, spacing: 12) {
-                remember
-                goesWith
+            switch part {
+            case .remember: remember
+            case .alsoPack: alsoPack
             }
         }
     }
 
-    // MARK: - A · Remember with it
+    /// "+ Add" / "Close" — the row's quiet door, an outlined capsule in the page's orange.
+    private func door(_ open: Bool, id: String, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(open ? "Close" : "+ Add").font(.system(.subheadline, weight: .semibold))
+                .foregroundStyle(tint)
+                .padding(.horizontal, Metrics.cardSide).frame(minHeight: Metrics.chip)
+                .overlay(Capsule().stroke(tint, lineWidth: 1.4))
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .accessibilityIdentifier(id)
+    }
 
+    // MARK: - A · Remember
+
+    /// Each reminder one line — its words · its When; a tap opens it. Then "+ Add", which opens the
+    /// add row (the words, Add, the When).
     private var remember: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HeadingBand(title: "Remember with it", tint: tint, id: "thing-heading-remember")
-                .padding(.bottom, 2)
             ForEach(Array(draft.reminders.enumerated()), id: \.element.id) { n, r in
                 row(r, n: n, count: draft.reminders.count)
             }
-            foot
-            Text("Shows on trips where \(thing) is packed \u{2014} in To do at its time, and under its line when you tick it.")
-                .font(.system(.footnote)).foregroundStyle(Theme.muted)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 6)
+            if adding { foot }
+            door(adding, id: "thing-remind-new") {
+                adding.toggle(); newWords = ""; addNeeds = ""
+            }
+            .padding(.top, draft.reminders.isEmpty && !adding ? 0 : Metrics.cardGap)
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("thing-remember")
@@ -111,7 +119,7 @@ struct ThingRememberPart: View {
 
     @ViewBuilder private func row(_ r: ThingReminder, n: Int, count: Int) -> some View {
         let when = phase(r.when)
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Metrics.cardGap) {
             HStack(spacing: 2) {
                 if count > 1 {
                     ReorderGrip(id: "thing-remind-\(n)-grip", label: "Move \(r.text)", key: r.id,
@@ -123,12 +131,14 @@ struct ThingRememberPart: View {
                 Button {
                     if open == r.id { close() } else { open = r.id; words = r.text; wordsNeeds = "" }
                 } label: {
-                    HStack(spacing: 8) {
-                        Text(r.text).font(.system(.body)).foregroundStyle(Theme.ink).lineLimit(2)
-                        Spacer(minLength: 8)
-                        Text(when.label).font(.system(.footnote, weight: .semibold)).foregroundStyle(when.color).lineLimit(1)
-                    }
-                    .padding(.vertical, 2).frame(minHeight: Metrics.line).contentShape(Rectangle())
+                    // One line: its words · its When (sketch A's "Charge it · day before"), wrapping as words do.
+                    (Text(r.text).foregroundStyle(Theme.ink)
+                     + Text(" \u{00B7} ").foregroundStyle(Theme.muted)
+                     + Text(when.label).fontWeight(.semibold).foregroundStyle(when.color))
+                        .font(.system(.subheadline))
+                        .lineLimit(2)
+                        .frame(maxWidth: .infinity, minHeight: Metrics.line, alignment: .leading)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("thing-remind-\(n)")
@@ -138,17 +148,16 @@ struct ThingRememberPart: View {
             .reorderLift(carried, key: r.id, tint: tint)
             if open == r.id { panel(r, n: n, count: count) }
         }
-        .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
     }
 
     /// The open reminder: its words, its When, up and down (Mac), Done — and Remove.
     private func panel(_ r: ThingReminder, n: Int, count: Int) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Metrics.cardGap) {
             TextField("The reminder", text: $words)
                 .textFieldStyle(.plain)
                 .font(.system(.body)).foregroundStyle(Theme.ink)
-                .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
-                .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
+                .padding(.horizontal, Metrics.cardSide).frame(minHeight: Metrics.tap)
+                .background(RoundedRectangle(cornerRadius: 10).fill(Theme.bg))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                 .onSubmit { done(r) }
                 .accessibilityIdentifier("thing-remind-name")
@@ -157,7 +166,7 @@ struct ThingRememberPart: View {
                      tint: tint, other: true) { when in
                 if let k = draft.reminders.firstIndex(where: { $0.id == r.id }) { draft.reminders[k].when = when }
             }
-            HStack(spacing: 8) {
+            HStack(spacing: Metrics.cardGap) {
                 if ReorderArrows.shown {
                     arrow(up: true, enabled: n > 0, id: r.id)
                     arrow(up: false, enabled: n < count - 1, id: r.id)
@@ -173,7 +182,7 @@ struct ThingRememberPart: View {
                 close()
             }
         }
-        .padding(.leading, 12).padding(.bottom, 8)
+        .padding(.bottom, Metrics.cardGap)
     }
 
     private func arrow(up: Bool, enabled: Bool, id: String) -> some View {
@@ -196,17 +205,17 @@ struct ThingRememberPart: View {
         draft.reminders.swapAt(k, k + by)
     }
 
-    /// The foot: a new reminder's words and Add, then its When.
+    /// The add row: a new reminder's words and Add, then its When.
     private var foot: some View {
         let picked = !newWhen.isEmpty && steps.contains { $0.value == newWhen }
         let when = picked ? newWhen : Library.whenForNewThingReminder(draft.reminders)
-        return VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
+        return VStack(alignment: .leading, spacing: Metrics.cardGap) {
+            HStack(spacing: Metrics.cardGap) {
                 TextField("Add a reminder", text: $newWords)
                     .textFieldStyle(.plain)
                     .font(.system(.body)).foregroundStyle(Theme.ink)
-                    .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
-                    .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
+                    .padding(.horizontal, Metrics.cardSide).frame(minHeight: Metrics.tap)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Theme.bg))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
                     .onSubmit { add(when) }
                     .accessibilityIdentifier("thing-remind-add-name")
@@ -219,7 +228,7 @@ struct ThingRememberPart: View {
             DropDown(title: "When", heading: .beside, options: steps, selected: when, id: "thing-remind-add-when",
                      tint: tint, other: true) { newWhen = $0 }
         }
-        .padding(.top, 8)
+        .padding(.top, draft.reminders.isEmpty ? 0 : Metrics.cardGap)
     }
 
     private func add(_ when: String) {
@@ -245,51 +254,39 @@ struct ThingRememberPart: View {
 
     private func close() { open = nil; words = ""; wordsNeeds = "" }
 
-    // MARK: - B · Goes with
+    // MARK: - B · Also pack
 
-    private var goesWith: some View {
+    /// Chips of the things packed with it, each with its ✕, and "+ Add" at the end of the same row;
+    /// "+ Add" opens the list of his things under it.
+    private var alsoPack: some View {
         let byId = Dictionary(model.library.items.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
         let chosen = draft.with.compactMap { byId[$0] }
-        return VStack(alignment: .leading, spacing: 6) {
-            HeadingBand(title: "Goes with", tint: tint, id: "thing-heading-with")
-            if !chosen.isEmpty {
-                FlowRow(spacing: 6) {
-                    ForEach(Array(chosen.enumerated()), id: \.element.id) { n, other in chip(other, n: n) }
-                }
+        return VStack(alignment: .leading, spacing: Metrics.cardGap) {
+            FlowRow(spacing: Metrics.cardGap) {
+                ForEach(Array(chosen.enumerated()), id: \.element.id) { n, other in chip(other, n: n) }
+                door(picking, id: "thing-with-add") { picking.toggle(); query = "" }
             }
-            Button {
-                picking.toggle(); query = ""
-            } label: {
-                Text(picking ? "Close the list" : "Add a thing").font(.system(.subheadline, weight: .semibold))
-                    .foregroundStyle(tint)
-                    .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
-                    .overlay(Capsule().stroke(tint, lineWidth: 1.4))
-                    .contentShape(Capsule())
-            }
-            .buttonStyle(.plain).focusEffectDisabled()
-            .accessibilityIdentifier("thing-with-add")
             if picking { picker }
-            Text("When \(thing) goes on a trip, these come along as their own lines, each in its own bag and place.")
-                .font(.system(.footnote)).foregroundStyle(Theme.muted)
-                .fixedSize(horizontal: false, vertical: true)
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("thing-with")
     }
 
-    /// A thing that goes with it: its name and ✕ — side by side, never a button in a button.
+    /// A thing packed with it: its name and ✕ — side by side, never a button in a button.
     private func chip(_ other: Item, n: Int) -> some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 2) {
             Text(other.name).font(.system(.subheadline, weight: .semibold)).foregroundStyle(tint).lineLimit(1)
                 .accessibilityIdentifier("thing-with-\(n)")
             Button { draft.with.removeAll { $0 == other.id } } label: {
-                ClearMark().frame(width: 18, height: 18).frame(width: Metrics.chip, height: Metrics.chip).contentShape(Rectangle())
+                // On the 24-point grid it is drawn on, so the cross sits in the middle of its disc (framed
+                // smaller, it hung off-centre — 0.101's chips).
+                ClearMark().onGrid(Metrics.mark).frame(width: Metrics.chip, height: Metrics.chip).contentShape(Rectangle())
             }
             .buttonStyle(.plain).focusEffectDisabled()
             .accessibilityIdentifier("thing-with-\(n)-remove")
-            .accessibilityLabel("Take \(other.name) off Goes with")
+            .accessibilityLabel("Take \(other.name) off Also pack")
         }
-        .padding(.leading, 10).padding(.trailing, 2)
+        .padding(.leading, Metrics.cardSide).padding(.trailing, Metrics.cardGap / 2)
         .frame(minHeight: Metrics.chip)
         .overlay(Capsule().stroke(tint, lineWidth: 1.2))
     }
@@ -305,19 +302,19 @@ struct ThingRememberPart: View {
                 .textFieldStyle(.plain)
                 .autocorrectionDisabled()
                 .font(.system(.body)).foregroundStyle(Theme.ink)
-                .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
-                .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
+                .padding(.horizontal, Metrics.cardSide).frame(minHeight: Metrics.tap)
+                .background(RoundedRectangle(cornerRadius: 10).fill(Theme.bg))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
-                .padding(.bottom, 4)
+                .padding(.bottom, Metrics.cardGap)
                 .accessibilityIdentifier("thing-with-search")
             ForEach(Array(shown.enumerated()), id: \.element.id) { n, other in
                 Button {
                     draft.with.append(other.id)
                     query = ""
                 } label: {
-                    HStack(spacing: 8) {
+                    HStack(spacing: Metrics.cardGap) {
                         Text(other.name).font(.system(.body)).foregroundStyle(Theme.ink).lineLimit(1)
-                        Spacer(minLength: 6)
+                        Spacer(minLength: Metrics.cardGap)
                         Text("Add").font(.system(.footnote, weight: .semibold)).foregroundStyle(tint)
                     }
                     .frame(maxWidth: .infinity, minHeight: Metrics.compact, alignment: .leading)
@@ -330,17 +327,162 @@ struct ThingRememberPart: View {
             }
             if fit.count > shown.count {
                 Text("\(fit.count - shown.count) more \u{2014} type to find them")
-                    .font(.system(.footnote)).foregroundStyle(Theme.muted).padding(.top, 4)
+                    .font(.system(.footnote)).foregroundStyle(Theme.muted).padding(.top, Metrics.cardGap)
             } else if fit.isEmpty {
                 Text(q.isEmpty ? "Nothing else to add." : "Nothing by that name.")
-                    .font(.system(.footnote)).foregroundStyle(Theme.muted).padding(.top, 4)
+                    .font(.system(.footnote)).foregroundStyle(Theme.muted).padding(.top, Metrics.cardGap)
             }
         }
-        .padding(10)
-        .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("thing-with-picker")
+    }
+}
+
+// MARK: - Before a trip (0.104)
+
+/// Before a trip's fold, kept on this device for every thing (0.104 — "folded as C").
+enum BeforeATripFold {
+    static let key = "ams.thing.before.folded"
+}
+
+/// The frame "Before a trip" on a thing's page (0.104 — his mix of sketches A and C, 28 Oct 2026): a
+/// card in the page's orange right after Name and Notes, its title line with the chevron that folds
+/// it — folded, that ONE line says what is set (`BeforeATrip.summary`) — and under it the rows
+/// (`BeforeATripRow`), a hairline between each two. Every room inside is the cards' shared tokens
+/// (`Metrics.cardSide`, `cardInset`, `cardGap`, `cardLine`), the same as Before you go's on a trip.
+struct BeforeATripFrame<Content: View>: View {
+    @Binding var folded: Bool
+    let summary: String
+    @ViewBuilder let content: () -> Content
+    /// The widest row label: every label takes it, so the controls start on one line.
+    @State private var labels: CGFloat = 0
+
+    private var tint: Color { AppSection.care.color }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            title
+            if !folded {
+                VStack(alignment: .leading, spacing: 0) { content() }
+                    .environment(\.beforeLabelWidth, labels)
+                    .onPreferenceChange(BeforeLabelWidth.self) { labels = $0 }
+            }
+        }
+        .padding(.horizontal, Metrics.cardSide)
+        .padding(.top, Metrics.cardGap)
+        .padding(.bottom, folded ? Metrics.cardGap : Metrics.cardInset)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(tint, lineWidth: 1.2))
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("thing-before-frame")
+    }
+
+    /// "Before a trip", folded the summary after it, and the chevron at the right (as Before you go's
+    /// on a trip). A tap anywhere on the line folds or opens it. Not a button round its words: on the
+    /// Mac a button folds its words into its own, and the summary is read on its own.
+    private var title: some View {
+        HStack(spacing: Metrics.cardGap * 2) {
+            Text("Before a trip").font(.headline).foregroundStyle(tint)
+                .lineLimit(1).fixedSize()
+                .accessibilityAddTraits(.isHeader)
+                .accessibilityIdentifier("thing-before-title")
+            if folded {
+                Text(summary).font(.system(.footnote)).foregroundStyle(Theme.muted)
+                    .lineLimit(1).minimumScaleFactor(0.85).truncationMode(.tail)
+                    .accessibilityIdentifier("thing-before-summary")
+            }
+            Spacer(minLength: 0)
+            Button { fold() } label: {
+                SVGPath.path(folded ? "M9 6l6 6-6 6" : "M6 9l6 6 6-6")
+                    .stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
+                    .frame(width: 22, height: 22).foregroundStyle(Theme.muted)
+                    .frame(width: Metrics.cardLine, height: Metrics.cardLine).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).focusEffectDisabled()
+            .accessibilityLabel(folded ? "Show Before a trip" : "Fold Before a trip")
+            .accessibilityValue(folded ? "folded" : "open")
+            .accessibilityIdentifier("thing-before-fold")
+        }
+        .frame(minHeight: Metrics.cardLine)
+        .contentShape(Rectangle())
+        .onTapGesture { fold() }
+    }
+
+    private func fold() {
+        withAnimation(.easeInOut(duration: 0.2)) { folded.toggle() }
+    }
+}
+
+/// One row of Before a trip: a short label on the left (its id the old heading's, `thing-heading-…`),
+/// the controls on the right; a hairline above every row but the first.
+struct BeforeATripRow<Content: View>: View {
+    let label: String
+    let id: String
+    var first = false
+    @ViewBuilder let content: () -> Content
+    @Environment(\.beforeLabelWidth) private var width
+
+    var body: some View {
+        HStack(alignment: .top, spacing: Metrics.cardSide) {
+            Text(label).font(.system(.subheadline)).foregroundStyle(Theme.ink)
+                .lineLimit(1).fixedSize()
+                .background(GeometryReader { g in Color.clear.preference(key: BeforeLabelWidth.self, value: g.size.width) })
+                .frame(width: width > 0 ? width : nil, alignment: .leading)
+                // Level with the first line of controls (a pill, a reminder's line).
+                .frame(minHeight: Metrics.chip)
+                .accessibilityAddTraits(.isHeader)
+                .accessibilityIdentifier(id)
+            VStack(alignment: .leading, spacing: Metrics.cardGap) { content() }
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.vertical, Metrics.cardGap)
+        .overlay(alignment: .top) {
+            if !first { Theme.line.frame(height: 1).accessibilityHidden(true) }
+        }
+    }
+}
+
+/// The widest label of Before a trip's rows.
+struct BeforeLabelWidth: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+}
+
+extension EnvironmentValues {
+    @Entry var beforeLabelWidth: CGFloat = 0
+}
+
+/// A switch drawn as a pill (0.104, Before a trip — sketch A's "Liquid", "Charge before a trip"):
+/// filled in the page's orange with white words when on, outlined when off — orange either way, never
+/// grey. To VoiceOver and the UI tests it is still the switch it was (`accessibilityRepresentation`):
+/// the same id on it, on or off as its value, its old words as its name.
+struct ChipToggle: View {
+    let title: String
+    /// What VoiceOver says (the switch's words until 0.104), when the pill says it shorter.
+    var spoken: String? = nil
+    /// A drawn mark before the words (the battery's).
+    var mark: String? = nil
+    @Binding var isOn: Bool
+
+    private var tint: Color { AppSection.care.color }
+
+    var body: some View {
+        Button { isOn.toggle() } label: {
+            HStack(spacing: Metrics.cardGap) {
+                if let mark {
+                    IconMark(path: mark, size: 16).foregroundStyle(isOn ? Color.white : tint)
+                        .accessibilityHidden(true)
+                }
+                Text(title).font(.system(.subheadline, weight: .semibold))
+                    .foregroundStyle(isOn ? Color.white : tint).lineLimit(1)
+            }
+            .padding(.horizontal, Metrics.cardSide).frame(minHeight: Metrics.chip)
+            .background(Capsule().fill(isOn ? tint : Color.clear))
+            .overlay(Capsule().stroke(tint, lineWidth: 1.4))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .accessibilityRepresentation { Toggle(spoken ?? title, isOn: $isOn) }
     }
 }
 

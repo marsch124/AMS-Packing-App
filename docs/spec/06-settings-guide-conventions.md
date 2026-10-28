@@ -1148,11 +1148,19 @@ notes; (0.101, spec 07 part 21) two lines after the reminder's: a thing's
    its foot; a template moved out of WET loses its own Context (0.89; a door beside Delete since 0.62); Delete template asks first; Arrange — drag headings and things, rename or remove a heading (0.63); Share at the top (a grab
    list's at its bottom right, round, under Ready to go — 0.84); Refine (violet card) after two or more reviews — Keep / Drop. (17 lines since 0.89, counted from the code.)
 7. **Care** (Care mark): Your things (changes reach trips ahead on unticked lines; a name he has is not added
-   again — 0.62); (0.101, spec 07 part 21) a thing's page order now Name, Notes, Photos, Remember with it, Goes with,
-   Kind of thing…, and a line of its own on the two: reminders with a When (Add, tap to change words or When or remove,
-   the grip ≡ / the Mac's arrows), Goes with's Add a thing and ✕, nothing changed until Save; Just added at the top until you
+   again — 0.62); (0.104, spec 05 "Before a trip") a thing's page order now Name, Notes, Before a trip (Battery, Also
+   pack, Remember, On a plane, Valid until), Photos, Kind of thing…, Care, and at its foot one line "a change reaches all
+   its templates, and past trips stay as they were packed" (was: Name, Notes, Photos, Remember with it, Goes with, Kind
+   of thing … On a plane, Battery, Valid until — 0.101); a line of its own on the frame: the chevron or its title line
+   folds it to one line that says what is set ("Battery · Also pack Charger · 1 reminder", "Nothing set"), kept on this
+   device for every thing; a line on On a plane and Valid until: a pill turns on (filled) or off, the hint beside the
+   date (a document: 6 months ahead), how far away it is, +1 month … +10 years; (0.101, spec 07 part 21 — named Remember
+   and Also pack since 0.104) a line on the two: reminders with a When, where they show (To do at their time, under the
+   line when ticked), + Add opens the line for a new one (type, When, Add), tap to change words or When or remove, the
+   grip ≡ / the Mac's arrows; Also pack's things come along as their own lines, + Add and ✕; nothing changed until Save;
+   Just added at the top until you
    leave; ✕ in search; (0.69) the search finds words in a thing's notes and its templates' notes, the matching line
-   under the thing; On a plane and Valid until (+1 month … +10 years, red once run out); the rest of a thing's page — its templates'
+   under the thing; the rest of a thing's page — its templates'
    notes under Notes, places to tap under Kept at home, No bag, Care how often and what to do (0.62); Bags with max weight,
    litres, empty weight and their own page; All your things · table (sort, filter, columns, Change all — the line says what changed, Undo puts
    back just that, the bar counts ticked things out of sight — 0.62;
@@ -1165,7 +1173,8 @@ notes; (0.101, spec 07 part 21) two lines after the reminder's: a thing's
    it; close the app (swipe it away) or quit it and nothing you did not confirm with Done is kept." (0.94 to 0.97 it
    said the app going to the background saved it, and that a glance at Control Center saved nothing); its Cancel line
    (0.98) "… nothing you changed there is kept, the pockets included." (until 0.98 "the pockets go back as they were
-   too"). (19 lines.)
+   too"). (34 lines since 0.104, counted from the code — the line on On a plane and Valid until became two, Before a
+   trip's and its pills'.)
 8. **To do** (To-do mark): To do (0.101: Priority at the top — "!" when adding, or held / right-clicked Mark as
    priority; a ticked to-do goes into Done at the foot, folded until tapped, Undo under the list; To buy the same with
    Bought); (0.101, the second line) "The To do tab wears a small red badge: how many to-dos
