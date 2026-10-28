@@ -1797,7 +1797,8 @@ selected", lines 0, 1, 3, 6; ⇧-click the Phone charger → lines 0, 1; the lin
 things" and ticks both → "2/7"; the bar's Not this time → "0/5 · 2 set aside"), `testMoveToBagMovesEverySelectedLine`
 (`-uiTestingPackingDay`, Into: the Day pack's heading "0 of 2 packed"; the Passport and the Phone charger selected,
 Move to bag's second bag is "Day pack" → its heading "0 of 4 packed", the count unchanged, still "2 selected"; picture
-`select-3-bag-menu`). Seen RED on 0.104 (GitHub's Mac probe, quoted in the commit).
+`select-3-bag-menu`). Seen RED on 0.104 (GitHub's Mac probe, 28 Oct 2026): "⌘-click did not select the line: []",
+"⇧-click from the Passport to the Map: ''", and the Day pack's heading never reached "0 of 4 packed".
 **Not covered by any test:** the gradient sweep/Reduce Motion; the done moment's spring (an animation); the
 placeholder for a vanished trip; a stored sorting that is none of the five; the Mac's tooltip on a line (a tooltip is not
 in the tree, and on GitHub's Mac the tests' hover showed none in the picture `trip-menu-0-tooltip` — to be looked

@@ -658,7 +658,7 @@ struct TripScreen: View {
                                     if picked.contains(line.id) {
                                         Color.clear.frame(width: 4, height: 4)
                                             .accessibilityElement()
-                                            .accessibilityLabel("Selected")
+                                            .accessibilityLabel(AMSPackingApp.testing ? "Selected · \(selectKeys.said)" : "Selected")
                                             .accessibilityIdentifier("trip-picked-\(n)")
                                     }
                                 }
@@ -959,7 +959,10 @@ struct TripScreen: View {
         if keys.contains(.command) { picked.toggle(line.id) } else { picked.extend(to: line.id, shown: order) }
         pocketing = nil
         // A field left with the keyboard would take Space and Esc: they are the selection's now.
-        NSApp.keyWindow?.makeFirstResponder(nil)
+        if let window = NSApp.keyWindow {
+            selectKeys.window = window                  // the window the click was in: the trip's
+            window.makeFirstResponder(nil)
+        }
         return true
     }
 
@@ -972,10 +975,20 @@ struct TripScreen: View {
     /// ⌘A selects every line shown — a hidden button, as ⌘S's behind Done (Keys.swift); in a field being typed in,
     /// its words, as anywhere. Space and Esc are `SelectionKeys`'s.
     private func selectionKeys(order: [String]) -> some View {
+        ZStack {
+        // Esc's second way to the selection, should the key monitor not have taken it: Done gives up Escape meanwhile.
+        if !picked.isEmpty {
+            Button("Clear the selection") { picked.clear() }
+                .keyboardShortcut(.cancelAction)
+        }
         Button("Select all lines") {
-            if let field = typing { field.selectAll(nil) } else { picked.selectAll(order) }
+            if let field = typing { field.selectAll(nil) } else {
+                picked.selectAll(order)
+                if let window = NSApp.keyWindow { selectKeys.window = window; window.makeFirstResponder(nil) }
+            }
         }
         .keyboardShortcut("a", modifiers: .command)
+        }
         .buttonStyle(.plain)
         .opacity(0).allowsHitTesting(false).accessibilityHidden(true)
     }
@@ -1742,12 +1755,19 @@ final class SelectionKeys: ObservableObject {
     private func take(_ event: NSEvent) -> NSEvent? {
         guard active, let window, event.window === window, window.isKeyWindow,
               event.modifierFlags.intersection([.command, .option, .control, .shift]).isEmpty else { return event }
-        if let field = window.firstResponder as? NSTextView, field.isEditable { return event }
         switch event.keyCode {
-        case 49: space += 1; return nil          // Space
-        case 53: escape += 1; return nil         // Esc
+        case 53: escape += 1; return nil         // Esc — in a field too: the selection goes first
+        case 49:                                 // Space — a field being typed in keeps it
+            if let field = window.firstResponder as? NSTextView, field.isEditable { return event }
+            space += 1; return nil
         default: return event
         }
+    }
+
+    /// Under the UI tests, on a selected line's marker: what the keys would meet — for a failure's words.
+    var said: String {
+        let first = window.map { String(describing: type(of: $0.firstResponder as Any)) } ?? "-"
+        return "active \(active) window \(window != nil) key \(window?.isKeyWindow == true) first \(first)"
     }
 
     /// A selected line's tint and the bar's ring: the accent colour he chose in System Settings — and with

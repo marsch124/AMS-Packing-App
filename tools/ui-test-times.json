@@ -153,6 +153,10 @@
   "iphone": 271.7,
   "mac": 51.8
  },
+ "testAShiftClickSelectsTheLinesBetweenAcrossHeadings": {
+  "iphone": 0.1,
+  "mac": 48.1
+ },
  "testAShortcutOpensAGrabListOrTheNextTrip": {
   "iphone": 15.8,
   "mac": 6.4
@@ -413,6 +417,10 @@
   "iphone": 81.9,
   "mac": 32.4
  },
+ "testMoveToBagMovesEverySelectedLine": {
+  "iphone": 0.1,
+  "mac": 40.8
+ },
  "testOnSiteHoldsBoughtLeftNotesAndTheWayHome": {
   "iphone": 76.4,
   "mac": 49.3
@@ -456,6 +464,10 @@
  "testSettingsTurnsOnPackingReminders": {
   "iphone": 16.1,
   "mac": 15.9
+ },
+ "testSeveralLinesAreSelectedOnTheMacAndTickedInOneGo": {
+  "iphone": 0.1,
+  "mac": 40.0
  },
  "testSomethingBoughtOnSiteGoesOnTheList": {
   "iphone": 37.0,

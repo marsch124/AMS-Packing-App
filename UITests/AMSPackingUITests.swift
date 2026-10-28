@@ -12681,9 +12681,11 @@ final class AMSPackingUITests: XCTestCase {
 
         // Esc clears the selection — and the trip stays open.
         sleep(1)
+        let keysSaid = pickedSaid(app)
+        print("SELECT-KEYS before Esc: \(keysSaid)")
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(waitUntil { !bar.exists && self.pickedLines(app).isEmpty }, "Esc did not clear the selection: \(pickedLines(app))")
-        XCTAssertNotNil(find(app, "trip-detail"), "Esc closed the trip instead of clearing the selection")
+        XCTAssertNotNil(find(app, "trip-detail"), "Esc closed the trip instead of clearing the selection (\(keysSaid))")
 
         // A plain click still ticks just its line, and selects nothing.
         pickLine(app, 2, [], near: "trip-line-1")
@@ -12794,6 +12796,16 @@ final class AMSPackingUITests: XCTestCase {
         XCUIElement.perform(withKeyModifiers: keys) { line.click() }
     }
     #endif
+
+    /// What a selected line's marker says under the tests (0.105): the keys' state, for a failure's words.
+    private func pickedSaid(_ app: XCUIApplication) -> String {
+        let marker = NSPredicate(format: "identifier BEGINSWITH 'trip-picked-'")
+        for query in [app.otherElements, app.groups] {
+            let e = query.matching(marker).firstMatch
+            if e.exists { return e.label }
+        }
+        return "no marker"
+    }
 
     /// The lines that show as selected (0.105): each selected row carries a marker `trip-picked-<n>`. One query
     /// for any n.
