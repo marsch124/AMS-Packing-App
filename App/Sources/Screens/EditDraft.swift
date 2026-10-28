@@ -216,6 +216,9 @@ final class PageDraft: ObservableObject {
     let copy: LibraryModel
     /// The library as the page opened.
     let opened: Library
+    /// What Edit ▸ Undo calls the page's Done (0.105): "Edit Hiking", "Change Your Choices". nil = read
+    /// from what changed.
+    var stepName: (() -> String)?
 
     init(live: LibraryModel) {
         self.live = live
@@ -233,7 +236,7 @@ final class PageDraft: ObservableObject {
     func save(mine: Set<Block> = []) -> Bool {
         guard changed else { return true }
         let from = opened, to = copy.library
-        guard live.change({ $0 = $0.applyingPage(from: from, to: to, mine: mine) }) else { return false }
+        guard live.change(named: stepName?(), { $0 = $0.applyingPage(from: from, to: to, mine: mine) }) else { return false }
         live.library.installLiveChoices()
         return true
     }
@@ -293,10 +296,11 @@ extension View {
     /// still for another reason (a template being arranged) without asking. `keptEarlier` (0.94): part
     /// of the page was kept already — on a bag's page Its details wrote it (since 0.98 the app put
     /// away keeps nothing) — so Discard says that what was kept stays. `discard`: what Discard does —
-    /// the page's Cancel.
-    func asksBeforeDiscarding(_ changed: Bool, holds: Bool = false, keptEarlier: Bool = false,
+    /// the page's Cancel. `isPage` (0.105): a page with its own fields is open — undo is its typing's,
+    /// never the library's (`EditingPages`); the grab list is one only while its Edit is.
+    func asksBeforeDiscarding(_ changed: Bool, holds: Bool = false, keptEarlier: Bool = false, isPage: Bool = true,
                               discard: @escaping () -> Void) -> some View {
-        modifier(DiscardAsk(changed: changed, holds: holds, keptEarlier: keptEarlier, discard: discard))
+        modifier(DiscardAsk(changed: changed, holds: holds, keptEarlier: keptEarlier, isPage: isPage, discard: discard))
     }
 }
 
@@ -304,6 +308,7 @@ private struct DiscardAsk: ViewModifier {
     let changed: Bool
     let holds: Bool
     let keptEarlier: Bool
+    let isPage: Bool
     let discard: () -> Void
     @State private var asking = false
     /// The page as `QuitGuard` knows it (Mac).
@@ -317,9 +322,10 @@ private struct DiscardAsk: ViewModifier {
     /// restart of the sync waits for it).
     private func tracked<V: View>(_ view: V) -> some View {
         view
-            .onAppear { OpenPages.shows(page, changed: changed) }
+            .onAppear { OpenPages.shows(page, changed: changed); EditingPages.shows(page, page: isPage) }
             .onChange(of: changed) { _, now in OpenPages.shows(page, changed: now) }
-            .onDisappear { OpenPages.gone(page) }
+            .onChange(of: isPage) { _, now in EditingPages.shows(page, page: now) }
+            .onDisappear { OpenPages.gone(page); EditingPages.gone(page) }
     }
 
     @ViewBuilder

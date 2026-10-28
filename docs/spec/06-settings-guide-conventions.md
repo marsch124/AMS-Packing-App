@@ -1236,7 +1236,15 @@ notes; (0.101, spec 07 part 21) two lines after the reminder's: a thing's
     — (0.94) "— a bag, a template or Your choices stays open with what you changed, so Done again saves it." (§20b); on the Mac Escape closes a window as its Cancel or Done does, never saving
     (0.62); (0.103) the last line now also says "⌘S is Save (or Done) on every page, even one that only shows
     something, like a trip. ⌘1 to ⌘6 change tabs. The All your things window closes with Done or ⌘W. Every key is on
-    its own card under Keyboard shortcuts, the last part of this guide." (5 lines.)
+    its own card under Keyboard shortcuts, the last part of this guide." (0.105) Before that last line, a line of its
+    own: "Undo: on the Mac, Edit ▸ Undo (⌘Z) takes back your last change, whatever page it was on — a tick or a heading’s
+    ticks, something set aside, things added to or taken off a trip, a thing’s or a template’s Done, a delete (a trip, a
+    thing, a template or a bag comes back whole) — and the menu says which: “Undo Tick Passport”. ⇧⌘Z puts it back. Up
+    to 50 steps, kept until the app quits or a restore. On the iPhone, shake it, or swipe left with three fingers. On a
+    page with its own fields — a thing, a template, Trip settings — undo is your typing’s, never the library’s. Undo takes
+    back only what is still as you left it: what your other device changed since stays, and a small note says so
+    (“Partly undone — Passport was changed on your iPhone”). The 6-second Undo under a trip and To do’s Undo take back
+    the same step — never twice." (6 lines.)
 12. **Keyboard shortcuts** (0.103; not one of the `topics` — a part of its own, `KeysGuide`, §7b): every key the app
     answers, as cards of key caps.
 
@@ -1370,7 +1378,7 @@ in its menu bar. On an iPhone or iPad with a keyboard attached, the same keys wo
 `cards`, each `Card(id, title, reach, line, rows)`; `reach` is `.withKeyboard` ("Mac, and iPhone or iPad with a
 keyboard") or `.macOnly` ("Mac only"); a `Row(action, chords, note)` has one chord or several ways ("Space or ↓"), a
 chord being `Key`s pressed together; a `Key` has its cap ("⌘", "S", "Esc", "A–Z") and its spoken name ("Command", "S",
-"Escape", "letters"). The seven cards, in order, with their rows:
+"Escape", "letters"). The eight cards (seven until 0.105), in order, with their rows:
 
 | # | Card (id) | Reach | Rows (keys) |
 |---|---|---|---|
@@ -1381,6 +1389,7 @@ chord being `Key`s pressed together; a `Key` has its cap ("⌘", "S", "Esc", "A�
 | 4 | A thing’s page (`thing`) | Mac | Save the thing ⌘S · Save, and start the next thing with the same choices ⌘N · Next thing in the list the page came from ⌘↓ · Previous thing ⌘↑ · Jump to a field by its name ⌘J · Next field Tab · Previous field ⇧Tab · Save from any field but Notes Return — "Also the Thing menu. Tab walks every field, top to bottom." |
 | 5 | Lists and drop-downs (`lists`) | Mac | Open a drop-down (Space or ↓) · Move through its choices (↑ ↓) · Jump to a choice by typing (A–Z) · Choose the lit one (Return) · Close the list, and stay on the page (Esc) · Move along a row of pills (← →) · Switch the lit pill, or a switch (Space) — "On a thing’s page, with the field lit." |
 | 6 | The Mac’s windows (`mac`) | Mac | Quit ⌘Q ("Asks first when a page holds a change you have not confirmed.") · New window ⌘N ("Not while a thing’s page is open: there ⌘N is Save and New.") · Close the All your things window ⌘W |
+| 7 | (0.105) Undo and Redo (`undo`) | Mac | line "The Edit menu, which says what it takes back: “Undo Tick Passport”. On an iPhone, shake it, or swipe left with three fingers." · Undo the last change, whatever page it was on ⌘Z ("Up to 50 steps. What your other device changed since stays. On a page with its own fields ⌘Z undoes your typing there.") · Redo what Undo took back ⇧⌘Z. Mac only: on the iPhone simulator a keyboard's ⌘Z did not reach the app (tried 28 Oct 2026) — the iPhone undoes by shake (§20a). |
 
 **On screen.** Last in the guide's `VStack(spacing: 12)`, after the twelve topics; every card padding 14, `Theme.card`,
 radius 12, 1-pt `Theme.line`. First a **heading card** (id `guide-keys`): the `command` symbol (SF Symbol, 24, slate)
@@ -1414,7 +1423,7 @@ the row's one label "Save, or Done, Command S") and no symbol in any; the search
 first and then the iPhone and iPad, the seven cards in order. Seen red with faults planted (the Go card without Care; ⌘'s
 spoken name the symbol): `("["go: no row for Care"]") is not equal to ("[]") - keys the app answers that the topic leaves
 out or gets wrong`, `("Optional("⌘ S")") is not equal to ("Optional("Command S")")`. UI `testHowItWorksHasAKeyboardShortcutsTopic`
-(iPhone and Mac): the topic is there, the heading card and seven cards, the rows' labels "Save, or Done, Command S", the Go
+(iPhone and Mac): the topic is there, the heading card and eight cards (seven until 0.105), the rows' labels "Save, or Done, Command S", the Go
 card's six rows `Home, Command 1` … `Settings, Command 6, or Command comma`, `Previous field, Shift Tab`; each card brought to the top for a picture
 (`keys-0-top`, `keys-1-card` … `keys-7-card`, `keys-8-search`; day and night, iPhone and Mac); the search finds it for
 `command s`, `jump to a field`, `shift tab` ("quit" is said in other parts too, and the lazy results would not have built the last card).
@@ -2195,6 +2204,7 @@ besides). The Mac hands a sheet its own window, so a page's hidden ⌘S can neve
 | Tab ⇧Tab Space ↑ ↓ ← → Return, letters | the thing page's key walk and its drop-downs | `ThingEditor.key`, `DropDown.answer` (Mac) |
 | ⌘Q | quit | `QuitCommand` |
 | ⌘W | closes the All your things window | the system |
+| ⌘Z, ⇧⌘Z | (0.105) Edit ▸ Undo / Redo: the last change to the library, named ("Undo Tick Passport"); on a page with its own fields, or in a field with typing to take back, the text's own Undo | `UndoCommands`/`UndoMenu` (`Store/LibraryUndo.swift`, Mac); the iPhone: shake, three fingers — the window's undo manager (`SystemUndo`) |
 
 **The Go menu** (`GoCommands`, `CommandMenu("Go")`, before the Thing menu): the six tabs in the tab bar's order, ⌘1 to ⌘6 —
 Apple's own convention — the tab showing ticked. It acts on the window in front (`RootView` gives its scene a
@@ -2227,6 +2237,56 @@ First trip, Your things, Search, the trip's loop and Share — each opened, ⌘S
 `testCommandSMakesANewTemplate`, `testCommandNumbersChangeTabs` (the Go menu has six items, all on; ⌘6 … ⌘1 each open their
 tab; ⌘, opens Settings), `testTheTabKeysAreOffWhileAPageIsOpen` (a trip open: all six items off, ⌘3 changes nothing and
 closes nothing; Done: on again, ⌘3 opens Templates), `testHelpOpensTheKeyboardShortcutsTopic`. Model and guide: §7b.
+
+### Edit ▸ Undo and Redo — ⌘Z everywhere (0.105; `Store/LibraryUndo.swift`, `PackingLibrary/Undo.swift`, the rule with the other device in spec 01 §5)
+
+**His words** (28 Oct 2026): "2. ⌘Z - yes please" — to the proposal "⌘Z undo everywhere (Mac): undo and redo the last change,
+whatever page it was on."
+
+**What is a step.** Every change this device makes to his library outside a page that holds its changes: a tick or an untick
+(a heading's round tick and Clear every tick are ONE step each), set aside / bring back, things added to or taken off a trip,
+a thing's or a template's Done (one step, however many writes the Done makes), Your choices' Done, a delete — a thing, a
+trip, a template, a bag: Undo brings it back whole, its lines, places on templates and ticks with it, under the same ids.
+Not steps: Group by and Fold all (views kept on the device, never in the library), and the app's own bookkeeping (spec 01 §5).
+Inside a page (the pages that ask before discarding, `EditingPages`: a thing, a template and its rows, a bag, Trip settings,
+the review, Your choices, Activity areas, the lost-luggage desk, a grab list while it is edited) nothing is a step until its
+Done — Cancel throws the page's changes away as before.
+
+**The Mac.** Edit ▸ Undo and Redo are the app's own items in place of the system's (`CommandGroup(replacing: .undoRedo)`,
+`UndoCommands`): ⌘Z and ⇧⌘Z, the step's name in the item — Apple's way: "Undo Tick Passport", "Redo Delete Weekend in the
+hills"; greyed "Undo" when there is nothing. The keys belong to the TEXT, and the items say the system's own words ("Undo
+Typing"), when a page with its own fields is open (whether or not anything was typed — ⌘Z there never reaches his
+library), or when a field anywhere has typing to take back; then the item sends the system's `undo:` / `redo:` down the
+window's responder chain, exactly what the system's own item does. Everything else — any tab, a trip's page, the All your
+things window — is the library's. What the items say is worked out after every event and as a menu opens (`UndoMenu`:
+`NSApplication.didUpdateNotification`, `NSMenu.didBeginTrackingNotification`, and the book changing). Ids for the tests:
+`edit-undo`, `edit-redo` (`UndoMenu.nameItems`, from `ThingKeys.nameMenuItems`).
+
+**The iPhone.** Shake to undo and the three-finger swipes: UIKit asks the window's undo manager (SwiftUI's
+environment `undoManager`, handed over in `RootView`). `SystemUndo` keeps it holding the book's steps, newest last, each its
+own group under its own name; its Undo runs `LibraryModel.undo` and registers the Redo as UIKit expects. While a page with
+fields is open the manager holds none of them (so undo there is the typing's), and after anything the manager cannot follow
+(a banner's undo, a restore, 50 reached) it is filled afresh from the book (the Redo is then not offered there).
+
+**The banners** — the trip's 6-second Undo (`TickUndo.step`), To do's and To buy's ✕ and tick bars, the table's Change all:
+each keeps the step its change made (`LibraryModel.lastStep`) and takes back THAT step through the book
+(`LibraryModel.undoStep`) — so ⌘Z and a banner never undo one change twice — and goes once ⌘Z has taken it back
+(`stillUndoable`). A banner whose step the book no longer holds (a restore forgot it) does its own undo, as before 0.105.
+
+**The note** when something was kept because the other device changed it since: "Partly undone — Passport was changed on
+your iPhone" / "Not undone — …" (`SaveNote`, id `undo-note`, 8 s; spec 01 §5).
+
+**Tests.** Mac (GitHub's Mac probe): `testCommandZUndoesAndRedoesATick` (a tick, Edit ▸ Undo reads "Undo Tick <the line's
+thing>", the Edit menu open for a picture, ⌘Z → 0/, Redo named, ⇧⌘Z → 1/), `testCommandZBringsBackADeletedTripWhole` (a
+ticked trip deleted, "Undo Delete …", ⌘Z → listed again and still 1/, ⇧⌘Z → gone), `testCommandZUndoesAThingsSave`
+(renamed and Saved, "Undo Edit <name> case", ⌘Z → the old name), `testCommandZInATextFieldUndoesTheTypingNotTheLibrary`
+(a tick; on a thing's page the menu never offers it; " case" typed into the name, ⌘Z → the name as it was; Cancel; the
+trip still 1/). iPhone (`-undoHookForTests`: two small buttons in a window of their own call the WINDOW's undo manager —
+what shake calls; XCUITest cannot shake): `testShakeUndoTakesBackATickAndRedoPutsItBack`,
+`testTheUndoBarAndShakeTakeBackEachStepOnce`, `testPartlyUndoneWhenTheOtherDeviceChangedAField`
+(`-otherDeviceNoteAfterStep`: the other device writes the Map's note after its Save; Undo → "Partly undone — Map was
+changed on your Mac", the name back, the other device's note kept), `testARestoreForgetsWhatCouldBeUndone`. Model:
+`UndoTests` (spec 01 §5), `KeyGuideTests` (⌘Z and ⇧⌘Z on the On any page card).
 
 ## 20b. A save that fails — a note, never a dead app (0.93; `SaveNote` in `RootView.swift`, `LibraryModel.couldNotSave`, `CloudStore.apply`)
 

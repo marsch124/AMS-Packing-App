@@ -3115,6 +3115,277 @@ final class AMSPackingUITests: XCTestCase {
     }
     #endif
 
+    // MARK: - ⌘Z undo everywhere (0.105, his "2. ⌘Z - yes please", 28 Oct 2026)
+
+    /// A picture kept with the run's results (on GitHub too) and, when SHOTS_DIR is set, as a file.
+    private func keepShot(_ app: XCUIApplication, _ name: String) {
+        let a = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        a.name = name
+        a.lifetime = .keepAlways
+        add(a)
+        shot(app, name, whole: true)
+    }
+
+    /// The test hook's buttons (`-undoHookForTests`) sit in a window of their own: tapped where they are, as
+    /// XCUITest cannot scroll a window that is no list.
+    private func press(_ e: XCUIElement) {
+        XCTAssertTrue(e.waitForExistence(timeout: 5), "no \(e.identifier)")
+        e.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+    }
+
+    /// Edit ▸ Undo, read by its id: its words, "" while it is not there.
+    private func undoTitle(_ app: XCUIApplication, redo: Bool = false) -> String {
+        let item = app.menuItems[redo ? "edit-redo" : "edit-undo"]
+        return item.exists ? item.title : ""
+    }
+
+    /// ⌘Z takes a tick back, ⇧⌘Z puts it back, and Edit ▸ Undo names it: "Undo Tick <the line's thing>".
+    func testCommandZUndoesAndRedoesATick() throws {
+        #if os(iOS)
+        throw XCTSkip("⌘Z and the Edit menu are the Mac's; the iPhone's undo is checked by its own test")
+        #else
+        let app = launch()
+        tab(app, "events")
+        XCTAssertTrue(appears(app, "screen-events"))
+        app.buttons["trip-row-0"].tap()
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let progress = app.staticTexts["trip-progress"]
+        XCTAssertTrue(progress.waitForExistence(timeout: 5))
+        XCTAssertTrue(words(progress).hasPrefix("0/"), "a fresh trip starts unticked: '\(words(progress))'")
+        let line = app.buttons["trip-line-0"]
+        XCTAssertTrue(line.waitForExistence(timeout: 5))
+        line.tap()
+        XCTAssertTrue(waitUntil { self.words(progress).hasPrefix("1/") }, "the tick did not count: '\(words(progress))'")
+        XCTAssertTrue(app.menuItems["edit-undo"].waitForExistence(timeout: 5), "Edit ▸ Undo has no id for the tests")
+        XCTAssertTrue(waitUntil { self.undoTitle(app).hasPrefix("Undo Tick ") }, "Edit ▸ Undo does not name the tick: '\(undoTitle(app))'")
+        let thing = String(undoTitle(app).dropFirst("Undo Tick ".count))
+        XCTAssertFalse(thing.isEmpty)
+        XCTAssertTrue(line.label.contains(thing), "Undo names '\(thing)', the line says '\(line.label)'")
+        // The Edit menu, open, for the picture.
+        let edit = app.menuBars.menuBarItems.containing(.menuItem, identifier: "edit-undo").firstMatch
+        if edit.exists {
+            edit.click()
+            sleep(1)
+            keepShot(app, "undo105-edit-menu")
+            app.typeKey(.escape, modifierFlags: [])
+        }
+        sleep(1)
+        app.typeKey("z", modifierFlags: .command)
+        XCTAssertTrue(waitUntil { self.words(progress).hasPrefix("0/") }, "⌘Z did not take the tick back: '\(words(progress))'")
+        XCTAssertTrue(waitUntil { self.undoTitle(app, redo: true) == "Redo Tick \(thing)" }, "Edit ▸ Redo says '\(undoTitle(app, redo: true))'")
+        app.typeKey("z", modifierFlags: [.command, .shift])
+        XCTAssertTrue(waitUntil { self.words(progress).hasPrefix("1/") }, "⇧⌘Z did not tick it again: '\(words(progress))'")
+        #endif
+    }
+
+    /// A trip deleted comes back whole with ⌘Z — its ticks too — and goes again with ⇧⌘Z.
+    func testCommandZBringsBackADeletedTripWhole() throws {
+        #if os(iOS)
+        throw XCTSkip("⌘Z and the Edit menu are the Mac's")
+        #else
+        let app = launch()
+        tab(app, "events")
+        XCTAssertTrue(appears(app, "screen-events"))
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        app.buttons["trip-line-0"].tap()
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-progress"]).hasPrefix("1/") })
+        tap(app, id: "trip-delete")
+        tap(app, id: "trip-delete-yes")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5), "the trip did not close after its delete")
+        XCTAssertTrue(waitUntil { !app.buttons["trip-row-0"].exists }, "the deleted trip is still listed")
+        XCTAssertTrue(waitUntil { self.undoTitle(app).hasPrefix("Undo Delete ") }, "Edit ▸ Undo does not name the delete: '\(undoTitle(app))'")
+        sleep(1)
+        app.typeKey("z", modifierFlags: .command)
+        XCTAssertTrue(app.buttons["trip-row-0"].waitForExistence(timeout: 5), "⌘Z did not bring the trip back")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-progress"]).hasPrefix("1/") },
+                      "the trip came back without its tick: '\(words(app.staticTexts["trip-progress"]))'")
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+        sleep(1)
+        app.typeKey("z", modifierFlags: [.command, .shift])
+        XCTAssertTrue(waitUntil { !app.buttons["trip-row-0"].exists }, "⇧⌘Z did not delete it again")
+        #endif
+    }
+
+    /// A thing's Done is one step: ⌘Z puts its old name back.
+    func testCommandZUndoesAThingsSave() throws {
+        #if os(iOS)
+        throw XCTSkip("⌘Z and the Edit menu are the Mac's")
+        #else
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        let field = app.textFields["thing-name"]
+        XCTAssertTrue(waitUntil { !self.value(field).isEmpty })
+        let name = value(field)
+        replace("\(name) case", in: field)
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.undoTitle(app) == "Undo Edit \(name) case" }, "Edit ▸ Undo says '\(undoTitle(app))'")
+        sleep(1)
+        app.typeKey("z", modifierFlags: .command)
+        XCTAssertTrue(waitUntil { self.undoTitle(app, redo: true) == "Redo Edit \(name) case" }, "⌘Z did not take the Save back: '\(undoTitle(app, redo: true))'")
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.value(app.textFields["thing-name"]) == name }, "the old name is not back: '\(value(app.textFields["thing-name"]))'")
+        tap(app, id: "thing-cancel")
+        #endif
+    }
+
+    /// On a page with its own fields ⌘Z is the typing's, as anywhere on the Mac — never the library's: the
+    /// tick made before stays, and the menu does not offer it.
+    func testCommandZInATextFieldUndoesTheTypingNotTheLibrary() throws {
+        #if os(iOS)
+        throw XCTSkip("⌘Z and the Edit menu are the Mac's")
+        #else
+        let app = launch()
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        app.buttons["trip-line-0"].tap()
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-progress"]).hasPrefix("1/") })
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { !self.undoTitle(app).contains("Tick") }, "a page with fields offers the library's tick: '\(undoTitle(app))'")
+        let field = app.textFields["thing-name"]
+        XCTAssertTrue(waitUntil { !self.value(field).isEmpty })
+        let name = value(field)
+        field.click()
+        field.typeKey(.rightArrow, modifierFlags: .command)
+        field.typeText(" case")
+        XCTAssertTrue(waitUntil { self.value(field) == "\(name) case" }, "the typing did not land: '\(value(field))'")
+        XCTAssertTrue(waitUntil { !self.undoTitle(app).contains("Tick") }, "while typing, Edit ▸ Undo offers the tick: '\(undoTitle(app))'")
+        app.typeKey("z", modifierFlags: .command)
+        XCTAssertTrue(waitUntil { self.value(field) == name }, "⌘Z did not take the typing back: '\(value(field))'")
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "things-done")
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-progress"]).hasPrefix("1/") },
+                      "⌘Z on the page took the library's tick back: '\(words(app.staticTexts["trip-progress"]))'")
+        #endif
+    }
+
+    /// The iPhone: shake to undo asks the window's undo manager (`-undoHookForTests` plays the shake — XCUITest
+    /// cannot shake a phone), which holds the same steps, named the same: a tick taken back, and put back.
+    func testShakeUndoTakesBackATickAndRedoPutsItBack() throws {
+        #if os(macOS)
+        throw XCTSkip("the Mac's ⌘Z has tests of its own")
+        #else
+        let app = launch("-uiTesting", ["-undoHookForTests"])
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let progress = app.staticTexts["trip-progress"]
+        XCTAssertTrue(waitUntil { self.words(progress).hasPrefix("0/") })
+        app.buttons["trip-line-0"].tap()
+        XCTAssertTrue(waitUntil { self.words(progress).hasPrefix("1/") })
+        let undo = app.buttons["test-undo"], redo = app.buttons["test-redo"]
+        XCTAssertTrue(waitUntil { self.value(undo).hasPrefix("Tick ") }, "the window's undo manager does not hold the tick: '\(value(undo))'")
+        press(undo)
+        XCTAssertTrue(waitUntil { self.words(progress).hasPrefix("0/") }, "shake's Undo did not take the tick back")
+        XCTAssertTrue(waitUntil { self.value(redo).hasPrefix("Tick ") }, "no Redo after the undo: '\(value(redo))'")
+        press(redo)
+        XCTAssertTrue(waitUntil { self.words(progress).hasPrefix("1/") }, "shake's Redo did not tick it again")
+        XCTAssertTrue(waitUntil { self.value(undo).hasPrefix("Tick ") }, "after Redo the tick is not there to undo again")
+        #endif
+    }
+
+    /// The trip's 6-second Undo and shake take back the same step, once: the heading's tick undone by the
+    /// bar is not offered again — the step before it is.
+    func testTheUndoBarAndShakeTakeBackEachStepOnce() throws {
+        #if os(macOS)
+        throw XCTSkip("checked on the iPhone, where shake plays ⌘Z")
+        #else
+        let app = launch("-uiTesting", ["-undoHookForTests", "-undoSeconds", "60"])
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let progress = app.staticTexts["trip-progress"]
+        let undo = app.buttons["test-undo"]
+        app.buttons["trip-line-0"].tap()
+        XCTAssertTrue(waitUntil { self.words(progress).hasPrefix("1/") })
+        let first = value(undo)
+        XCTAssertTrue(first.hasPrefix("Tick "), "the line's tick is not the step: '\(first)'")
+        tap(app, id: "trip-group-0-all")
+        XCTAssertTrue(app.buttons["trip-undo"].waitForExistence(timeout: 5), "no Undo bar after a heading's tick")
+        XCTAssertTrue(waitUntil { self.value(undo) != first }, "the heading's tick is not a step of its own")
+        let ticked = words(progress)
+        tap(app, id: "trip-undo")
+        XCTAssertTrue(waitUntil { self.words(progress).hasPrefix("1/") }, "the bar did not take the heading back: '\(words(progress))' (was '\(ticked)')")
+        XCTAssertTrue(waitUntil { !app.buttons["trip-undo"].exists }, "the bar stayed after its Undo")
+        XCTAssertTrue(waitUntil { self.value(undo) == first }, "after the bar's Undo, shake offers '\(value(undo))', not the step before")
+        press(undo)
+        XCTAssertTrue(waitUntil { self.words(progress).hasPrefix("0/") }, "shake did not take the line's tick back")
+        #endif
+    }
+
+    /// The other device changed a field the step wrote: Undo takes back the rest, keeps that field, and says
+    /// so — "Partly undone — Map was changed on your Mac".
+    func testPartlyUndoneWhenTheOtherDeviceChangedAField() throws {
+        #if os(macOS)
+        throw XCTSkip("the rule is the model's (UndoTests); its note is looked at on the iPhone")
+        #else
+        let app = launch("-uiTesting", ["-undoHookForTests", "-otherDeviceNoteAfterStep", "In the lid pocket"])
+        openThing(app, "Map")
+        XCTAssertTrue(waitUntil { self.value(app.textFields["thing-name"]) == "Map" })
+        replace("Map case", in: app.textFields["thing-name"])
+        replace("Fold along the creases", in: anyField(app, "thing-notes"))
+        hideKeyboard(app)
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        let undo = app.buttons["test-undo"]
+        XCTAssertTrue(waitUntil { self.value(undo) == "Edit Map case" }, "the Save is not one step: '\(value(undo))'")
+        sleep(2)                                                     // the other device's note arrives
+        press(undo)
+        let note = app.staticTexts["undo-note"]
+        XCTAssertTrue(note.waitForExistence(timeout: 5), "no note after a partial undo")
+        XCTAssertEqual(words(note), "Partly undone \u{2014} Map was changed on your Mac")
+        keepShot(app, "undo105-partly-undone")
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.value(app.textFields["thing-name"]) == "Map" }, "the name was not taken back")
+        XCTAssertEqual(value(anyField(app, "thing-notes")), "In the lid pocket", "Undo wrote over the other device's note")
+        tap(app, id: "thing-cancel")
+        #endif
+    }
+
+    /// A restore replaces the library: nothing of before is offered to undo.
+    func testARestoreForgetsWhatCouldBeUndone() throws {
+        #if os(macOS)
+        throw XCTSkip("the rule is the model's; checked on the iPhone")
+        #else
+        let app = launch("-uiTesting", ["-undoHookForTests"])
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        app.buttons["trip-line-0"].tap()
+        let undo = app.buttons["test-undo"]
+        XCTAssertTrue(waitUntil { self.value(undo).hasPrefix("Tick ") })
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+        tab(app, "settings")
+        tap(app, id: "backup-restore")
+        XCTAssertTrue(appears(app, "restore-detail", timeout: 5))
+        tap(app, id: "restore-confirm")
+        XCTAssertTrue(disappears(app, "restore-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.value(undo).isEmpty }, "after a restore, the tick of before is offered: '\(value(undo))'")
+        #endif
+    }
+
     // MARK: - Warn instead of merge (0.102, his decision of 26 Oct 2026)
 
     /// The other device's save of the same block while a page here has it open
@@ -17776,9 +18047,9 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(top.exists, "no card for the line at the top")
         toTopThird(app, title)
         shot(app, "keys-0-top")
-        // Seven cards, each row read as words.
-        for n in 0..<7 { XCTAssertTrue(guidePart(app, "guide-keys-card-\(n)").exists, "no card \(n)") }
-        XCTAssertFalse(guidePart(app, "guide-keys-card-7").exists, "an eighth card")
+        // Eight cards (0.105: Undo and Redo, last), each row read as words.
+        for n in 0..<8 { XCTAssertTrue(guidePart(app, "guide-keys-card-\(n)").exists, "no card \(n)") }
+        XCTAssertFalse(guidePart(app, "guide-keys-card-8").exists, "a ninth card")
         // One label for a whole row: the action, then the keys read as words.
         func row(_ id: String) -> String {
             let e = guidePart(app, id)
@@ -17791,7 +18062,7 @@ final class AMSPackingUITests: XCTestCase {
         }
         XCTAssertEqual(row("guide-keys-1-5"), "Settings, Command 6, or Command comma")
         XCTAssertEqual(row("guide-keys-4-6"), "Previous field, Shift Tab")
-        for n in 0..<7 {
+        for n in 0..<8 {
             let card = guidePart(app, "guide-keys-card-\(n)")
             toTopThird(app, card)
             shot(app, "keys-\(n + 1)-card")

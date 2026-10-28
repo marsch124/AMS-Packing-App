@@ -161,6 +161,15 @@ public enum KeyGuide {
                 note: "Not while a thing\u{2019}s page is open: there \u{2318}N is Save and New."),
             Row("Close the All your things window", [cmd("w")]),
         ]),
+        // ⌘Z undo everywhere (0.105, Store/LibraryUndo.swift). The Mac's Edit menu; an iPhone shakes (a keyboard's
+        // ⌘Z is not passed on to the app there — tried on the simulator, 28 Oct 2026).
+        Card(id: "undo", title: "Undo and Redo", reach: .macOnly,
+              line: "The Edit menu, which says what it takes back: \u{201C}Undo Tick Passport\u{201D}. On an iPhone, shake it, or swipe left with three fingers.",
+              rows: [
+            Row("Undo the last change, whatever page it was on", [cmd("z")],
+                note: "Up to 50 steps. What your other device changed since stays. On a page with its own fields \u{2318}Z undoes your typing there."),
+            Row("Redo what Undo took back", [chord(.shift, .command, .character("z"))]),
+        ]),
     ]
 
     /// One paragraph as the guide's search reads and shows it: a lead (an action, or a card's heading) and the words after it.

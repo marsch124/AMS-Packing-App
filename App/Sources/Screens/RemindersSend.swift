@@ -49,7 +49,7 @@ struct RemindersSend: View {
         }
         do {
             let sent = try await ShopReminders.shared.send(lines)
-            model.change { lib in for s in sent { _ = lib.markSent(actionId: s.actionId, reminderId: s.reminderId) } }
+            model.change(undoable: false) { lib in for s in sent { _ = lib.markSent(actionId: s.actionId, reminderId: s.reminderId) } }
             trouble = false
             says = "\(sent.count) in Reminders, in the list \u{201C}\(ShopReminders.listName)\u{201D}. Tick them there in the shop \u{2014} they tick here too."
         } catch {

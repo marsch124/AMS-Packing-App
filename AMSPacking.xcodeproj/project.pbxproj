@@ -118,6 +118,7 @@
 		ED1AD4573764AA2A6FA0350D /* TickAll.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B024F8A00820DD9D55E10D0 /* TickAll.swift */; };
 		ED4F64A39956C4A66F614F17 /* SyncHealer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5A5727912E5FAA6B41C908C /* SyncHealer.swift */; };
 		F547B210B31D99C35F89FC3E /* BagDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = B81D1DC40B7BE148110F1C91 /* BagDetail.swift */; };
+		F67FBF80AD05F354A240BB10 /* LibraryUndo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C9CD5E1C4C9E9237755961C /* LibraryUndo.swift */; };
 		F686270BF7A3D16C6D7275DA /* Spotlight.swift in Sources */ = {isa = PBXBuildFile; fileRef = 212C8BB2ADFC3812D0CE1766 /* Spotlight.swift */; };
 		F860D075335671D64671560F /* PackingStations.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADDEE3B99A60D7E8557BAA11 /* PackingStations.swift */; };
 		FBC13904D9EB455D6F6AEDE9 /* SyncCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBCE6F6679B4724E0039268E /* SyncCard.swift */; };
@@ -198,6 +199,7 @@
 		84A8F1D2ED5D5358B98D4BE9 /* WhereIsIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhereIsIntent.swift; sourceTree = "<group>"; };
 		84D38B8F1FFBA5FF61854300 /* ReviewScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewScreen.swift; sourceTree = "<group>"; };
 		878AF15AECFDDAD02F227DDD /* TripScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripScreen.swift; sourceTree = "<group>"; };
+		8C9CD5E1C4C9E9237755961C /* LibraryUndo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryUndo.swift; sourceTree = "<group>"; };
 		8DCA03D292255B391659C37C /* Headings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Headings.swift; sourceTree = "<group>"; };
 		90C73A28812C7D0D542A832F /* PackingDay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PackingDay.swift; sourceTree = "<group>"; };
 		9275ED8A5762A3BD07EABD8E /* CrossedAsk.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrossedAsk.swift; sourceTree = "<group>"; };
@@ -310,6 +312,7 @@
 				5799D84209CA656EEE129EFC /* EditTiming.swift */,
 				09CEA44FC29BD0EB0658E8C9 /* Forecast.swift */,
 				E85262A8D75E3FFA9A6E252A /* LibraryModel.swift */,
+				8C9CD5E1C4C9E9237755961C /* LibraryUndo.swift */,
 				E5B074BD6830D547EF38F914 /* ObjCExceptions.h */,
 				50267DCB9436F2D12C79F8B1 /* ObjCExceptions.m */,
 				61946E344209EE542B58B829 /* QuickActions.swift */,
@@ -616,6 +619,7 @@
 				D0D4A2EA2FA240B7D980E71C /* KitDashboard.swift in Sources */,
 				A95973A9F2025DB491456F72 /* Laundry.swift in Sources */,
 				B1070E8FEA2D20959B29BA24 /* LibraryModel.swift in Sources */,
+				F67FBF80AD05F354A240BB10 /* LibraryUndo.swift in Sources */,
 				0A6B0C9DBEE6264A11D02837 /* ListsScreen.swift in Sources */,
 				D105E6CC01A99CC0BE25F875 /* Loop.swift in Sources */,
 				2708A38885C4595DA65F738E /* LostBag.swift in Sources */,

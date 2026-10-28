@@ -15,15 +15,18 @@ struct TickUndo: Identifiable, Equatable {
     let id = UUID()
     let change: TicksChanged
     let said: String
+    /// The press's step in Edit ▸ Undo (0.105): the bar's Undo takes back that step, as ⌘Z does — never
+    /// twice — and the bar goes once ⌘Z has taken it back.
+    var step: UndoStep.ID?
 
     /// A heading's round tick on a group: "Ticked 3 in Toiletries" / "Unticked 3 in Toiletries".
-    static func heading(_ change: TicksChanged, group: String) -> TickUndo {
-        TickUndo(change: change, said: "\(change.checked ? "Ticked" : "Unticked") \(change.count) in \(group)")
+    static func heading(_ change: TicksChanged, group: String, step: UndoStep.ID? = nil) -> TickUndo {
+        TickUndo(change: change, said: "\(change.checked ? "Ticked" : "Unticked") \(change.count) in \(group)", step: step)
     }
 
     /// Clear every tick in Trip settings: "Cleared 12 ticks".
-    static func cleared(_ change: TicksChanged) -> TickUndo {
-        TickUndo(change: change, said: "Cleared \(change.count) tick\(change.count == 1 ? "" : "s")")
+    static func cleared(_ change: TicksChanged, step: UndoStep.ID? = nil) -> TickUndo {
+        TickUndo(change: change, said: "Cleared \(change.count) tick\(change.count == 1 ? "" : "s")", step: step)
     }
 }
 
@@ -117,7 +120,7 @@ struct ClearTicksRow: View {
                             asking = false
                             let id = tripId
                             var change: TicksChanged?
-                            model.change { change = $0.setEveryTick(false, tripId: id) }
+                            model.change(named: "Clear Ticks") { change = $0.setEveryTick(false, tripId: id) }
                             if let change { cleared(change) }
                         } label: {
                             Text("Clear the ticks")

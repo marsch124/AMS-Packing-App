@@ -18,6 +18,8 @@ struct BuyList: View {
     @State private var removed: ActionItem?
     /// The line last ticked as bought, for Undo (0.101); one bar at a time, as on To do.
     @State private var ticked: ActionItem?
+    /// The step of that ✕ or tick in Edit ▸ Undo (0.105): the bar's Undo takes back that step, as ⌘Z does.
+    @State private var step: UndoStep.ID?
     /// Bought (n) opened (0.101) — folded each time the page opens.
     @State private var boughtOpen = false
 
@@ -80,14 +82,15 @@ struct BuyList: View {
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
             }
-            if let removed {
+            // Through Edit ▸ Undo's history (0.105), as on To do; its reminder follows (`ShopReminders.follow`).
+            if let removed, model.stillUndoable(step) {
                 LineUndoBar(text: removed.text, id: "buy-undo") {
-                    model.change { _ = $0.putBackLine(removed) }
+                    if !model.undoStep(step) { model.change { _ = $0.putBackLine(removed) } }
                     self.removed = nil
                 }
-            } else if let ticked, let now = model.library.actions.first(where: { $0.id == ticked.id }), now.done {
+            } else if let ticked, model.stillUndoable(step), let now = model.library.actions.first(where: { $0.id == ticked.id }), now.done {
                 LineUndoBar(text: ticked.text, says: "Bought", id: "buy-tick-undo") {
-                    tick(now)
+                    if model.undoStep(step) { self.ticked = nil } else { tick(now) }
                 }
             }
             HStack(spacing: 8) {
@@ -146,7 +149,7 @@ struct BuyList: View {
         withAnimation(.easeInOut(duration: 0.2)) { model.change { _ = $0.setActionDone(!line.done, id: line.id) } }
         if let rid { Task { await ShopReminders.shared.setDone(rid, !line.done) } }
         // Bought: into Bought, with Undo under the list (0.101). A tick taken back says nothing.
-        if !line.done { ticked = line; removed = nil } else if ticked?.id == line.id { ticked = nil }
+        if !line.done { ticked = line; removed = nil; step = model.lastStep } else if ticked?.id == line.id { ticked = nil }
     }
 
     /// Gone from here = gone from Reminders too (its reminder stayed behind until
@@ -156,6 +159,7 @@ struct BuyList: View {
         model.change { gone = $0.removeLine(id: line.id) }
         removed = gone?.line
         ticked = nil
+        step = model.lastStep
         if let rid = gone?.reminderId { Task { await ShopReminders.shared.remove(rid) } }
     }
 

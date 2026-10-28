@@ -9,7 +9,10 @@ struct ListsScreen: View {
     @EnvironmentObject var model: LibraryModel
 
     var body: some View {
-        DraftedPage(live: model) { page in ListsPage(page: page) }
+        DraftedPage(live: model) { page in
+            ListsPage(page: page)
+                .onAppear { page.stepName = { "Change Your Choices" } }       // Edit ▸ Undo's name (0.105)
+        }
     }
 }
 

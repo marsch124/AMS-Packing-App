@@ -28,6 +28,8 @@ struct ActionsScreen: View {
     /// The to-do last ticked, for Undo (0.101: ticked, it goes into Done, folded away). One bar at a
     /// time: a tick puts away the ✕'s Undo, and the other way round.
     @State private var ticked: ActionItem?
+    /// The step of that ✕ or tick in Edit ▸ Undo (0.105): the bar's Undo takes back that step, as ⌘Z does.
+    @State private var step: UndoStep.ID?
     /// Done (n) opened (0.101) — folded each time the page opens.
     @State private var doneOpen = false
 
@@ -92,14 +94,16 @@ struct ActionsScreen: View {
                 }
                 .padding(.horizontal, 16).padding(.bottom, 24)
             }
-            if let removed {
+            // Through Edit ▸ Undo's history (0.105): once ⌘Z has taken the step back the bar goes, and the
+            // bar's Undo is ⌘Z's. Not in the history (a restore forgot it): its own undo, as before.
+            if let removed, model.stillUndoable(step) {
                 LineUndoBar(text: removed.text, id: "action-undo") {
-                    model.change { _ = $0.putBackLine(removed) }
+                    if !model.undoStep(step) { model.change { _ = $0.putBackLine(removed) } }
                     self.removed = nil
                 }
-            } else if let ticked, model.library.actions.contains(where: { $0.id == ticked.id && $0.done }) {
+            } else if let ticked, model.stillUndoable(step), model.library.actions.contains(where: { $0.id == ticked.id && $0.done }) {
                 LineUndoBar(text: ticked.text, says: "Done", id: "action-tick-undo") {
-                    model.change { _ = $0.setActionDone(false, id: ticked.id) }
+                    if !model.undoStep(step) { model.change { _ = $0.setActionDone(false, id: ticked.id) } }
                     self.ticked = nil
                 }
             }
@@ -201,7 +205,7 @@ struct ActionsScreen: View {
     /// Ticked: into Done, with Undo under the list (0.101). A tick taken back says nothing.
     private func tick(_ a: ActionItem) {
         withAnimation(.easeInOut(duration: 0.2)) { model.change { _ = $0.setActionDone(!a.done, id: a.id) } }
-        if !a.done { ticked = a; removed = nil } else if ticked?.id == a.id { ticked = nil }
+        if !a.done { ticked = a; removed = nil; step = model.lastStep } else if ticked?.id == a.id { ticked = nil }
     }
 
     /// One of the two sides at the top. Which one is showing is said by colour and
@@ -228,6 +232,7 @@ struct ActionsScreen: View {
         model.change { gone = $0.removeLine(id: a.id)?.line }
         removed = gone
         ticked = nil
+        step = model.lastStep
     }
 
     private func add() {

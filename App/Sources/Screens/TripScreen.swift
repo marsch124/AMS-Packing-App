@@ -275,7 +275,7 @@ struct TripScreen: View {
                         let from = trip.name
                         startedId = new.id
                         rebuiltNote = "New trip from \u{201C}\(from)\u{201D}: \(new.entries.count) things, nothing ticked. Its dates are under the pen."
-                    }, cleared: { change in undo = change.isEmpty ? nil : .cleared(change) })
+                    }, cleared: { change in undo = change.isEmpty ? nil : .cleared(change, step: model.lastStep) })
                     .environmentObject(model)
                     Spacer(minLength: 8)
                     // After the trip: what did I use, what did I miss. Once, then it says so —
@@ -476,8 +476,11 @@ struct TripScreen: View {
                                     Button {
                                         // What it changed, offered back as Undo (0.79): exactly those ticks.
                                         var change: TicksChanged?
-                                        model.change { change = $0.setChecked(!sectionDone, tripId: tripId, entryIds: mine.map(\.id)) }
-                                        if let change, !change.isEmpty { undo = .heading(change, group: group.label) }
+                                        // Edit ▸ Undo names it after the heading (0.105): "Tick Toiletries".
+                                        model.change(named: "\(sectionDone ? "Untick" : "Tick") \(group.label)") {
+                                            change = $0.setChecked(!sectionDone, tripId: tripId, entryIds: mine.map(\.id))
+                                        }
+                                        if let change, !change.isEmpty { undo = .heading(change, group: group.label, step: model.lastStep) }
                                     } label: {
                                         TickCircle(on: sectionDone, tint: AppSection.events.color, ring: sectionDone ? nil : Theme.line)
                                             .frame(width: Metrics.lineButton, height: Metrics.line).contentShape(Rectangle())
@@ -693,9 +696,11 @@ struct TripScreen: View {
             // (Right above that bar: Undo, for 6 seconds after a heading's round tick or Clear every
             // tick — 0.79. Between the list and the bar, over no line: the list is shorter meanwhile.
             // Not for another trip: Start a new trip from this one changes the trip on this screen.)
-            if let u = undo, u.change.tripId == tripId {
+            if let u = undo, u.change.tripId == tripId, model.stillUndoable(u.step) {
                 TickUndoBar(undo: u, act: {
-                    model.change { _ = $0.undo(u.change) }
+                    // The press's step, through Edit ▸ Undo's history (0.105) — ⌘Z and this bar take back
+                    // the same step once. Not in the history (a restore forgot it): exactly those ticks, as before.
+                    if !model.undoStep(u.step) { model.change { _ = $0.undo(u.change) } }
                     undo = nil
                 }, gone: { if undo?.id == u.id { undo = nil } })
                 .padding(.bottom, placeFilter == nil ? 0 : 10)
