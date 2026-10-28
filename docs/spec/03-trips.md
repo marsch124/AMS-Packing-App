@@ -1299,7 +1299,11 @@ smaller tick circles and less space between lines").
   list order, independent of sorting); accessibility value = "×4 · laundry" / "×7" / ""; `.isSelected`
   when ticked. Content, 8 pt apart (10 until 0.67): a `TickCircle` of **`Metrics.mark` — 18 pt on the
   iPhone, 14 on the Mac** (20 until 0.67; 26 before 0.62) — a 1.6-pt ring in the line's phase colour
-  (graphic-readable), or `Theme.line` when set aside; filled with a white tick when ticked and not set aside;
+  (graphic-readable); filled with a white tick when ticked. Set aside (0.106, his pick D of 28 Oct 2026 — "a small
+  gray-out… visually pleasing"; the empty `Theme.line` ring until then still looked like a tick to tap): no ring but
+  `NotThisTimeMark`, a faint "no" sign in the same `Metrics.mark` square — a ring 0.62 of it with a slash from lower
+  left to upper right, `Theme.muted` 1.3 pt at 55 % — its own element, label "Not this time", id
+  `trip-line-<n>-notthistime`;
   the name (Body; muted when ticked; muted and struck through — 3 px his call in the comment, drawn with
   `.strikethrough` — when set aside; up to 2 lines); "Bought on site" (Footnote semibold green) right under
   the name when marked; at the right "×N" (Subheadline semibold mono muted) when the quantity > 1, plus the
@@ -1586,9 +1590,12 @@ which the line's template icons read too ("Where it comes from", under "A line")
   settings' Save builds it: a name, not retired, `itemMatchesEvent` (season, transport, catering, its Context), and
   no weather tag unless the trip forces that condition on (`buildTotalEntries`' own rules, without the
   de-duplication).
-- **A line's headings.** A line stands under the template it was made from (`sourceListId`) AND under every other
-  trip template that brings the SAME thing (`sourceItemId`) — the sample's Headlamp, made from the base template,
-  is also on Hiking, so it stands under both. A line whose own template is no longer on the trip (unticked later,
+- **A line's headings.** A line's templates are the one it was made from (`sourceListId`) AND every other trip
+  template that brings the SAME thing (`sourceItemId`). Since 0.106 (his pick B of 28 Oct 2026, packing: "you cannot
+  display the same item twice, even if it is in two templates") it stands ONCE, under the first of them in the trip's
+  order, and its `TemplateMarks` before the bag show the others after a muted "also" (`alsoOnTemplates`; label "Also
+  on Hiking") — the sample's Headlamp, made from the base template and also on Hiking, stands under Common base
+  saying "also" + Hiking's icon. Until 0.105 it stood under every one of them. A line whose own template is no longer on the trip (unticked later,
   its line kept because it was ticked or changed) stands under that template's name after the trip's templates, as
   long as the template exists. A line typed on the trip, Bought on site, or sent (a shared trip's lines carry no
   template) — and a line whose template is gone — stands under **"Added on the trip"**, last. Weather gear added

@@ -58,8 +58,11 @@ extension Library {
     /// `lines` (the trip's, as the screen shows them — the place filter and "only what is
     /// still unticked" already applied) under the templates they come from
     /// (`lineTemplates`): the trip's templates in its order, then templates no longer on
-    /// the trip, then "Added on the trip". A line can stand under several headings — it is
-    /// the same line, one tick. Within a heading the lines keep the order they are given
+    /// the trip, then "Added on the trip". A line on several templates stands ONCE, under
+    /// the first of them; the others are said on the line ("also Plane", `alsoOnTemplates`)
+    /// — 0.106, his pick B of 28 Oct 2026, packing: "you cannot display the same item twice,
+    /// even if it is in two templates. It's impossible to pack in that way." (until then it
+    /// stood under every heading). Within a heading the lines keep the order they are given
     /// in; empty headings are left out.
     public func linesByTemplate(tripId: String, lines: [Item]) -> [EntryGroup] {
         let from = lineTemplates(tripId: tripId)
@@ -72,11 +75,10 @@ extension Library {
         var added: [Item] = []
         for line in lines {
             guard let lists = from[line.id], !lists.isEmpty else { added.append(line); continue }
-            for list in lists {
-                if !order.contains(list.id) { order.append(list.id) }
-                names[list.id] = list.name
-                under[list.id, default: []].append(line)
-            }
+            let first = lists[0]
+            if !order.contains(first.id) { order.append(first.id) }
+            names[first.id] = first.name
+            under[first.id, default: []].append(line)
         }
         var out: [EntryGroup] = []
         for id in order {
@@ -86,6 +88,12 @@ extension Library {
         }
         if !added.isEmpty { out.append(EntryGroup(label: Library.addedOnTheTrip, entries: added)) }
         return out
+    }
+
+    /// Sorted by Template, the templates a line is ALSO on, after the one it stands under
+    /// (`linesByTemplate`): "also Plane" on the line (0.106). Only lines on two templates or more.
+    public func alsoOnTemplates(tripId: String) -> [String: [PackList]] {
+        lineTemplates(tripId: tripId).compactMapValues { $0.count > 1 ? Array($0.dropFirst()) : nil }
     }
 
     /// Would this row of `list` come onto `trip` when it is built? A name, not retired

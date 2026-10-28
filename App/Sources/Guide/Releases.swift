@@ -18,6 +18,9 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.106", date: "28 Oct 2026", title: "Not this time, and once under Template",
+                changed: ["A thing you don\u{2019}t bring this time shows a small, faint \u{201C}no\u{201D} sign instead of an empty circle.",
+                          "Group by Template: a thing on two templates shows once, under the first, and says \u{201C}also\u{201D} with the other template\u{2019}s icon \u{2014} a kit is no longer open twice."]),
         Release(version: "0.105.2", date: "28 Oct 2026", title: "One pocket, no question",
                 changed: ["Ticking a line no longer asks which pocket when its bag has only one \u{2014} the pocket buttons show only when there is a choice. Pack to go home the same."]),
         Release(version: "0.105.1", date: "28 Oct 2026", title: "Kits without the red line",

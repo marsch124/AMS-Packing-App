@@ -1770,7 +1770,7 @@ Tests.
    the trip's own key) through the ONE rule the trip screen uses (`Library.linesGrouped`, moved from
    `TripScreen.grouped` for this: Template = `linesByTemplate`, others the web app's `groupBy`, Into puts a reminder
    under "To do"); each group counts its lines not set aside, as its heading's "2/5" does; a group whose every line is
-   set aside is not shown. A line on two templates counts under both (it is under both on the trip). To charge is
+   set aside is not shown. A line on two templates counts once, under the first (0.106; until then under both). To charge is
    exactly the To charge card's (`chargeCard(tripId:today:)` — from the day before the trip through its last day;
    no card, no line): "To charge: N left" (orange) / "all charged" (green). To do counts the trip's reminders not set
    aside: "To do: N left" / "all done"; no reminders, no line.
@@ -3712,8 +3712,8 @@ as "Camera: Empty the SD card"; its arrow opens the thing; a tick is the trip's 
 
 1. **The heading's own count.** A group's ring reads exactly the heading's "ticked/packable": the group's lines not
    set aside, how many of them are ticked. Its reminders (To do lines, spec 07 part 12) count as lines, as they do
-   today — so a group is done only when they are ticked too. Under Template a line on two templates counts in both
-   groups (it stands under both). The ring and the count never disagree.
+   today — so a group is done only when they are ticked too. Under Template a line on two templates counts once,
+   under the first (0.106; until then in both). The ring and the count never disagree.
 2. **Only where there is something to pack.** A group whose every line is set aside has no ring (its count says
    "0/0"; it has no round tick either). An empty group is not drawn at all (as before).
 3. **The ring** (`GroupProgressMark`, not a button): `GroupProgressMark.size` across — 14 pt on the iPhone, 11 on the
@@ -4138,6 +4138,7 @@ set aside"). Pictures `remind-thing-page`, `remind-thing-page-changed`, `remind-
 | 28 Oct 2026 | **0.105, select several lines on the Mac — his yes.** On a trip on the Mac, ⌘-click puts a line in the selection (it is not ticked), ⇧-click selects every line from the one chosen last to this one in the order the list shows them, across its headings, ⌘A every line shown, Esc lets them go; a plain click still ticks one line. Selected lines take the Mac's accent colour. With two or more, a bar above Add a thing: "4 selected", Tick, Untick, Not this time, Move to bag (the trip's bags), Clear — each ONE change; the line's menu on a selected line acts on all. Move to bag changes the lines on this trip only, never the thing. The iPhone is unchanged. Spec 03 "Several lines selected", spec 06 §7b | His words, 28 Oct 2026: "3. Select several lines... - yes please" (the proposal: "Select several lines (Mac): ⇧-click or ⌘-click lines on a trip, then tick, set aside or move to another bag in one go."). Model `LineSelectionTests`; UI `testSeveralLinesAreSelectedOnTheMacAndTickedInOneGo`, `testAShiftClickSelectsTheLinesBetweenAcrossHeadings`, `testMoveToBagMovesEverySelectedLine` — seen red on 0.104 first. |
 | 28 Oct 2026 | **0.105.1, no red "1 missing" under a kit — his words.** Packing with some cameras and drones left at home on purpose, his screenshot of "Camera kit · 3 inside" over "1 missing: Camera Action" in red: "This red text is far too dominant. This is not needed." The line under a kit is gone (`KitLineParts`); a thing taken out shows only struck through in the kit's fold (value "taken out"), and "N inside" already leaves it out. `KitOnLine.missingWords` stays in the model (tests), shown nowhere. Four UI tests now assert no `trip-line-<n>-kit-missing` — red on 0.105, where it was there. |
 | 28 Oct 2026 | **0.105.2, a bag with one pocket never asks — his words.** His screenshot while packing: a lone "MaxPack" pill under the Regular mouse in his Carry-on Bellroy; "What does MaxPack mean? Do we need that?" — told it is that bag's one pocket, offered after each tick; his answer: "Yes, please change that so a bag with only one pocket never asks." `Library.asksPocket` (two or more) gates the pills after a tick and on Pack to go home; a line's menu still offers the one pocket (asked for). |
+| 28 Oct 2026 | **0.106, a faint "no" sign for Not this time, and a thing once under Template — his picks D and B.** Packing for Torremolinos, his screenshots: a set-aside line's empty ring "needs something… a small gray-out strike-through that is visually pleasing"; and the EDC Tech kit, on Travel short and Plane (base), shown open under both with Group by Template — "you cannot display the same item twice… It's impossible to pack in that way. How do you solve that?" Shown a picture of five circles (A–E) and three ways (A–C), he answered "1D 2B": `NotThisTimeMark` replaces the ring of a set-aside line; `linesByTemplate` puts a line under its first template only and `alsoOnTemplates` feeds its marks ("also" + the other templates' icons). |
 
 ## Open questions
 

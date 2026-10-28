@@ -3,7 +3,7 @@ import XCTest
 @testable import PackingLibrary
 
 /// A trip sorted by Template (0.74, spec 03 "Sorting and grouping"): its lines under
-/// the templates they come from — a line on two templates under both.
+/// the templates they come from — a line on two templates once, under the first, "also" the other (0.106).
 final class TripByTemplateTests: XCTestCase {
     override func setUp() { PackingEnv.reset(); _ = setPhases(DEFAULT_PHASES) }
     override func tearDown() { PackingEnv.reset(); _ = setPhases(DEFAULT_PHASES) }
@@ -30,28 +30,30 @@ final class TripByTemplateTests: XCTestCase {
     private func headings(_ groups: [EntryGroup]) -> [String] { groups.map(\.label) }
     private func names(_ group: EntryGroup) -> [String] { group.entries.map(\.name) }
 
-    func testALineStandsUnderEveryTemplateThatBringsIt() {
+    /// 0.106 (his pick B, 28 Oct 2026): a line on three templates stands once, under the first in the
+    /// trip's order; the other two are said on it ("also Bike, Run").
+    func testALineOnSeveralTemplatesStandsOnceUnderTheFirst() {
         let (lib, id) = library()
         let trip = lib.trips[0]
         let groups = lib.linesByTemplate(tripId: id, lines: trip.entries)
         XCTAssertEqual(headings(groups), ["Always packed", "Bike", "Run"], "not the trip's template order")
         XCTAssertEqual(names(groups[0]), ["Passport", "Headlamp"])
-        // In the trip's own order: the Headlamp came first (from the base template).
-        XCTAssertEqual(names(groups[1]), ["Headlamp", "Helmet"], "the Headlamp is not under Bike too")
-        XCTAssertEqual(names(groups[2]), ["Headlamp", "Running shoes"], "the Headlamp is not under Run too")
-        let lamps = groups.flatMap(\.entries).filter { $0.name == "Headlamp" }
-        XCTAssertEqual(Set(lamps.map(\.id)).count, 1, "the Headlamp is not ONE line shown three times")
+        XCTAssertEqual(names(groups[1]), ["Helmet"], "the Headlamp stands under Bike too")
+        XCTAssertEqual(names(groups[2]), ["Running shoes"], "the Headlamp stands under Run too")
+        XCTAssertEqual(groups.flatMap(\.entries).filter { $0.name == "Headlamp" }.count, 1, "the Headlamp is shown more than once")
         XCTAssertEqual(trip.entries.filter { $0.name == "Headlamp" }.count, 1, "the trip holds the Headlamp twice")
+        let also = lib.alsoOnTemplates(tripId: id)
+        let lamp = trip.entries.first { $0.name == "Headlamp" }!
+        XCTAssertEqual(also[lamp.id]?.map(\.name), ["Bike", "Run"], "the Headlamp does not say where else it is")
+        XCTAssertNil(also[trip.entries.first { $0.name == "Helmet" }!.id], "a line on one template says \"also\"")
     }
 
-    func testOneTickShowsUnderEveryHeading() {
+    func testOneTickCountsOnce() {
         var (lib, id) = library()
         let lamp = lib.trips[0].entries.first { $0.name == "Headlamp" }!
         XCTAssertTrue(lib.setChecked(true, tripId: id, entryId: lamp.id))
         let groups = lib.linesByTemplate(tripId: id, lines: lib.trips[0].entries)
-        for g in groups {
-            XCTAssertEqual(g.entries.first { $0.name == "Headlamp" }?.checked, true, "not ticked under \(g.label)")
-        }
+        XCTAssertEqual(groups.flatMap(\.entries).filter(\.checked).map(\.name), ["Headlamp"], "the tick shows more than once")
         XCTAssertEqual(progress(lib.trips[0].entries).done, 1, "the trip counts the shared line more than once")
     }
 
@@ -80,7 +82,9 @@ final class TripByTemplateTests: XCTestCase {
         trip = lib.createTrip(trip)
         let groups = lib.linesByTemplate(tripId: trip.id, lines: trip.entries)
         XCTAssertEqual(groups.first { $0.label == "Run" }.map(names), ["Running shoes"], "Run claims a summer-only Headlamp in winter")
-        XCTAssertEqual(groups.first { $0.label == "Bike" }.map(names), ["Headlamp", "Helmet"])
+        XCTAssertEqual(groups.first { $0.label == "Bike" }.map(names), ["Helmet"], "the Headlamp left Always packed")
+        let lamp = trip.entries.first { $0.name == "Headlamp" }!
+        XCTAssertEqual(lib.alsoOnTemplates(tripId: trip.id)[lamp.id]?.map(\.name), ["Bike"], "Run is said for a summer-only Headlamp in winter")
     }
 
     /// Quick: the ticked templates only — and a line whose template is no longer on the

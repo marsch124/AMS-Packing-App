@@ -1842,6 +1842,17 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "received-trip-saved")
     }
 
+    /// The faint "no" sign of a set-aside line (0.106, `trip-line-<n>-notthistime`): its own element on
+    /// the iPhone; on the Mac the line's button carries its words, "Not this time".
+    private func notThisTimeShown(_ app: XCUIApplication, _ n: Int) -> Bool {
+        if app.descendants(matching: .any)["trip-line-\(n)-notthistime"].exists { return true }
+        #if os(macOS)
+        return app.buttons.matching(identifier: "trip-line-\(n)").allElementsBoundByIndex.contains { $0.exists && words($0).contains("Not this time") }
+        #else
+        return false
+        #endif
+    }
+
     /// "Not this time" means it did not go (the spec pass, 5 Oct 2026): setting a
     /// ticked line aside takes the tick, a set-aside line does not tick, and taken
     /// back it is unticked. A section with every line set aside has nothing to tick
@@ -1857,11 +1868,15 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "trip-line-0-aside")
         XCTAssertTrue(waitUntil { self.words(progress) == "0/6 · 1 set aside" }, "not set aside: '\(words(progress))'")
         XCTAssertFalse(isOn(app.buttons["trip-line-0"]), "set aside, and still ticked underneath")
+        // Its circle is a small, faint "no" sign (0.106, his pick D) — no empty ring to tap.
+        XCTAssertTrue(waitUntil { self.notThisTimeShown(app, 0) }, "the set-aside line shows no \"no\" sign")
+        shot(app, "trip-not-this-time-sign")
         app.buttons["trip-line-0"].tap()
         XCTAssertFalse(waitUntil(timeout: 2) { self.isOn(app.buttons["trip-line-0"]) }, "a set-aside line took a tick")
         XCTAssertEqual(words(progress), "0/6 · 1 set aside")
         tap(app, id: "trip-line-0-aside")
         XCTAssertTrue(waitUntil { self.words(progress) == "0/7" }, "taken back, it came back ticked: '\(words(progress))'")
+        XCTAssertTrue(waitUntil { !self.notThisTimeShown(app, 0) }, "taken back, it still shows the \"no\" sign")
 
         // Every line of the one section set aside.
         XCTAssertTrue(app.buttons["trip-group-0-all"].waitForExistence(timeout: 5), "the section has no tick to begin with")
@@ -16638,9 +16653,10 @@ final class AMSPackingUITests: XCTestCase {
 
     /// Sorted by Template (his ask, 12 Oct 2026: "pack focused on e.g. Bike, Run or
     /// Golf"): the lines under the templates they come from, in the trip's order — the
-    /// base template, then Hiking. The sample's Headlamp is on both: it stands under
-    /// both, and one tick shows under both; the trip counts it once.
-    func testATripSortedByTemplateShowsAThingUnderBothItsTemplates() {
+    /// base template, then Hiking. The sample's Headlamp is on both: since 0.106 (his pick
+    /// B, 28 Oct 2026: "you cannot display the same item twice") it stands ONCE, under the
+    /// base template, and says "also Hiking"; the trip counts it once.
+    func testATripSortedByTemplateShowsAThingOnceAndSaysWhereElse() {
         let app = launch()
         tab(app, "events")
         tap(app, id: "trip-row-0")
@@ -16652,15 +16668,15 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { heading(0) == "Common base" }, "the first heading is not the base template: '\(heading(0))'")
         XCTAssertEqual(heading(1), "Hiking")
         XCTAssertFalse(app.staticTexts["trip-group-2-label"].exists, "a third heading: '\(heading(2))'")
-        // The Headlamp — line 3, made from the base template — under BOTH.
+        // The Headlamp — line 3, made from the base template — ONCE, saying "also Hiking".
         let lamps = app.buttons.matching(identifier: "trip-line-3")
-        XCTAssertTrue(waitUntil { lamps.count == 2 }, "the Headlamp stands under \(lamps.count) template(s), not both")
+        XCTAssertTrue(waitUntil { lamps.count == 1 }, "the Headlamp stands under \(lamps.count) templates, not once")
         XCTAssertTrue(words(lamps.element(boundBy: 0)).contains("Headlamp"), "line 3 is not the Headlamp")
+        XCTAssertTrue(waitUntil { self.fromWords(app, 3).hasPrefix("Hiking") }, "the Headlamp does not say also Hiking: '\(fromWords(app, 3))'")
         shot(app, "trip-by-template")
         tapVisible(app, lamps.element(boundBy: 0))
-        XCTAssertTrue(waitUntil { self.words(progress) == "1/7" }, "the trip does not count the shared line once: '\(words(progress))'")
-        XCTAssertTrue(waitUntil { lamps.count == 2 && lamps.element(boundBy: 0).isSelected && lamps.element(boundBy: 1).isSelected },
-                      "one tick does not show under both templates")
+        XCTAssertTrue(waitUntil { self.words(progress) == "1/7" }, "the trip does not count the line once: '\(words(progress))'")
+        XCTAssertTrue(waitUntil { lamps.count == 1 && self.isOn(lamps.element(boundBy: 0)) }, "the tick does not show")
         shot(app, "trip-by-template-ticked")
     }
 
@@ -16671,7 +16687,8 @@ final class AMSPackingUITests: XCTestCase {
         for query in [app.otherElements, app.groups, app.images, app.staticTexts] where query[id].exists {
             let e = query[id]
             if let value = e.value as? String, !value.isEmpty { return value }
-            return e.label.hasPrefix("From ") ? String(e.label.dropFirst(5)) : e.label
+            for lead in ["From ", "Also on "] where e.label.hasPrefix(lead) { return String(e.label.dropFirst(lead.count)) }
+            return e.label
         }
         return ""
     }
@@ -16684,11 +16701,13 @@ final class AMSPackingUITests: XCTestCase {
         let own = marksWords(app, id)
         if !own.isEmpty { return own }
         #if os(macOS)
-        // Sorted by Template a line stands under two headings: two buttons of one name
-        // (a plain query for it is a hard failure on the Mac — GitHub's probe, 12 Oct 2026).
+        // Matched, not queried plainly: until 0.106 a line sorted by Template stood under two
+        // headings — two buttons of one name (a plain query is a hard failure on the Mac).
         for e in app.buttons.matching(identifier: "trip-line-\(n)").allElementsBoundByIndex where e.exists {
             let line = words(e)
-            if let r = line.range(of: "From ") { return String(line[r.upperBound...]) }
+            for lead in ["From ", "Also on "] {
+                if let r = line.range(of: lead) { return String(line[r.upperBound...]) }
+            }
         }
         #endif
         return ""
@@ -16722,9 +16741,12 @@ final class AMSPackingUITests: XCTestCase {
         hideKeyboard(app)
         XCTAssertTrue(scrollUntil(app, "trip-line-7", near: "trip-line-0"), "the typed line is not on the trip")
         XCTAssertEqual(fromWords(app, 7), "", "a line typed on the trip names a template")
-        // Sorted by Template: the headings say it, the lines do not.
+        // Sorted by Template: the heading says the first template; a line on another one too says
+        // only that one, "also Hiking" (0.106).
         XCTAssertEqual(choose(app, "trip-view", 5), "Template")
-        XCTAssertTrue(waitUntil { self.fromWords(app, 3).isEmpty }, "sorted by Template, a line still names its templates")
+        XCTAssertTrue(waitUntil { self.fromWords(app, 3).hasPrefix("Hiking") && !self.fromWords(app, 3).contains("Common base") },
+                      "sorted by Template, the Headlamp does not say only its other template: '\(fromWords(app, 3))'")
+        XCTAssertEqual(fromWords(app, 0), "", "sorted by Template, the Passport (one template) names it")
     }
 
     // MARK: - Reminders on a template (0.70, spec 07 part 12)

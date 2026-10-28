@@ -46,8 +46,8 @@ struct TripScreen: View {
     @State private var placeNeeds = ""
     /// The thing opened from Before you go — or from a line's menu, Open thing (0.104).
     @State private var checking: CheckedThing?
-    /// The line whose Show note is up (0.104, from its menu): "<group>|<line id>", the copy pressed —
-    /// under Template a line can stand twice. Never part of a row's key (spec 03, the endless redraw).
+    /// The line whose Show note is up (0.104, from its menu): "<group>|<line id>", the copy pressed
+    /// (until 0.106 a line could stand under two templates). Never part of a row's key (spec 03, the endless redraw).
     @State private var noteShown: String?
     /// On site is open (their field test, 3 Oct 2026) — Pack to go home is inside it.
     @State private var onSite = false
@@ -55,7 +55,7 @@ struct TripScreen: View {
     /// it is checked before each trip and not packed yet.
     @State private var kitOpen: [String: Bool] = [:]
     /// The line just ticked whose bag has pockets: its pockets show under it (0.69) —
-    /// "<group>|<line id>", the copy tapped (under Template a line can stand twice, 0.74).
+    /// "<group>|<line id>", the copy tapped (0.74–0.105 a line could stand under two templates).
     @State private var pocketing: String?
     /// Only the lines still unticked — a tapped door check opens the trip so (0.69).
     @State private var onlyUnticked = false
@@ -105,7 +105,7 @@ struct TripScreen: View {
     // packing" — the lines under their templates' section NAMES, in the order they first
     // come, "Everything else" last (`groupBySection`).
     // Template since 0.74 (his ask, 12 Oct 2026): "pack focused on e.g. Bike, Run or Golf" — the lines
-    // under the templates they come from, a line on two templates under both (`linesByTemplate`).
+    // under the templates they come from, a line on two templates once, under the first (`linesByTemplate`, 0.106).
     // Whose it is since 0.103 (his idea, 27 Oct 2026: "pack everything that we share on my own, so that when
     // she comes home, I have already packed a lot"): the lines under the owner of each thing, "Both have one"
     // last (`linesByWhose`). The property's own name on a thing's page.
@@ -246,9 +246,9 @@ struct TripScreen: View {
         let kits = model.library.kitLines(tripId: tripId)
         // Every bag's pockets, asked once for all the lines (0.69).
         let pockets = model.library.pocketsByBag()
-        // Where each line comes from (0.74): its templates' icons, before its bag — not when
-        // sorted by Template, whose headings say it.
-        let from = view == "template" ? [:] : model.library.lineTemplates(tripId: tripId)
+        // Where each line comes from (0.74): its templates' icons, before its bag. Sorted by
+        // Template the heading says the first; the line says only the others, "also Plane" (0.106).
+        let from = view == "template" ? model.library.alsoOnTemplates(tripId: tripId) : model.library.lineTemplates(tripId: tripId)
         // Reminders on things (0.101): each line's, read once for all the lines.
         let remind = model.library.thingReminders(tripId: tripId)
         // What is written about each line's thing (0.104): its menu's Show note, and the Mac's tooltip.
@@ -541,7 +541,7 @@ struct TripScreen: View {
                                         PackLine(line: line, nights: qtyNights(trip), tint: Color(hexString: readableHex(phaseColor(line.phase), dark: scheme == .dark, graphic: true)),
                                                  showBag: view != "container", washed: washes(trip),
                                                  kitWords: kits[line.id]?.insideWords ?? "",
-                                                 from: from[line.id] ?? [], fromId: "trip-line-\(n)-from",
+                                                 from: from[line.id] ?? [], fromId: "trip-line-\(n)-from", also: view == "template",
                                                  remindLeft: (remind[line.id] ?? []).filter { !$0.done }.count,
                                                  with: model.library.withNames(line), markId: "trip-line-\(n)")
                                     }
@@ -884,8 +884,7 @@ struct TripScreen: View {
         let on = !line.checked
         model.change { _ = $0.setChecked(on, tripId: tripId, entryId: line.id) }
         // Its bag has pockets to choose from: they show under it, the usual one chosen (0.69) —
-        // not for a bag with one pocket (0.105.2). Under the copy tapped only: under Template a
-        // line can stand twice.
+        // not for a bag with one pocket (0.105.2). Under the copy tapped only.
         pocketing = on && Library.asksPocket(pockets[normName(line.container)] ?? []) ? "\(g)|\(line.id)" : nil
     }
 
@@ -1391,6 +1390,8 @@ struct PackLine: View {
     /// The templates it comes from (0.74): their icons, before the bag. Empty = nothing.
     var from: [PackList] = []
     var fromId = ""
+    /// Sorted by Template (0.106): `from` holds the OTHER templates the line is on — "also Plane".
+    var also = false
     /// Its thing's reminders not ticked yet on this trip (0.101): "1 left", orange.
     var remindLeft = 0
     /// What brought it along (0.101): "with Camera", violet.
@@ -1414,7 +1415,16 @@ struct PackLine: View {
         // smaller tick circles and less space between lines"; 6 Oct, testing 0.63: "Far
         // too much space between the lines" — 44 points top to top until 0.67.
         HStack(spacing: 8) {
-            TickCircle(on: line.checked && !aside, tint: tint, ring: aside ? Theme.line : nil)
+            if aside {
+                // Not this time (0.106, his pick D of 28 Oct 2026): a small, faint "no" sign where the
+                // circle was — no empty ring that looks like a tick to tap.
+                NotThisTimeMark()
+                    .accessibilityElement()
+                    .accessibilityLabel("Not this time")
+                    .accessibilityIdentifier("\(markId)-notthistime")
+            } else {
+                TickCircle(on: line.checked, tint: tint)
+            }
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 6) {
                 (Text(line.name) + (kitWords.isEmpty ? Text("") : Text(" \u{00B7} \(kitWords)").foregroundStyle(Theme.muted)))
@@ -1434,7 +1444,7 @@ struct PackLine: View {
             Spacer(minLength: 8)
             // A reminder (spec 07, part 12) is something to DO: no count, no bag.
             if Library.isReminder(line) {
-                if !from.isEmpty { TemplateMarks(from: from, id: fromId) }
+                if !from.isEmpty { TemplateMarks(from: from, id: fromId, also: also) }
                 if showBag {
                     Text("To do").font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted).lineLimit(1)
                 }
@@ -1455,7 +1465,7 @@ struct PackLine: View {
                 // Where it comes from (0.74): its templates' icons, right before the bag —
                 // the bag's words are cut first, never the icons.
                 MarksBeforeBag(cap: cap) {
-                    TemplateMarks(from: from, id: fromId)
+                    TemplateMarks(from: from, id: fromId, also: also)
                     if showBag || !pocket.isEmpty {
                         Text(bag).font(.system(.footnote)).foregroundStyle(Theme.muted).lineLimit(1)
                     }
@@ -1486,6 +1496,8 @@ struct PackLine: View {
 struct TemplateMarks: View {
     let from: [PackList]
     let id: String
+    /// Sorted by Template (0.106): the other templates the line is on, after the word "also".
+    var also = false
     @Environment(\.colorScheme) private var scheme
 
     #if os(macOS)
@@ -1502,6 +1514,7 @@ struct TemplateMarks: View {
         let violet = ThingDetailLine.violet(scheme)
         let shown = from.count > 3 ? Array(from.prefix(2)) : from
         HStack(spacing: 3) {
+            if also { Text("also").font(.system(.footnote)).foregroundStyle(Theme.muted).padding(.trailing, 1) }
             ForEach(Array(shown.enumerated()), id: \.offset) { _, list in
                 // His colour for the template (0.90), else the violet.
                 let tint = Library.markColour(list, dark: scheme == .dark).map { Color(hexString: $0) } ?? violet
@@ -1522,11 +1535,11 @@ struct TemplateMarks: View {
         .fixedSize()
         .layoutPriority(1)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("From \(TemplateMarks.names(from))")
+        .accessibilityLabel("\(also ? "Also on" : "From") \(TemplateMarks.names(from))")
         .accessibilityValue(TemplateMarks.names(from))
         .accessibilityIdentifier(id)
         #if os(macOS)
-        .help("From \(TemplateMarks.names(from))")
+        .help("\(also ? "Also on" : "From") \(TemplateMarks.names(from))")
         #endif
     }
 }
@@ -1561,6 +1574,25 @@ struct MarksBeforeBag: Layout {
             sub.place(at: CGPoint(x: x, y: bounds.midY), anchor: .leading, proposal: ProposedViewSize(all[i]))
             x -= spacing
         }
+    }
+}
+
+/// A trip line set aside (Not this time): a small, faint "no" sign in the tick circle's place — a ring
+/// two thirds its size with a slash, in the muted grey at half strength (0.106, his pick D of 28 Oct 2026:
+/// the empty ring looked like a tick to tap). As wide as `Metrics.mark`, so the names stay in line.
+struct NotThisTimeMark: View {
+    var body: some View {
+        let s = Metrics.mark, r = s * 0.62
+        ZStack {
+            Circle().stroke(Theme.muted, lineWidth: 1.3).frame(width: r, height: r)
+            Path { p in
+                let d = r / 2 * 0.7071
+                p.move(to: CGPoint(x: s / 2 - d, y: s / 2 + d)); p.addLine(to: CGPoint(x: s / 2 + d, y: s / 2 - d))
+            }
+            .stroke(Theme.muted, style: StrokeStyle(lineWidth: 1.3, lineCap: .round))
+        }
+        .opacity(0.55)
+        .frame(width: s, height: s)
     }
 }
 
