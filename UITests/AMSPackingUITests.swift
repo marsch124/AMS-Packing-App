@@ -15680,7 +15680,9 @@ final class AMSPackingUITests: XCTestCase {
             XCTAssertGreaterThanOrEqual(e.frame.height, 24, "\(id) is squashed: \(e.frame.height)")
         }
         #else
-        XCTAssertGreaterThanOrEqual(notesBlock, nameBlock + 7.5, "Notes is no longer 44 high: \(notesBlock) heading to heading, Name \(nameBlock)")
+        // Name 37, Notes 44: 7 apart. Since 0.104 Notes' block ends at the frame's top, a box, where a
+        // heading's text starts about half a point below its slot (74.3 / 81.7 on an iPhone 17 Pro) — 6.5.
+        XCTAssertGreaterThanOrEqual(notesBlock, nameBlock + 6.5, "Notes is no longer 44 high: \(notesBlock) heading to frame, Name \(nameBlock)")
         for (e, id) in [(photo, "Choose a photo"), (file, "Choose a file…")] {
             XCTAssertGreaterThanOrEqual(e.frame.height, 37.5, "\(id) takes a tap only \(e.frame.height) high")
         }
