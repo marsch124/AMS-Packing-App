@@ -16,6 +16,10 @@ struct RootView: View {
     /// The app went to the background since it was last in front (the UI tests play
     /// "something happened while he was away" on its return).
     @State private var wasAway = false
+    /// A page this window opened over its tab (0.105): ⌘N's new thing, or what Quick open opened (QuickOpen.swift).
+    @State private var rootPage: RootPage?
+    /// This window, for `RootPages`.
+    @State private var windowKey = UUID()
 
     var body: some View {
         #if os(macOS)
@@ -36,6 +40,21 @@ struct RootView: View {
     /// The web app's column, on the Mac.
     static let column: CGFloat = 720
 
+    /// How File ▸ New Thing and Quick open reach this window (0.105).
+    private var opener: PageOpener {
+        let open: (RootPage) -> Void = { rootPage = $0 }
+        #if os(macOS)
+        let tab = section
+        let sections = SectionSwitch(current: section, go: { section = $0 })
+        return PageOpener(open: open, quickOpen: {
+            let target = QuickOpenTarget(opener: PageOpener(open: open), sections: sections, trip: PageWatch.shared.tripInFront)
+            QuickOpenPanel.shared.toggle(over: NSApp.keyWindow, target: target, tab: tab)
+        })
+        #else
+        return PageOpener(open: open)
+        #endif
+    }
+
     private var page: some View {
         VStack(spacing: 0) {
             SectionScreen(section: section, go: { section = $0 })
@@ -46,6 +65,14 @@ struct RootView: View {
         .background(Theme.bg.ignoresSafeArea())
         // The Go menu acts on the window in front (0.103, Keys.swift): which tab it shows and how to change it.
         .focusedSceneValue(\.sectionSwitch, SectionSwitch(current: section, go: { section = $0 }))
+        // File ▸ New Thing and Go ▸ Quick Open (0.105) open their pages over this window's tab, which stays.
+        .focusedSceneValue(\.pageOpener, opener)
+        .sheet(item: $rootPage) { RootPageView(page: $0).environmentObject(model) }
+        .onChange(of: rootPage) { _, page in
+            if page != nil { RootPages.opened(windowKey) { rootPage = nil } } else { RootPages.closed(windowKey) }
+        }
+        // New Thing under the app icon (iPhone) or in the Dock's menu (Mac), 0.105: Home opens it, as a Spotlight result.
+        .onChange(of: model.newThingToOpen, initial: true) { _, asked in if asked { section = .home } }
         // Packing reminders (his idea 7): a tapped one opens its trip on Home; and
         // whenever the library settles after a change, the waiting ones are put right.
         .onAppear {

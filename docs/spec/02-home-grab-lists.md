@@ -2165,11 +2165,17 @@ typing in Raycast).
 **iPhone: the entries under the icon** (Home Screen quick actions, `UIApplicationShortcutItem`, set by the app
 at run time — none are written in the Info.plist). Holding the Packing icon shows, above Edit Home Screen and
 Remove App:
+- **New Thing first (0.105, his words of 28 Oct 2026: "On the iPhone: "New thing" also goes into the menu when you hold
+  the app icon").** Kind `com.schabbauer.AMSPacking.newThing`, title "New Thing", the system's plus
+  (`UIApplicationShortcutIcon(type: .add)`): the app opens on a new, empty thing's page (`LibraryModel.newThingToOpen` →
+  Home, `whenFree`; spec 06 §20a "New Thing and Quick open"). iOS still shows four entries, so since 0.105 **three** grab
+  lists go with it (`GRAB_QUICK_ACTIONS_BESIDE_NEW_THING`); the rules below choose those three. The Mac's Dock menu has
+  New Thing first too, above the grab lists.
 - **Which:** iOS shows at most four (`GRAB_QUICK_ACTIONS`). The build's decision: the **four grab lists opened
-  most recently on this iPhone**, shown in **his Home order** (Home's eight as he arranged them, then the ones
+  most recently on this iPhone** (three since 0.105, beside New Thing), shown in **his Home order** (Home's eight as he arranged them, then the ones
   waiting in Grab Lists — `Library.grabListsInHomeOrder()`), so an entry keeps its place while he uses them. Until
   four have been opened, the **first ones on Home fill the rest**; a new iPhone shows Indoor swim, Indoor bike,
-  Indoor run and Outdoor swim. A list deleted since it was opened is passed over and the next most recent steps
+  Indoor run and Outdoor swim (since 0.105: New Thing, Indoor swim, Indoor bike, Indoor run). A list deleted since it was opened is passed over and the next most recent steps
   up. Model: `Library.quickActionGrabLists(opened:count:)` (`PackingLibrary/GrabQuickActions.swift`).
 - **"Opened"** = the grab list's screen appeared (`GrabScreen` on appear): from a Home tile, Grab Lists, the
   Action button's menu, a Shortcut, Siri or an entry under the icon itself. The record is this iPhone's alone —

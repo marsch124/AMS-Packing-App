@@ -51,6 +51,9 @@ final class PageWatch: ObservableObject {
 
     /// A sheet is on one of the app's windows. Said to the Go menu, which greys its items.
     @Published private(set) var open = false
+    /// The trip whose page is in front with nothing over it (0.105, `TripPages`): Quick open (⌘K) stays on for its
+    /// commands. nil = none.
+    @Published private(set) var tripInFront: String?
     private var watching: [Any] = []
 
     private init() {
@@ -71,6 +74,8 @@ final class PageWatch: ObservableObject {
     func refresh() {
         let now = NSApplication.shared.windows.contains { $0.sheetParent != nil || $0.attachedSheet != nil }
         if now != open { open = now }
+        let trip = MainActor.assumeIsolated { TripPages.inFront() }
+        if trip != tripInFront { tripInFront = trip }
     }
 }
 #endif
@@ -96,8 +101,10 @@ extension FocusedValues {
 
 #if os(macOS)
 /// The Go menu: the six tabs, ⌘1 to ⌘6 in the tab bar's order, the tab showing ticked. Off while a page is open.
+/// Then Quick Open… ⌘K (0.105, QuickOpen.swift) — on while no page is open, and on a trip's page for its commands.
 struct GoCommands: Commands {
     @FocusedValue(\.sectionSwitch) private var window
+    @FocusedValue(\.pageOpener) private var opener
     @ObservedObject private var pages = PageWatch.shared
 
     var body: some Commands {
@@ -107,6 +114,10 @@ struct GoCommands: Commands {
                     .keyboardShortcut(KeyEquivalent(Character(String(n + 1))), modifiers: .command)
                     .disabled(window == nil || pages.open)
             }
+            Divider()
+            Button("Quick Open\u{2026}") { opener?.quickOpen?() }
+                .keyboardShortcut("k", modifiers: .command)
+                .disabled(opener?.quickOpen == nil || (pages.open && pages.tripInFront == nil))
         }
     }
 }
@@ -136,7 +147,8 @@ struct SettingsAndHelpCommands: Commands {
 extension ThingKeys {
     /// The Go menu's items, ⌘, and Help's Keyboard Shortcuts, named for the tests (SwiftUI hands a menu item
     /// no identifier; `nameMenuItems` calls this): `go-home`, `go-events`, `go-templates`, `go-care`,
-    /// `go-actions`, `go-settings`, `go-settings-comma`, `help-keys`.
+    /// `go-actions`, `go-settings`, `go-settings-comma`, `help-keys` — and since 0.105 `go-quick-open`,
+    /// `file-new-thing`, `file-new-window`.
     static func nameGoMenuItems(_ bar: NSMenu) {
         let tabs = Dictionary(uniqueKeysWithValues: AppSection.allCases.map { ($0.label, "go-\($0.rawValue)") })
         func name(_ item: NSMenuItem, _ id: String) {
@@ -147,6 +159,12 @@ extension ThingKeys {
             switch top.title {
             case "Go":
                 for item in top.submenu?.items ?? [] { if let id = tabs[item.title] { name(item, id) } }
+                for item in top.submenu?.items ?? [] where item.title.hasPrefix("Quick Open") { name(item, "go-quick-open") }
+            case "File":
+                for item in top.submenu?.items ?? [] {
+                    if item.title == "New Thing" { name(item, "file-new-thing") }
+                    if item.title == "New Window" { name(item, "file-new-window") }
+                }
             case "Help":
                 for item in top.submenu?.items ?? [] where item.title == "Keyboard Shortcuts" { name(item, "help-keys") }
             default:

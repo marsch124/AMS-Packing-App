@@ -24,7 +24,11 @@ final class KeyGuideTests: XCTestCase {
             ("lists", "Open a drop-down", "Space or ↓"), ("lists", "Move through", "↑↓"),
             ("lists", "Jump to a choice", "A–Z"), ("lists", "Choose the lit one", "Return"),
             ("lists", "Close the list", "Esc"), ("lists", "row of pills", "←→"), ("lists", "Switch the lit pill", "Space"),
-            ("mac", "Quit", "⌘Q"), ("mac", "New window", "⌘N"), ("mac", "Close the All your things window", "⌘W"),
+            ("mac", "Quit", "⌘Q"), ("mac", "Close the All your things window", "⌘W"),
+            // 0.105: ⌘N is New thing (File menu), New window moved to ⌥⌘N; ⌘K is Quick open (Go menu) and its keys.
+            ("new", "New thing", "⌘N"), ("new", "New window", "⌥⌘N"),
+            ("quick", "Open Quick open", "⌘K"), ("quick", "Move through", "↑↓"), ("quick", "Open the lit one", "Return"),
+            ("quick", "Close it", "Esc"),
         ]
         var missing: [String] = []
         for key in must {
@@ -51,6 +55,8 @@ final class KeyGuideTests: XCTestCase {
         XCTAssertEqual(rows.first { $0.row.action == "Next thing in the list the page came from" }?.row.spoken, "Command Down arrow")
         XCTAssertEqual(rows.first { $0.row.action == "Open a drop-down" }?.row.spoken, "Space, or Down arrow")
         XCTAssertEqual(rows.first { $0.row.action == "Cancel, or close the page" }?.row.spoken, "Escape, or Command period")
+        XCTAssertEqual(rows.first { $0.row.action == "New window" }?.row.spoken, "Option Command N", "⌥⌘N in words")
+        XCTAssertEqual(rows.first { $0.row.action == "Open Quick open" }?.row.voiceOver, "Open Quick open, Command K")
         let symbols = CharacterSet(charactersIn: "⌘⇧⌥⌃↑↓←→⎋⏎⇥–")
         for (card, row) in rows {
             XCTAssertNil(row.spoken.rangeOfCharacter(from: symbols), "\(card): \(row.action) is read out as '\(row.spoken)'")
@@ -74,6 +80,9 @@ final class KeyGuideTests: XCTestCase {
         XCTAssertTrue(found("quit").contains { $0.hasPrefix("Quit") }, "an action")
         XCTAssertTrue(found("jump").contains { $0.hasPrefix("Jump to a field") }, "an action")
         XCTAssertTrue(found("go menu").contains { $0.hasPrefix("Go to") }, "the Go menu")
+        XCTAssertTrue(found("⌘k").contains { $0.hasPrefix("Open Quick open") }, "⌘K")
+        XCTAssertTrue(found("new thing").contains { $0.hasPrefix("New thing") }, "New thing")
+        XCTAssertTrue(found("option command n").contains { $0.hasPrefix("New window") }, "Option Command N")
         XCTAssertTrue(found("keyboard attached").contains { $0.contains("iPhone or iPad") }, "the line at the top")
         XCTAssertEqual(GuideSearch.find("keyboard shortcuts", in: [part]).first?.titleHolds, true, "the heading")
         XCTAssertTrue(found("qxzqxz").isEmpty)
@@ -83,7 +92,7 @@ final class KeyGuideTests: XCTestCase {
     func testTheLineAtTheTopSaysTheMacFirstThenTheIPhone() {
         XCTAssertTrue(KeyGuide.intro.hasPrefix("These are the Mac"))
         XCTAssertTrue(KeyGuide.intro.contains("iPhone or iPad with a keyboard attached"))
-        XCTAssertEqual(KeyGuide.cards.map(\.id), ["any", "go", "search", "edit", "thing", "lists", "mac"])
+        XCTAssertEqual(KeyGuide.cards.map(\.id), ["any", "go", "quick", "new", "search", "edit", "thing", "lists", "mac"])
         XCTAssertEqual(KeyGuide.cards.first?.reach.words, "Mac, and iPhone or iPad with a keyboard")
         XCTAssertEqual(KeyGuide.cards.first { $0.id == "thing" }?.reach.words, "Mac only")
         // The tab keys are the Mac's Go menu; an iPhone or iPad keeps ⌘S only where a page has a real Save.

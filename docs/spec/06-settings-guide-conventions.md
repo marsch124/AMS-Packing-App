@@ -1217,7 +1217,9 @@ notes; (0.101, spec 07 part 21) two lines after the reminder's: a thing's
    trip); the Action-button path (iPhone Settings → Action Button → Shortcut → Packing → Choose a grab list); if
    Packing is missing, open it once; Home Screen or Siri ("Open Swim in Packing"); (0.86) hold the Packing icon on
    the Home Screen for the four grab lists opened most recently — on the Mac, right-click its Dock icon for all of
-   them. (5 lines.)
+   them; since 0.105: "Hold the Packing icon on the Home Screen: New Thing opens a new, empty thing’s page, and below
+   it are the three grab lists you opened last — tap one and it opens, ready to tick. On the Mac, right-click Packing
+   in the Dock for New Thing and all your grab lists." (5 lines.)
 11. **iPhone and Mac** (Settings mark): both hold the same library through iCloud, a change arrives within a minute or
     so; the magnifier searches everything (a thing's notes too — 0.69); every page's Cancel and Save/Done and the swipe
     that asks (0.92) — and (0.98, the Apple way, replacing 0.94's "Put the app away with a template, Your choices or a
@@ -1236,7 +1238,11 @@ notes; (0.101, spec 07 part 21) two lines after the reminder's: a thing's
     — (0.94) "— a bag, a template or Your choices stays open with what you changed, so Done again saves it." (§20b); on the Mac Escape closes a window as its Cancel or Done does, never saving
     (0.62); (0.103) the last line now also says "⌘S is Save (or Done) on every page, even one that only shows
     something, like a trip. ⌘1 to ⌘6 change tabs. The All your things window closes with Done or ⌘W. Every key is on
-    its own card under Keyboard shortcuts, the last part of this guide." (5 lines.)
+    its own card under Keyboard shortcuts, the last part of this guide."; (0.105) after "change tabs.": "⌘N opens a new,
+    empty thing’s page from any tab, as a new note in Notes — Save makes the thing, Cancel makes nothing (in Your things
+    too; on a thing’s page ⌘N is Save and New); a new window is ⌥⌘N. ⌘K is Quick open: type a few letters of a thing, a
+    trip or a template — a thing’s Swedish name too — and Return opens it, or of a command such as Go to Care or Sync
+    details; on a trip’s page it offers the trip’s Group by choices and Fold all. ↑ ↓ move, Esc closes it." (5 lines.)
 12. **Keyboard shortcuts** (0.103; not one of the `topics` — a part of its own, `KeysGuide`, §7b): every key the app
     answers, as cards of key caps.
 
@@ -1370,17 +1376,19 @@ in its menu bar. On an iPhone or iPad with a keyboard attached, the same keys wo
 `cards`, each `Card(id, title, reach, line, rows)`; `reach` is `.withKeyboard` ("Mac, and iPhone or iPad with a
 keyboard") or `.macOnly` ("Mac only"); a `Row(action, chords, note)` has one chord or several ways ("Space or ↓"), a
 chord being `Key`s pressed together; a `Key` has its cap ("⌘", "S", "Esc", "A–Z") and its spoken name ("Command", "S",
-"Escape", "letters"). The seven cards, in order, with their rows:
+"Escape", "letters"); `Key.option` (⌥, "Option") since 0.105. The nine cards (seven until 0.105), in order, with their rows:
 
 | # | Card (id) | Reach | Rows (keys) |
 |---|---|---|---|
 | 0 | On any page (`any`) | Mac + keyboard | Save, or Done (⌘S; "On the Mac also on a page that only shows something — a trip, How it works, Search — where it closes the page.") · Cancel, or close the page (Esc or ⌘.; "Esc never saves anything. ⌘. is Esc on an iPhone.") · Add what you typed in an Add field (Return) |
 | 1 | Go to (`go`) | Mac | Home ⌘1 · Trips ⌘2 · Templates ⌘3 · Care ⌘4 · To do ⌘5 · Settings ⌘6 or ⌘, — "The Mac’s Go menu. Switched off while a page is open: finish it with ⌘S or Esc first." |
-| 2 | Search (`search`) | Mac | Search How it works (⌘F) · Find an icon, on a template’s icon page (⌘F) · Empty the search (Esc; "A second Esc closes the page.") |
-| 3 | Editing a list or a page (`edit`) | Mac + keyboard | Save a grab list, a template, your lists or an activity area (⌘S) · Throw away what you changed (Esc; a grab list stays open, a template being arranged ends Arrange first) |
-| 4 | A thing’s page (`thing`) | Mac | Save the thing ⌘S · Save, and start the next thing with the same choices ⌘N · Next thing in the list the page came from ⌘↓ · Previous thing ⌘↑ · Jump to a field by its name ⌘J · Next field Tab · Previous field ⇧Tab · Save from any field but Notes Return — "Also the Thing menu. Tab walks every field, top to bottom." |
-| 5 | Lists and drop-downs (`lists`) | Mac | Open a drop-down (Space or ↓) · Move through its choices (↑ ↓) · Jump to a choice by typing (A–Z) · Choose the lit one (Return) · Close the list, and stay on the page (Esc) · Move along a row of pills (← →) · Switch the lit pill, or a switch (Space) — "On a thing’s page, with the field lit." |
-| 6 | The Mac’s windows (`mac`) | Mac | Quit ⌘Q ("Asks first when a page holds a change you have not confirmed.") · New window ⌘N ("Not while a thing’s page is open: there ⌘N is Save and New.") · Close the All your things window ⌘W |
+| 2 | Quick open (`quick`, 0.105) | Mac | Open Quick open ⌘K ("Also in the Go menu. Off while a page other than a trip is open.") · Move through what it found (↑ ↓) · Open the lit one, or run it (Return) · Close it (Esc) — "Type a few letters of a thing, a trip or a template — a thing’s Swedish name too — or of a command: a tab, New thing, Keyboard shortcuts, Sync details. On a trip’s page: its Group by choices and Fold all." |
+| 3 | New (`new`, 0.105) | Mac | New thing ⌘N ("An empty thing’s page, from any tab, the cursor in Name. Save makes the thing; Cancel or Esc makes nothing.") · New window ⌥⌘N — "The Mac’s File menu, as in Notes and Reminders. Off while a page is open — except Your things, where ⌘N opens a new thing’s page too, and a thing’s page, where it is Save and New." |
+| 4 | Search (`search`) | Mac | Search How it works (⌘F) · Find an icon, on a template’s icon page (⌘F) · Empty the search (Esc; "A second Esc closes the page.") |
+| 5 | Editing a list or a page (`edit`) | Mac + keyboard | Save a grab list, a template, your lists or an activity area (⌘S) · Throw away what you changed (Esc; a grab list stays open, a template being arranged ends Arrange first) |
+| 6 | A thing’s page (`thing`) | Mac | Save the thing ⌘S · Save, and start the next thing with the same choices ⌘N · Next thing in the list the page came from ⌘↓ · Previous thing ⌘↑ · Jump to a field by its name ⌘J · Next field Tab · Previous field ⇧Tab · Save from any field but Notes Return — "Also the Thing menu. Tab walks every field, top to bottom." |
+| 7 | Lists and drop-downs (`lists`) | Mac | Open a drop-down (Space or ↓) · Move through its choices (↑ ↓) · Jump to a choice by typing (A–Z) · Choose the lit one (Return) · Close the list, and stay on the page (Esc) · Move along a row of pills (← →) · Switch the lit pill, or a switch (Space) — "On a thing’s page, with the field lit." |
+| 8 | The Mac’s windows (`mac`) | Mac | Quit ⌘Q ("Asks first when a page holds a change you have not confirmed.") · Close the All your things window ⌘W (until 0.105 also New window ⌘N, "Not while a thing’s page is open: there ⌘N is Save and New." — now on the New card, ⌥⌘N) |
 
 **On screen.** Last in the guide's `VStack(spacing: 12)`, after the twelve topics; every card padding 14, `Theme.card`,
 radius 12, 1-pt `Theme.line`. First a **heading card** (id `guide-keys`): the `command` symbol (SF Symbol, 24, slate)
@@ -1411,12 +1419,16 @@ scrolled to the topic (`KeysGuide.scrollId`). Off while a page is open, like the
 code: the missing or wrong ones are named in one message); the Go card is the six tabs in the tab bar's order, ⌘1 to ⌘6;
 VoiceOver's words ("Command S", "Shift Tab", "Command Down arrow", "Space, or Down arrow", "Escape, or Command period",
 the row's one label "Save, or Done, Command S") and no symbol in any; the search finds the keys by name, symbol and action and the line at the top; the line says the Mac
-first and then the iPhone and iPad, the seven cards in order. Seen red with faults planted (the Go card without Care; ⌘'s
+first and then the iPhone and iPad, the nine cards in order (0.105: ⌘N New thing, ⌥⌘N New window — spoken "Option Command N" —
+⌘K Quick open and its ↑↓, Return, Esc; seen red on the 0.104 topic: `("["new: no row for New thing", "new: no row for New
+window", "quick: no row for Open Quick open", "quick: no row for Move through", "quick: no row for Open the lit one", "quick:
+no row for Close it"]") is not equal to ("[]") - keys the app answers that the topic leaves out or gets wrong`). Seen red with faults planted (the Go card without Care; ⌘'s
 spoken name the symbol): `("["go: no row for Care"]") is not equal to ("[]") - keys the app answers that the topic leaves
 out or gets wrong`, `("Optional("⌘ S")") is not equal to ("Optional("Command S")")`. UI `testHowItWorksHasAKeyboardShortcutsTopic`
-(iPhone and Mac): the topic is there, the heading card and seven cards, the rows' labels "Save, or Done, Command S", the Go
-card's six rows `Home, Command 1` … `Settings, Command 6, or Command comma`, `Previous field, Shift Tab`; each card brought to the top for a picture
-(`keys-0-top`, `keys-1-card` … `keys-7-card`, `keys-8-search`; day and night, iPhone and Mac); the search finds it for
+(iPhone and Mac): the topic is there, the heading card and nine cards (seven until 0.105; the Quick open row "Open Quick open,
+Command K", the New card's "New thing, Command N" and "New window, Option Command N"), the rows' labels "Save, or Done, Command S", the Go
+card's six rows `Home, Command 1` … `Settings, Command 6, or Command comma`, `Previous field, Shift Tab` (`guide-keys-6-6` since 0.105); each card brought to the top for a picture
+(`keys-0-top`, `keys-1-card` … `keys-9-card`, `keys-10-search`; day and night, iPhone and Mac); the search finds it for
 `command s`, `jump to a field`, `shift tab` ("quit" is said in other parts too, and the lazy results would not have built the last card).
 
 ---
@@ -2190,7 +2202,10 @@ besides). The Mac hands a sheet its own window, so a page's hidden ⌘S can neve
 | — | Help ▸ Keyboard Shortcuts: How it works at its topic | `SettingsAndHelpCommands`, `LibraryModel.keysToOpen` |
 | ⌘F | search How it works; find an icon | `GuideScreen`, `TemplatesScreen` icon picker (Mac) |
 | Esc in those fields | empties the search, then closes the page | `onExitCommand` (Mac) |
-| ⌘N | New Window (File menu) — Save and New while a thing's page is open | `ThingCommands` |
+| ⌘N | New Thing (File menu, 0.105): an empty thing's page over the tab — off while a page is open; Your things' own (`commandN`); Save and New while a thing's page is open | `ThingCommands`, `RootPage.newThing`, `ThingsScreen` |
+| ⌥⌘N | New Window (File menu; ⌘N until 0.105) | `ThingCommands` |
+| ⌘K | Quick open (Go menu, 0.105): things, trips, templates, commands; on a trip's page its Group by and Fold all | `GoCommands`, `QuickOpenPanel` |
+| ↑ ↓ Return Esc in Quick open | move, open or run, close | `QuickOpenPanel.key` |
 | ⌘↓ ⌘↑ ⌘J | next / previous thing, jump to a field | Thing menu (`ThingKeys`, Mac) |
 | Tab ⇧Tab Space ↑ ↓ ← → Return, letters | the thing page's key walk and its drop-downs | `ThingEditor.key`, `DropDown.answer` (Mac) |
 | ⌘Q | quit | `QuitCommand` |
@@ -2204,6 +2219,45 @@ app's windows (`PageWatch`: `NSWindow` will-begin / did-end sheet, did-become / 
 `sheetParent`/`attachedSheet`). The tab keys are the Mac's alone: an iPhone or iPad keyboard has no tab shortcuts (the hidden
 buttons they would need cannot be kept out of the accessibility tree, above). The menu's items carry ids for the tests (`go-home`, `go-events`, `go-templates`, `go-care`,
 `go-actions`, `go-settings`, `go-settings-comma`, `help-keys`), given by `ThingKeys.nameGoMenuItems` as the Thing menu's are.
+
+**New Thing and Quick open (0.105; `Screens/QuickOpen.swift`, `PackingLibrary/QuickOpen.swift`).** His words of 28 Oct 2026:
+"⌘N opens a new, empty thing's page from anywhere in the app. That's what ⌘N means in Apple's own apps, like a new note in
+Notes or a new reminder in Reminders. ⌘N currently opens a new window. That would move to ⌥⌘N, Apple's usual alternative. On
+the iPhone: "New thing" also goes into the menu when you hold the app icon." — and "1. ⌘K - yes please", to "⌘K quick open
+(Mac): type a few letters to jump to any thing, trip or template, or run a command like 'Group by Whose'".
+- **File menu** (`ThingCommands`, `CommandGroup(replacing: .newItem)`): **New Thing ⌘N** (`file-new-thing`), then **New
+  Window ⌥⌘N** (`file-new-window`). New Thing opens `RootPage.newThing` — `ThingEditor(itemId: ThingEditor.newThing)`, the
+  thing page on a thing not made yet (as ⌘N's next thing since 0.68: empty, the cursor in Name, no Duplicate or Delete;
+  Save makes it, Cancel/Esc makes nothing; a swipe with a name typed asks first) — presented by the window's own `RootView`
+  over the tab it shows, so the tab stays. The window says how through `focusedSceneValue(\.pageOpener)`; the All your things
+  window gives its own (its table's page). Off (greyed) while a page is open (`PageWatch`); while a thing's page is open the
+  item has no key, ⌘N being Thing ▸ Save and New (one item at a time holds a key). **Which ⌘N wins inside a page:** a
+  thing's page reads its keys before the menu bar (`ThingEditor.key`'s local monitor: ⌘N = Save and New, also with one of
+  its drop-downs open); Your things holds a hidden ⌘N button of its own (`commandN`, as `commandS`) that opens its own new
+  thing's page — made, the thing stands under Just added; anywhere else a page is open, ⌘N does nothing.
+- **Under the app icon** (iPhone) and **in the Dock's menu** (Mac): **New Thing** first (kind
+  `com.schabbauer.AMSPacking.newThing`, the system's plus) — through `LibraryModel.newThingToOpen`: RootView goes to Home,
+  Home makes way for it (`whenFree`) and opens the new thing's page. Spec 02 §13b.
+- **Go ▸ Quick Open… ⌘K** (`go-quick-open`): a panel of its own (`QuickOpenPanel`: a borderless `NSPanel`, a child window of
+  the window in front, centred over it a fifth of the way down, 560 wide, as tall as what it shows up to a 380-point list;
+  `Theme.card`, a 1-pt `Theme.line`, radius 14, the window shadow; day and night by the tokens). A search field (Title 3,
+  the magnifier) and what it finds in groups **Things · Trips · Templates · Commands**, each row the tab's own mark (a tab
+  command its tab's; New thing a plus, Keyboard shortcuts ⌘, Sync details the cloud), its name, the line under it (a
+  thing's place at home — and the Swedish name that found it; a trip's destination and countdown; a template's count of
+  things), the current choice ticked, a command's keys at the right; the lit row in its colour at 18 %. **↑ ↓** light a
+  row (through the groups), **Return** opens or runs it, **Esc**, **⌘K** again or a click elsewhere closes it (the panel's
+  own `KeyMonitor`). Nothing typed: a line says what it finds; nothing found: "Nothing is called that." A thing, trip or
+  template opens as the window's page (`RootPage`) — over the tab, which stays. Matching (`QuickOpen`, tested by
+  `QuickOpenTests`): capitals and accents do not count (å ä ö = a a o), best first — the whole name 100, its start 90, a
+  later word's start 75, several words' starts in any order 60, the first letters 45, anywhere inside (2+ letters) 25; a
+  thing's Swedish name 5 lower than the same match on its own; then the shorter name, then A to Z; five a group.
+  **Commands** with no page open: Go to Home … Settings (⌘1 … ⌘6), New thing (⌘N), Keyboard shortcuts, Sync details (each
+  also by a few other words: "icloud", "to-dos", "things"). **On a trip's page** (`PageWatch.tripInFront`, marked by
+  `TripPageMark`): only that trip's commands — Group by When … Whose it is (the current one ticked; `ams.view`) and Fold
+  all / Unfold all (every heading of the trip under its Group by, `TripFolds.settingAll`) — the page answers at once (its
+  `@AppStorage`). Off while any other page is open (the Apple modal rule). Ids: `quick-open`, `quick-open-field`,
+  `quick-open-<kind>`, `quick-open-<kind>-<n>` (selected when lit), `quick-open-hint`, `quick-open-none`. Mac only — an
+  iPhone or iPad keyboard has no ⌘K (the hidden button it would need stays in the accessibility tree there, above).
 
 **The audit (0.103) — every page with a Done, a Save or an Add, and its ⌘S.** Real Save/Done, since 0.92: Trip settings
 (`tripset-save-top`, `tripset-save`), the trip review, Your choices (`lists-done`), Activity areas, a template's page

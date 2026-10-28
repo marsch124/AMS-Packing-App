@@ -200,6 +200,8 @@ struct ThingsTable: View {
             // ⌘↓ ⌘↑ (Mac) go through the rows as sorted and filtered now.
             ThingEditor(itemId: o.id, order: { things().map(\.id) }).environmentObject(model)
         }
+        // File ▸ New Thing (0.105) in the table's own window: a new thing's page over it.
+        .modifier(NewThingHere(on: inWindow) { opening = ThingEditor.newThing })
         .sheet(isPresented: $filtering) {
             FilterSheet(stored: $filtersStored, base: unfiltered()).environmentObject(model)
         }
@@ -651,6 +653,21 @@ struct ThingsTable: View {
             .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("table-row-\(n)")
+        }
+    }
+}
+
+/// File ▸ New Thing in the All your things window (0.105): the window's own new thing's page. Only the window — the
+/// table on a sheet is a page, where the menu's New Thing is off.
+private struct NewThingHere: ViewModifier {
+    let on: Bool
+    let open: () -> Void
+
+    func body(content: Content) -> some View {
+        if on {
+            content.focusedSceneValue(\.pageOpener, PageOpener(open: { if $0 == .newThing { open() } }))
+        } else {
+            content
         }
     }
 }

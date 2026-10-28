@@ -312,6 +312,12 @@ struct HomeScreen: View {
             model.thingToOpen = nil
             if model.library.items.contains(where: { $0.id == id }) { whenFree { thingShown = Opened(id: id) } }
         }
+        // New Thing under the app icon or in the Dock's menu (0.105): a new, empty thing's page, over whatever was up.
+        .onChange(of: model.newThingToOpen, initial: true) { _, asked in
+            guard asked else { return }
+            model.newThingToOpen = false
+            whenFree { thingShown = Opened(id: ThingEditor.newThing) }
+        }
     }
 
     private struct GrabOpened: Identifiable { let list: GrabDefinition; var id: String { list.id } }
@@ -395,11 +401,13 @@ struct HomeScreen: View {
     /// not present a second window from a view while another is up or still closing,
     /// so until 5 Oct 2026 such a request could open nothing.
     private func whenFree(_ open: @escaping () -> Void) {
+        // A page the window opened over its tab with ⌘N or Quick open (0.105, `RootPages`) makes way too.
         let busy = searching || showingGrabLists || opened != nil || grab != nil || menuShown || placeShown != nil
-            || thingShown != nil
+            || thingShown != nil || RootPages.anyOpen
         guard busy else { open(); return }
         searching = false; showingGrabLists = false; opened = nil; grab = nil; menuShown = false; placeShown = nil
         thingShown = nil
+        RootPages.closeAll()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { open() }
     }
 

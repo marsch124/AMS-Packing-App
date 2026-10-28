@@ -20,6 +20,17 @@ final class GrabQuickActionsTests: XCTestCase {
                        "a new device does not offer the first four on Home")
     }
 
+    /// New Thing comes first under the icon (0.105): three grab lists go with it, iOS showing four — the three opened
+    /// most recently, in Home's order; on a new device the first three on Home.
+    func testNewThingLeavesRoomForThreeGrabLists() {
+        let lib = Library()
+        XCTAssertEqual(GRAB_QUICK_ACTIONS_BESIDE_NEW_THING, 3, "New Thing and three grab lists make the four iOS shows")
+        XCTAssertEqual(titles(lib.quickActionGrabLists(opened: [], count: GRAB_QUICK_ACTIONS_BESIDE_NEW_THING)),
+                       ["Indoor swim", "Indoor bike", "Indoor run"])
+        XCTAssertEqual(lib.quickActionGrabLists(opened: ["run-out", "bike-out", "swim", "run"], count: GRAB_QUICK_ACTIONS_BESIDE_NEW_THING).map(\.id),
+                       ["swim", "bike-out", "run-out"], "not the three opened most recently, in Home's order")
+    }
+
     /// The four opened most recently — not the fifth — and shown in Home's order, never in
     /// the order they were opened: an entry keeps its place under the icon.
     func testTheFourOpenedMostRecentlyStandInHomeOrder() {

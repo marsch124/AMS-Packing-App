@@ -53,6 +53,9 @@ struct ThingsScreen: View {
                     .accessibilityIdentifier("things-done")
             }
             .padding(16)
+            // ⌘N (0.105, Mac): a new thing's page here too — the menu's New Thing is off while a page is open; made, the
+            // thing stands under Just added, as one added at the foot.
+            .commandN { editing = ThingEditor.newThing }
             TextField("Search your things…", text: $query)
                 .textFieldStyle(.plain)
                 .font(.system(.body)).foregroundStyle(Theme.ink)
@@ -359,8 +362,12 @@ struct ThingEditor: View {
         self.itemId = itemId
         self.order = order
         self.made = made
-        _shown = State(initialValue: itemId)
+        _shown = State(initialValue: itemId == ThingEditor.newThing ? nil : itemId)
     }
+
+    /// The id that opens the page on a NEW thing (0.105: File ▸ New Thing, ⌘N in Your things, New Thing under the app
+    /// icon): empty, the cursor in Name; Save makes it, Cancel makes nothing — as ⌘N's next thing on the Mac (0.68).
+    static let newThing = ""
 
     /// The thing on the page ("" while a new one is being made).
     private var current: String { shown ?? "" }
@@ -601,7 +608,7 @@ struct ThingEditor: View {
             BagDetail(bagId: b.id).environmentObject(model)
         }
         .onAppear {
-            if let id = shown { load(id) }
+            if let id = shown { load(id) } else if atLoad == nil { startNew() }
             #if os(macOS)
             startKeys()
             #endif
@@ -623,6 +630,20 @@ struct ThingEditor: View {
         .accessibilityIdentifier("thing-detail")
         #if os(macOS)
         .frame(minWidth: 520, minHeight: 600)
+        #endif
+    }
+
+    /// A new thing's page (0.105): empty, and what it was opened with kept, so a swipe down with a name typed asks
+    /// first (0.92). The Mac puts the cursor in Name with its keys (`startKeys`); the iPhone here.
+    private func startNew() {
+        draft = newItem(name: "")
+        atLoad = ThingKept(draft: draft, onLists: [], weightText: "", careEvery: 0, careNotes: "", sections: [:],
+                           kit: KitDraft(), remember: RememberDraft(), limits: TripLimits())
+        #if os(iOS)
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(450))
+            naming = true
+        }
         #endif
     }
 

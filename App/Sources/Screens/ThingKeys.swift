@@ -254,24 +254,32 @@ final class ThingKeys: ObservableObject {
 
 /// The Thing menu in the Mac's menu bar — every key of a thing's page, the Apple way:
 /// nothing hidden, nothing to remember. Switched off while no thing's page is open, so
-/// ⌘N is File ▸ New Window everywhere else (the page reads its keys before the menu
-/// does, so its ⌘N wins only while it is open — and the UI tests' launch keeps opening
-/// a window with ⌘N).
+/// ⌘N is File ▸ New Thing everywhere else (0.105; New Window until then). The page reads
+/// its keys before the menu does, so its ⌘N — Save and New — wins while it is open.
 struct ThingCommands: Commands {
     @ObservedObject var keys = ThingKeys.shared
+    @ObservedObject private var pages = PageWatch.shared
+    @FocusedValue(\.pageOpener) private var opener
     @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
         // ⌘N belongs to ONE item at a time — two items with the same key and the Mac shows
         // it on neither (GitHub's Mac, 7 Oct 2026: Save and New came without its ⌘N). So
-        // File ▸ New Window has it while no thing's page is open, Save and New while one is.
+        // File ▸ New Thing has it while no thing's page is open, Save and New while one is.
+        // New Thing (0.105, his words of 28 Oct 2026, QuickOpen.swift): an empty thing's page over
+        // the window in front, off while a page is open (Your things answers ⌘N itself); New Window
+        // moved to ⌥⌘N, Apple's usual other key for it.
         CommandGroup(replacing: .newItem) {
             if keys.pages.isEmpty {
-                Button("New Window") { openWindow(id: AMSPackingApp.mainWindowId) }
+                Button("New Thing") { opener?.open(.newThing) }
                     .keyboardShortcut("n")
+                    .disabled(opener == nil || pages.open)
             } else {
-                Button("New Window") { openWindow(id: AMSPackingApp.mainWindowId) }
+                Button("New Thing") {}
+                    .disabled(true)
             }
+            Button("New Window") { openWindow(id: AMSPackingApp.mainWindowId) }
+                .keyboardShortcut("n", modifiers: [.command, .option])
         }
         CommandMenu("Thing") {
             let page = keys.active

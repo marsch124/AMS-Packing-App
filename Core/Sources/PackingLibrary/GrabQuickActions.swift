@@ -14,6 +14,10 @@ import PackingCore
 
 /// How many entries iOS shows under an app's icon (`UIApplicationShortcutItem`s).
 public let GRAB_QUICK_ACTIONS = 4
+/// How many of them are grab lists since New Thing came first under the icon (0.105 — his words of 28 Oct 2026: "On
+/// the iPhone: 'New thing' also goes into the menu when you hold the app icon"): iOS still shows four, so the three
+/// grab lists opened most recently go with it — the fourth would be cut off.
+public let GRAB_QUICK_ACTIONS_BESIDE_NEW_THING = GRAB_QUICK_ACTIONS - 1
 /// How many openings a device remembers — more than four, so a list deleted (or taken off
 /// every device) leaves the next most recent one to step up.
 public let GRAB_OPENED_KEEP = 16

@@ -21,6 +21,17 @@ enum GrabQuickActions {
     /// id>" — the id also rides in `userInfo["id"]`. The kind is what the Home Screen gives the
     /// entry as its accessibility identifier, so a test finds an entry by its list, not its words.
     static let type = "com.schabbauer.AMSPacking.grab"
+    /// New Thing, first under the icon and first in the Dock's menu (0.105 — his words of 28 Oct 2026: "On the
+    /// iPhone: 'New thing' also goes into the menu when you hold the app icon"): the app opens on a new, empty thing's
+    /// page (`LibraryModel.newThingToOpen`, on Home). iOS shows four entries, so three grab lists go with it
+    /// (`GRAB_QUICK_ACTIONS_BESIDE_NEW_THING`).
+    static let newThingType = "com.schabbauer.AMSPacking.newThing"
+    static let newThingTitle = "New Thing"
+
+    /// New Thing chosen under the icon or in the Dock's menu: Home opens a new thing's page.
+    static func openNewThing() {
+        LibraryModel.shared.newThingToOpen = true
+    }
     /// This device's openings, most recent first (`GrabOpenings`) — never synced.
     static let openedKey = "ams.grab.opened"
 
@@ -61,11 +72,17 @@ enum GrabQuickActions {
     /// list is opened, and when the app goes to the background. The system keeps them
     /// while the app is not running, so they are there at a cold start.
     static func refresh(_ library: Library) {
-        let lists = library.quickActionGrabLists(opened: opened)
-        let said = lists.map { "\($0.id)|\(GrabOpenings.title($0))|\(iconName($0))" }
+        let lists = library.quickActionGrabLists(opened: opened, count: GRAB_QUICK_ACTIONS_BESIDE_NEW_THING)
+        let said = [newThingType] + lists.map { "\($0.id)|\(GrabOpenings.title($0))|\(iconName($0))" }
         guard said != lastHanded else { return }
         lastHanded = said
-        UIApplication.shared.shortcutItems = lists.map(item)
+        UIApplication.shared.shortcutItems = [newThingItem()] + lists.map(item)
+    }
+
+    /// New Thing's entry: first, with the system's own plus (as Reminders' New Reminder).
+    static func newThingItem() -> UIApplicationShortcutItem {
+        UIApplicationShortcutItem(type: newThingType, localizedTitle: newThingTitle, localizedSubtitle: nil,
+                                  icon: UIApplicationShortcutIcon(type: .add), userInfo: nil)
     }
 
     /// The drawing an entry wears — the one on the list's tile (`GrabDoodle`): its doodle,
@@ -89,6 +106,7 @@ enum GrabQuickActions {
     /// app runs (`PackingSceneDelegate`). Not one of ours, or its list is gone: false.
     @discardableResult
     static func perform(_ item: UIApplicationShortcutItem) -> Bool {
+        if item.type == newThingType { openNewThing(); return true }
         guard item.type.hasPrefix(type + "."),
               let id = item.userInfo?["id"] as? String ?? Optional(String(item.type.dropFirst(type.count + 1))) else { return false }
         return open(id: id)
@@ -178,12 +196,16 @@ final class PackingMacDelegate: NSObject, NSApplicationDelegate {
         QuitGuard.start()
     }
 
-    /// Right-click (or hold) the Dock icon while the app runs: every grab list, in Home's order,
-    /// under a "Grab lists" heading. Choosing one opens it.
+    /// Right-click (or hold) the Dock icon while the app runs: New Thing (0.105), then every grab list,
+    /// in Home's order, under a "Grab lists" heading. Choosing one opens it.
     func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
         let lists = LibraryModel.shared.library.grabListsInHomeOrder()
-        guard !lists.isEmpty else { return nil }
         let menu = NSMenu()
+        let new = NSMenuItem(title: GrabQuickActions.newThingTitle, action: #selector(openNewThing(_:)), keyEquivalent: "")
+        new.target = self
+        menu.addItem(new)
+        guard !lists.isEmpty else { return menu }
+        menu.addItem(.separator())
         menu.addItem(.sectionHeader(title: "Grab lists"))
         for list in lists {
             let item = NSMenuItem(title: GrabOpenings.title(list), action: #selector(openGrab(_:)), keyEquivalent: "")
@@ -192,6 +214,14 @@ final class PackingMacDelegate: NSObject, NSApplicationDelegate {
             menu.addItem(item)
         }
         return menu
+    }
+
+    /// New Thing in the Dock's menu: the app comes to the front — with a window if it had none — and Home opens a new
+    /// thing's page, as from the iPhone's icon.
+    @objc private func openNewThing(_ item: NSMenuItem) {
+        NSApp.activate()
+        if GrabQuickActions.mainWindows == 0 { GrabQuickActions.openMainWindow?() }
+        GrabQuickActions.openNewThing()
     }
 
     @objc private func openGrab(_ item: NSMenuItem) {

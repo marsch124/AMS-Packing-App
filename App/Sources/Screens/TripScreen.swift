@@ -782,6 +782,8 @@ struct TripScreen: View {
         .accessibilityIdentifier("trip-detail")
         #if os(macOS)
         .frame(minWidth: 520, minHeight: 640)
+        // Quick open (⌘K, 0.105) offers this trip's commands while its page is in front.
+        .background(TripPageMark(tripId: tripId))
         #endif
         .onAppear(perform: takeFocus)
         .onChange(of: model.tripFocus) { _, _ in takeFocus() }

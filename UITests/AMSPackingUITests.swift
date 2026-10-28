@@ -28,9 +28,9 @@ final class AMSPackingUITests: XCTestCase {
         #if os(macOS)
         // Launched by the test runner, the Mac app sometimes comes to the front with
         // NO window (seen 2026-09-21: frontmost, menu bar only; launched normally it
-        // always opens one). File ▸ New Window is what he would do too.
+        // always opens one). File ▸ New Window is what he would do too — ⌥⌘N since 0.105 (⌘N is New Thing).
         if !app.windows.firstMatch.waitForExistence(timeout: 5) {
-            app.typeKey("n", modifierFlags: .command)
+            app.typeKey("n", modifierFlags: [.command, .option])
             _ = app.windows.firstMatch.waitForExistence(timeout: 5)
         }
         #endif
@@ -5141,17 +5141,18 @@ final class AMSPackingUITests: XCTestCase {
     #if os(iOS)
     /// Grab lists by holding the app icon (0.86, his yes of 15 Oct 2026): an entry under the
     /// icon on the Home Screen opens its grab list — at a cold start, and while the app waits
-    /// in the background. The entries are the four opened most recently, so Outdoor bike (the
-    /// fifth on Home) is there only once he has opened it. `-quickAction <title>` hands the
+    /// in the background. The entries are the three opened most recently (four until 0.105, when New Thing
+    /// came first), so Outdoor bike (the fifth on Home) is there only once he has opened it, and Indoor run
+    /// (the third) is there on a new device. `-quickAction <title>` hands the
     /// entry with that title — taken from the ones the app gave the system — with the app's
     /// start, as iOS does; `-quickActionOnReturn <title>` hands it to the scene's delegate as
     /// the app comes back to the front, as iOS does while it runs.
     func testAnEntryUnderTheAppIconOpensItsGrabList() {
         let cold = XCUIApplication()
-        cold.launchArguments += ["-uiTesting", "-quickAction", "Outdoor swim"]
+        cold.launchArguments += ["-uiTesting", "-quickAction", "Indoor run"]
         cold.launch()
         XCTAssertTrue(appears(cold, "grab-detail", timeout: 20), "the entry under the icon opened nothing at a cold start")
-        XCTAssertTrue(waitUntil { self.words(cold.staticTexts["grab-title"]) == "Outdoor swim" },
+        XCTAssertTrue(waitUntil { self.words(cold.staticTexts["grab-title"]) == "Indoor run" },
                       "a cold start opened another list: '\(words(cold.staticTexts["grab-title"]))'")
         cold.terminate()
 
@@ -5170,6 +5171,47 @@ final class AMSPackingUITests: XCTestCase {
                       "Outdoor bike, opened just before, is not under the icon — or its entry opened nothing while the app ran")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["grab-title"]) == "Outdoor bike" },
                       "the entry opened another list: '\(words(app.staticTexts["grab-title"]))'")
+    }
+    #endif
+
+    /// The thing page's Name is empty (an empty field's value is its placeholder on the iPhone).
+    private func nameIsEmpty(_ app: XCUIApplication) -> Bool {
+        let field = app.textFields["thing-name"]
+        guard field.exists else { return false }
+        let v = field.value as? String ?? ""
+        return v.isEmpty || v == field.placeholderValue
+    }
+
+    #if os(iOS)
+    /// New Thing under the app icon (0.105, his words of 28 Oct 2026: "On the iPhone: 'New thing' also goes into the
+    /// menu when you hold the app icon"): the app opens straight on a new, empty thing's page — at a cold start, and
+    /// while it waits in the background, from any tab; Save makes the thing. `-quickAction` / `-quickActionOnReturn`
+    /// hand the entry titled so from the ones the app gave the system, as iOS does.
+    func testNewThingUnderTheAppIconOpensANewThingsPage() {
+        let cold = XCUIApplication()
+        cold.launchArguments += ["-uiTesting", "-quickAction", "New Thing"]
+        cold.launch()
+        XCTAssertTrue(appears(cold, "thing-detail", timeout: 20), "New Thing under the icon opened nothing at a cold start")
+        XCTAssertTrue(waitUntil { self.nameIsEmpty(cold) }, "the page is not a new thing's: '\(says(cold, "thing-name"))'")
+        XCTAssertFalse(cold.buttons["thing-delete"].exists, "a thing not made yet offers Delete")
+        shot(cold, "new-thing-icon")
+        type("Compass", into: cold.textFields["thing-name"])
+        tap(cold, id: "thing-save")
+        XCTAssertTrue(disappears(cold, "thing-detail", timeout: 10), "Save did not close the new thing's page")
+        openThing(cold, "Compass")
+        XCTAssertTrue(waitUntil { self.says(cold, "thing-name") == "Compass" }, "Save did not make the thing: '\(says(cold, "thing-name"))'")
+        cold.terminate()
+
+        let app = XCUIApplication()
+        app.launchArguments += ["-uiTesting", "-quickActionOnReturn", "New Thing"]
+        app.launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        tab(app, "templates")
+        XCUIDevice.shared.press(.home)
+        sleep(2)
+        app.activate()
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 15), "New Thing opened nothing while the app ran")
+        XCTAssertTrue(waitUntil { self.nameIsEmpty(app) }, "it opened a page that is not new: '\(says(app, "thing-name"))'")
     }
     #endif
 
@@ -5287,8 +5329,9 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(entry("bike-out").waitForExistence(timeout: 10), "Outdoor bike, just opened, is not under the icon")
         let shown = board.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'com.schabbauer.AMSPacking.grab.'"))
         XCTAssertEqual(Set(shown.allElementsBoundByIndex.map(\.identifier)),
-                       Set(["swim", "bike", "run", "bike-out"].map { "com.schabbauer.AMSPacking.grab.\($0)" }),
-                       "not the three first on Home and the one he opened")
+                       Set(["swim", "bike", "bike-out"].map { "com.schabbauer.AMSPacking.grab.\($0)" }),
+                       "not the two first on Home and the one he opened (New Thing takes the fourth place, 0.105)")
+        XCTAssertTrue(board.buttons["com.schabbauer.AMSPacking.newThing"].exists, "New Thing is not under the icon")
         shot(app, "icon-menu")
         entry("bike-out").tap()
         XCTAssertTrue(appears(app, "grab-detail", timeout: 15), "tapping Outdoor bike under the icon opened nothing")
@@ -14058,8 +14101,8 @@ final class AMSPackingUITests: XCTestCase {
 
     /// ⌘N saves the thing and opens a NEW thing's page with its Kind of thing, Whose it is,
     /// Kept at home, Usually packed in, When and templates (his answer, 7 Oct 2026), the
-    /// cursor in Name; Esc on a new page makes nothing. With no page open, ⌘N is still
-    /// File ▸ New Window.
+    /// cursor in Name; Esc on a new page makes nothing. In Your things ⌘N opens a new thing's
+    /// page of its own (0.105); New Window is ⌥⌘N.
     func testCommandNSavesAndStartsTheNextThingWithTheSameChoices() throws {
         #if os(iOS)
         throw XCTSkip("The keys of a thing's page are the Mac's")
@@ -14102,10 +14145,18 @@ final class AMSPackingUITests: XCTestCase {
         pressEscape(app)
         XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
         XCTAssertEqual(words(app.staticTexts["things-count"]), "12 things", "Esc on a new page made a thing")
-        // No page open: ⌘N is File ▸ New Window, as always.
+        // In Your things, with no thing's page open, ⌘N is its own New Thing (0.105) — no longer New Window.
         let windows = app.windows.count
         app.typeKey("n", modifierFlags: .command)
-        XCTAssertTrue(waitUntil { app.windows.count > windows }, "with no thing's page open, ⌘N did not open a window")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5), "⌘N in Your things opened no new thing's page")
+        XCTAssertTrue(waitUntil { self.says(app, "thing-name").isEmpty }, "⌘N in Your things opened a page that is not new")
+        XCTAssertEqual(app.windows.count, windows, "⌘N opened a window")
+        pressEscape(app)
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        // File ▸ New Window is ⌥⌘N (0.105), Apple's usual other key for it.
+        XCTAssertTrue(app.menuItems["file-new-window"].waitForExistence(timeout: 5), "File has no New Window")
+        app.typeKey("n", modifierFlags: [.command, .option])
+        XCTAssertTrue(waitUntil { app.windows.count > windows }, "⌥⌘N did not open a window")
         #endif
     }
 
@@ -17754,6 +17805,181 @@ final class AMSPackingUITests: XCTestCase {
         #endif
     }
 
+
+    // MARK: New Thing and Quick open (0.105)
+
+    /// ⌘N = File ▸ New Thing (0.105, his words of 28 Oct 2026: "⌘N opens a new, empty thing's page from anywhere in
+    /// the app"): from any tab an empty thing's page, the cursor in Name; ⌘S makes the thing and the tab under it
+    /// stays; Esc makes nothing; the menu item is off while a page is open.
+    func testCommandNOpensANewThingsPageFromAnyTab() throws {
+        #if os(iOS)
+        throw XCTSkip("⌘N is the Mac's File menu; the iPhone has New Thing under the app icon")
+        #else
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        let count = app.staticTexts["count-things"]
+        XCTAssertTrue(count.waitForExistence(timeout: 5))
+        let before = Int(words(count)) ?? -1
+        let item = app.menuItems["file-new-thing"]
+        XCTAssertTrue(item.waitForExistence(timeout: 5), "File has no New Thing:\n" + String(app.menuBars.firstMatch.debugDescription.prefix(3000)))
+        XCTAssertTrue(waitUntil { item.isEnabled }, "File ▸ New Thing is off with no page open")
+        menuPicture(app, "File", "file-menu")
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        app.typeKey("n", modifierFlags: .command)
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5), "⌘N opened no thing's page")
+        XCTAssertEqual(says(app, "thing-name"), "", "the new thing's page is not empty")
+        XCTAssertTrue(focused(app, "thing-name"), "the cursor is not in Name")
+        XCTAssertFalse(app.buttons["thing-delete"].exists, "a thing not made yet offers Delete")
+        XCTAssertTrue(waitUntil(timeout: 8) { !item.isEnabled }, "File ▸ New Thing stayed on with a page open")
+        shot(app, "new-thing-page")
+        app.typeText("Compass")
+        app.typeKey("s", modifierFlags: .command)
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5), "⌘S did not save the new thing")
+        XCTAssertNotNil(find(app, "screen-templates"), "the tab under the page changed")
+        // Esc on a new page makes nothing.
+        app.typeKey("n", modifierFlags: .command)
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5), "a second ⌘N opened no page")
+        pressEscape(app)
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5), "Esc did not close the new thing's page")
+        tab(app, "home")
+        XCTAssertTrue(waitUntil { Int(self.words(count)) == before + 1 }, "not exactly one thing more: \(before) → '\(words(count))'")
+        #endif
+    }
+
+    #if os(macOS)
+    /// New Thing in the Dock icon's menu (0.105): the app opens a new, empty thing's page.
+    func testTheDockMenuOpensANewThingsPage() {
+        let app = launch("-uiTesting", ["-dockMenu", "New Thing"])
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 20), "New Thing in the Dock menu opened no page")
+        XCTAssertTrue(waitUntil { self.nameIsEmpty(app) }, "it opened a page that is not new: '\(says(app, "thing-name"))'")
+    }
+
+    /// A picture of one of the app's menus, open, for looking at only (asks nothing, fails nothing): a menu bar item has
+    /// no identifier, so it is found by its title.
+    private func menuPicture(_ app: XCUIApplication, _ title: String, _ name: String) {
+        guard let dir = ProcessInfo.processInfo.environment["SHOTS_DIR"], !dir.isEmpty else { return }
+        let menu = app.menuBars.menuBarItems.matching(NSPredicate(format: "title == %@", title)).firstMatch
+        guard menu.waitForExistence(timeout: 3) else { print("SHOT \(name): no menu \(title)"); return }
+        menu.click()
+        sleep(1)
+        shot(app, name, whole: true)
+        app.typeKey(.escape, modifierFlags: [])
+        sleep(1)
+    }
+
+    /// ⌘K and its panel: opens it (waiting until its field has the keys).
+    private func quickOpen(_ app: XCUIApplication) -> XCUIElement {
+        app.typeKey("k", modifierFlags: .command)
+        let field = app.textFields["quick-open-field"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "⌘K opened no Quick open")
+        sleep(1)                                                // the panel takes the keys
+        return field
+    }
+    #endif
+
+    /// ⌘K = Go ▸ Quick Open (0.105, his yes of 28 Oct 2026): a few letters find a thing — by its name or its Swedish
+    /// one, which the row then says — and Return opens its page; ↓ lights the next row, across the groups, and a
+    /// template opens its page; Esc closes the panel and opens nothing.
+    func testQuickOpenFindsAThingByAFewLettersAndOpensIt() throws {
+        #if os(iOS)
+        throw XCTSkip("Quick open is the Mac's")
+        #else
+        // Night for a picture: `TEST_RUNNER_NIGHT=1` asks this app for dark, as the Keyboard shortcuts test does.
+        let night = ProcessInfo.processInfo.environment["NIGHT"] == "1" ? ["-AppleInterfaceStyle", "Dark"] : []
+        let app = launch("-uiTestingSwedish", night)
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        let item = app.menuItems["go-quick-open"]
+        XCTAssertTrue(item.waitForExistence(timeout: 5), "the Go menu has no Quick Open:\n" + String(app.menuBars.firstMatch.debugDescription.prefix(3000)))
+        XCTAssertTrue(waitUntil { item.isEnabled }, "Go ▸ Quick Open is off with no page open")
+        var field = quickOpen(app)
+        XCTAssertTrue(app.staticTexts["quick-open-hint"].exists, "nothing typed, and nothing says what it finds")
+        app.typeText("headl")
+        let first = app.buttons["quick-open-thing-0"]
+        XCTAssertTrue(waitUntil { self.words(first).contains("Headlamp") }, "'headl' did not find the Headlamp: '\(words(first))'")
+        XCTAssertTrue(isOn(first), "the first row is not lit")
+        shot(app, "quick-open-thing", whole: true)
+        app.typeKey(.return, modifierFlags: [])
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5), "Return opened no thing's page")
+        XCTAssertTrue(waitUntil { self.says(app, "thing-name") == "Headlamp" }, "it opened another thing: '\(says(app, "thing-name"))'")
+        XCTAssertFalse(field.exists, "the panel stayed up over the page")
+        pressEscape(app)
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+
+        // By its Swedish name, which the row says.
+        field = quickOpen(app)
+        app.typeText("regnj")
+        XCTAssertTrue(waitUntil { self.words(first).contains("Rain jacket") && self.words(first).contains("Regnjacka") },
+                      "the Swedish name did not find the Rain jacket, or the row does not say it: '\(words(first))'")
+        shot(app, "quick-open-swedish", whole: true)
+        app.typeKey(.return, modifierFlags: [])
+        XCTAssertTrue(waitUntil { self.says(app, "thing-name") == "Rain jacket" }, "it opened another thing: '\(says(app, "thing-name"))'")
+        pressEscape(app)
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+
+        // Esc closes the panel and opens nothing.
+        field = quickOpen(app)
+        app.typeText("map")
+        XCTAssertTrue(waitUntil { self.words(first).contains("Map") })
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(waitUntil { !field.exists }, "Esc did not close Quick open")
+        XCTAssertNil(find(app, "thing-detail"), "Esc opened the lit thing")
+
+        // ↓ lights the next row, across the groups: "hik" finds Hiking boots (a thing), then Hiking (a template).
+        field = quickOpen(app)
+        app.typeText("hik")
+        let template = app.buttons["quick-open-template-0"]
+        XCTAssertTrue(waitUntil { self.words(template).contains("Hiking") }, "'hik' did not find the Hiking template: '\(words(template))'")
+        XCTAssertTrue(waitUntil { self.words(first).contains("Hiking boots") }, "'hik' did not find the Hiking boots: '\(words(first))'")
+        app.typeKey(.downArrow, modifierFlags: [])
+        XCTAssertTrue(waitUntil { self.isOn(template) && !self.isOn(first) }, "↓ did not light the next row")
+        app.typeKey(.return, modifierFlags: [])
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5), "Return on a template opened no template's page")
+        #endif
+    }
+
+    /// Quick open runs commands (0.105): "care" finds Go to Care and Return goes there; on a trip's page it offers that
+    /// trip's commands and nothing else — "whose" groups the trip by Whose it is, "fold" folds every heading.
+    func testQuickOpenRunsACommand() throws {
+        #if os(iOS)
+        throw XCTSkip("Quick open is the Mac's")
+        #else
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        var field = quickOpen(app)
+        app.typeText("care")
+        let command = app.buttons["quick-open-command-0"]
+        XCTAssertTrue(waitUntil { self.words(command).contains("Go to Care") }, "'care' did not find Go to Care: '\(words(command))'")
+        app.typeKey(.return, modifierFlags: [])
+        XCTAssertTrue(appears(app, "screen-care", timeout: 5), "Go to Care did not go to Care")
+        XCTAssertFalse(field.exists)
+
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let item = app.menuItems["go-quick-open"]
+        XCTAssertTrue(waitUntil(timeout: 8) { item.isEnabled }, "Go ▸ Quick Open is off on a trip's page")
+        field = quickOpen(app)
+        app.typeText("headl")
+        XCTAssertTrue(waitUntil { app.staticTexts["quick-open-none"].exists }, "on a trip's page Quick open offered a thing")
+        field.typeKey("a", modifierFlags: .command)
+        app.typeText("whose")
+        XCTAssertTrue(waitUntil { self.words(command).contains("Group by Whose it is") }, "'whose' did not find Group by Whose it is: '\(words(command))'")
+        shot(app, "quick-open-trip", whole: true)
+        app.typeKey(.return, modifierFlags: [])
+        XCTAssertTrue(waitUntil { self.chosen(app, "trip-view") == "Whose it is" }, "the trip is not grouped by Whose it is: '\(chosen(app, "trip-view"))'")
+        let all = app.buttons["trip-fold-all"]
+        XCTAssertTrue(all.waitForExistence(timeout: 5))
+        XCTAssertFalse(isOn(all), "the headings were folded before")
+        field = quickOpen(app)
+        app.typeText("fold")
+        XCTAssertTrue(waitUntil { self.words(command).contains("Fold all") }, "'fold' did not find Fold all: '\(words(command))'")
+        app.typeKey(.return, modifierFlags: [])
+        XCTAssertTrue(waitUntil { self.isOn(all) }, "Fold all from Quick open did not fold every heading")
+        XCTAssertNotNil(find(app, "trip-detail"), "the trip closed")
+        #endif
+    }
+
     // MARK: Keyboard shortcuts in How it works
 
     /// The topic Keyboard shortcuts (his ask: "make the list visually pleasing and easy to read for a human"):
@@ -17776,9 +18002,9 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(top.exists, "no card for the line at the top")
         toTopThird(app, title)
         shot(app, "keys-0-top")
-        // Seven cards, each row read as words.
-        for n in 0..<7 { XCTAssertTrue(guidePart(app, "guide-keys-card-\(n)").exists, "no card \(n)") }
-        XCTAssertFalse(guidePart(app, "guide-keys-card-7").exists, "an eighth card")
+        // Nine cards (seven until 0.105 added Quick open and New), each row read as words.
+        for n in 0..<9 { XCTAssertTrue(guidePart(app, "guide-keys-card-\(n)").exists, "no card \(n)") }
+        XCTAssertFalse(guidePart(app, "guide-keys-card-9").exists, "a tenth card")
         // One label for a whole row: the action, then the keys read as words.
         func row(_ id: String) -> String {
             let e = guidePart(app, id)
@@ -17790,8 +18016,11 @@ final class AMSPackingUITests: XCTestCase {
             XCTAssertTrue(row("guide-keys-1-\(m)").hasPrefix("\(name), Command \(m + 1)"), "⌘\(m + 1): '\(row("guide-keys-1-\(m)"))'")
         }
         XCTAssertEqual(row("guide-keys-1-5"), "Settings, Command 6, or Command comma")
-        XCTAssertEqual(row("guide-keys-4-6"), "Previous field, Shift Tab")
-        for n in 0..<7 {
+        XCTAssertEqual(row("guide-keys-2-0"), "Open Quick open, Command K")
+        XCTAssertEqual(row("guide-keys-3-0"), "New thing, Command N")
+        XCTAssertEqual(row("guide-keys-3-1"), "New window, Option Command N")
+        XCTAssertEqual(row("guide-keys-6-6"), "Previous field, Shift Tab")
+        for n in 0..<9 {
             let card = guidePart(app, "guide-keys-card-\(n)")
             toTopThird(app, card)
             shot(app, "keys-\(n + 1)-card")
@@ -17805,7 +18034,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.guidePart(app, "guide-hit-keys").exists }, "the search does not find Command S in Keyboard shortcuts")
         let hit = guideHit(app, "guide-hit-keys-title")
         XCTAssertEqual(hit.said, "Keyboard shortcuts")
-        shot(app, "keys-8-search")
+        shot(app, "keys-10-search")
         replace("jump to a field", in: field)
         XCTAssertTrue(waitUntil { self.guidePart(app, "guide-hit-keys").exists }, "the search does not find an action's words")
         replace("shift tab", in: field)

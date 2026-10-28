@@ -80,6 +80,16 @@ enum SampleLibrary {
         return lib
     }
 
+    /// The sample library with Swedish names on two things (`-uiTestingSwedish`, 0.105): the web app kept his
+    /// original wording, and Quick open finds a thing by it.
+    static func swedish() -> Library {
+        var lib = make()
+        for (name, swedish) in [("Headlamp", "Pannlampa"), ("Rain jacket", "Regnjacka")] {
+            if let n = lib.items.firstIndex(where: { $0.name == name }) { lib.items[n].swedish = swedish }
+        }
+        return lib
+    }
+
     /// The sample library ready for Check before you go (`-uiTestingChecks`): a plane
     /// trip three weeks out, built from Hiking and the base template, which now carries a pocket
     /// knife and sun cream in the carry-on (where every sample thing goes); the sun

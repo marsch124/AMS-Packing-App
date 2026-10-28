@@ -63,6 +63,9 @@ final class LibraryModel: ObservableObject {
     /// A thing whose result was tapped in Spotlight (0.92, Store/Spotlight.swift): Home opens its
     /// page and clears it.
     @Published var thingToOpen: String?
+    /// New Thing under the app icon on the iPhone, or in the Dock's menu on the Mac (0.105): Home opens a new,
+    /// empty thing's page and clears it.
+    @Published var newThingToOpen = false
 
     private let store: LibraryStore
     private var held: [StoredRecord] = []
@@ -628,6 +631,9 @@ extension LibraryModel {
         }
         if args.contains("-uiTestingSections") {
             return LibraryModel(store: MemoryStore(SampleLibrary.sectioned().records()), usesICloud: false, sky: sky)
+        }
+        if args.contains("-uiTestingSwedish") {
+            return LibraryModel(store: MemoryStore(SampleLibrary.swedish().records()), usesICloud: false, sky: sky)
         }
         if args.contains("-uiTestingWhose") {
             return LibraryModel(store: MemoryStore(SampleLibrary.whose().records()), usesICloud: false, sky: sky)

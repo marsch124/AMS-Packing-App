@@ -24,6 +24,7 @@ public enum KeyGuide {
 
         public static let command = Key("\u{2318}", "Command")
         public static let shift = Key("\u{21E7}", "Shift")
+        public static let option = Key("\u{2325}", "Option")
         public static let escape = Key("Esc", "Escape")
         public static let tab = Key("Tab", "Tab")
         public static let space = Key("Space", "Space")
@@ -123,6 +124,23 @@ public enum KeyGuide {
             Row("To do", [cmd("5")]),
             Row("Settings", [cmd("6"), chord(.command, .comma)]),
         ]),
+        // Quick open (0.105, his yes of 28 Oct 2026): ⌘K, a few letters, Return.
+        Card(id: "quick", title: "Quick open", reach: .macOnly,
+              line: "Type a few letters of a thing, a trip or a template \u{2014} a thing\u{2019}s Swedish name too \u{2014} or of a command: a tab, New thing, Keyboard shortcuts, Sync details. On a trip\u{2019}s page: its Group by choices and Fold all.",
+              rows: [
+            Row("Open Quick open", [cmd("k")], note: "Also in the Go menu. Off while a page other than a trip is open."),
+            Row("Move through what it found", [chord(.up, .down)]),
+            Row("Open the lit one, or run it", [chord(.return)]),
+            Row("Close it", [chord(.escape)]),
+        ]),
+        // New (0.105, his words of 28 Oct 2026): "⌘N opens a new, empty thing's page from anywhere in the app … ⌘N
+        // currently opens a new window. That would move to ⌥⌘N, Apple's usual alternative."
+        Card(id: "new", title: "New", reach: .macOnly,
+              line: "The Mac\u{2019}s File menu, as in Notes and Reminders. Off while a page is open \u{2014} except Your things, where \u{2318}N opens a new thing\u{2019}s page too, and a thing\u{2019}s page, where it is Save and New.",
+              rows: [
+            Row("New thing", [cmd("n")], note: "An empty thing\u{2019}s page, from any tab, the cursor in Name. Save makes the thing; Cancel or Esc makes nothing."),
+            Row("New window", [chord(.option, .command, .character("n"))]),
+        ]),
         Card(id: "search", title: "Search", reach: .macOnly, line: nil, rows: [
             Row("Search How it works", [chord(.command, .character("f"))]),
             Row("Find an icon, on a template\u{2019}s icon page", [chord(.command, .character("f"))]),
@@ -157,8 +175,6 @@ public enum KeyGuide {
         Card(id: "mac", title: "The Mac\u{2019}s windows", reach: .macOnly, line: nil, rows: [
             Row("Quit", [cmd("q")],
                 note: "Asks first when a page holds a change you have not confirmed."),
-            Row("New window", [cmd("n")],
-                note: "Not while a thing\u{2019}s page is open: there \u{2318}N is Save and New."),
             Row("Close the All your things window", [cmd("w")]),
         ]),
     ]
