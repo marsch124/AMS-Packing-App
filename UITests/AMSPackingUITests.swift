@@ -12703,9 +12703,14 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertEqual(words(count), "7 selected", "Space dropped the selection")
         XCTAssertEqual(progress.value as? String, "all packed", "Space also pressed another button")
         XCTAssertNotNil(find(app, "trip-detail"), "Space closed the trip")
+        let keysAfter = pickedSaid(app)
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(waitUntil { !bar.exists }, "Esc did not clear the selection after ⌘A")
-        XCTAssertNotNil(find(app, "trip-detail"), "the trip closed")
+        if find(app, "trip-detail") == nil {
+            shot(app, "select-9-closed", whole: true)
+            print("SELECT-KEYS before the last Esc: \(keysAfter)\n" + String(app.debugDescription.prefix(6000)))
+        }
+        XCTAssertNotNil(find(app, "trip-detail"), "the trip closed (\(keysAfter))")
         #endif
     }
 
