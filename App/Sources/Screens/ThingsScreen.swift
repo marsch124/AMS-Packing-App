@@ -1479,12 +1479,20 @@ extension ThingEditor {
     /// and Remember are not in the walk).
     static let beforeFields: [ThingField] = [.battery, .liquid, .restricted, .expiry]
 
+    /// Before a trip folded, as this device keeps it NOW — read from the defaults themselves: the
+    /// keys' monitor holds a copy of the page, whose @AppStorage still said "open" after a fold
+    /// (GitHub's Mac, 28 Oct 2026: Tab from Notes went on to Has a battery while it was folded).
+    fileprivate static var beforeFoldedNow: Bool {
+        get { UserDefaults.standard.bool(forKey: BeforeATripFold.key) }
+        set { UserDefaults.standard.set(newValue, forKey: BeforeATripFold.key) }
+    }
+
     /// Every field, in his reading order — the order Tab walks. Before a trip's come right after Notes
     /// (0.104) — while it is folded Tab goes past them; `all` (⌘J) names them folded too, and landing
     /// on one opens it.
     fileprivate func fieldOrder(all: Bool = false) -> [ThingField] {
         var out: [ThingField] = [.name, .notes]
-        if all || !beforeFolded { out += ThingEditor.beforeFields }
+        if all || !ThingEditor.beforeFoldedNow { out += ThingEditor.beforeFields }
         out.append(.category)
         out.append(.owner)                                                               // always (0.73)
         let templates = self.templates
@@ -1696,7 +1704,7 @@ extension ThingEditor {
     fileprivate func land(_ f: ThingField?, whole: Bool = true, quiet: Bool = false) {
         if at == .expiry, f != .expiry { readExpiry() }
         // A field of Before a trip reached while it is folded (⌘J): the frame opens (0.104).
-        if let f, beforeFolded, ThingEditor.beforeFields.contains(f) { beforeFolded = false }
+        if let f, ThingEditor.beforeFields.contains(f), ThingEditor.beforeFoldedNow { ThingEditor.beforeFoldedNow = false }
         keyHome.quiet = quiet && f != at
         keyNote = ""
         at = f

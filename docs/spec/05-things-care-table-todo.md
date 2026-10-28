@@ -1108,7 +1108,9 @@ apart; a field 6 pt under its heading):
      `RememberDraft`; Cancel keeps nothing, and a change makes a swipe down ask first. Folding is not a change.
    - **The Mac's keys**: Tab walks Battery, Liquid, Not in the cabin and Valid until right after Notes (Keyboard (Mac)
      below); folded, Tab goes past them (Notes → Kind of thing), ⌘J still finds them by name and opens the frame; folded
-     by a click while the keys were in it, Tab goes on from Kind of thing (Shift-Tab: Notes).
+     by a click while the keys were in it, Tab goes on from Kind of thing (Shift-Tab: Notes). The keys read the fold
+     from the defaults themselves (`ThingEditor.beforeFoldedNow`): the keys' monitor holds a copy of the page whose
+     @AppStorage still said "open" after a fold (GitHub's Mac, 28 Oct 2026: Tab from Notes went on to Has a battery).
    - **Tests**: UI `testBeforeATripIsOneFrameInHisOrderThatFolds` (`-uiTestingThingReminders`, the Camera: the frame
      after Notes and before Photos, the five rows in his order inside it, "Also pack", the hint on the date's line and
      short, the page's note one line under Delete; folded: "2 reminders" and "Also pack 2 things", no rows, the summary
