@@ -161,7 +161,7 @@ struct ThingKitPart: View {
         return VStack(alignment: .leading, spacing: 6) {
             HeadingBand(title: "Inside", id: "thing-kit-title")
             if things.isEmpty {
-                Text("A pouch or a kit? Add the things that stay packed in it.")
+                Text("Is this item a pouch or a kit? Add the things that stay packed in it.")
                     .font(.system(.subheadline)).foregroundStyle(Theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("thing-kit-none")
