@@ -12642,6 +12642,166 @@ final class AMSPackingUITests: XCTestCase {
         #endif
     }
 
+    // MARK: - Several lines selected on the Mac (0.105)
+
+    /// His yes of 28 Oct 2026 ("Select several lines … yes please"): on a trip on the Mac, ⌘-click puts a line in
+    /// the selection (it ticks nothing), a second one brings the bar — "2 selected" — whose Tick ticks both in one
+    /// go; Esc clears the selection and leaves the trip open; a plain click still ticks just its line and selects
+    /// nothing; ⌘A selects every line shown and Space ticks them. Pictures `select-1-bar` (and `-night`).
+    func testSeveralLinesAreSelectedOnTheMacAndTickedInOneGo() throws {
+        #if os(iOS)
+        throw XCTSkip("Selecting several lines is the Mac's (his ask)")
+        #else
+        let night = ProcessInfo.processInfo.environment["NIGHT"] == "1"
+        let app = launch("-uiTesting", night ? ["-AppleInterfaceStyle", "Dark"] : [])
+        openSampleTrip(app)
+        let progress = app.staticTexts["trip-progress"]
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/7" }, "the sample trip is not 0/7: '\(words(progress))'")
+        let bar = app.descendants(matching: .any).matching(identifier: "trip-select-bar").firstMatch
+        let count = app.staticTexts["trip-select-count"]
+
+        // ⌘-click: in the selection, not ticked — and one line alone brings no bar.
+        pickLine(app, 0, .command, near: "trip-view")
+        XCTAssertTrue(waitUntil { self.pickedLines(app).contains(0) }, "⌘-click did not select the line: \(pickedLines(app))")
+        XCTAssertEqual(words(progress), "0/7", "⌘-click ticked the line")
+        XCTAssertFalse(isOn(app.buttons["trip-line-0"]), "⌘-click ticked the line")
+        XCTAssertFalse(bar.exists, "the bar came for one line")
+        pickLine(app, 1, .command, near: "trip-line-0")
+        XCTAssertTrue(waitUntil { self.words(count) == "2 selected" }, "two lines ⌘-clicked, the bar says '\(words(count))'")
+        XCTAssertEqual(pickedLines(app), [0, 1])
+        XCTAssertEqual(words(progress), "0/7", "selecting ticked something")
+        shot(app, night ? "select-1-bar-night" : "select-1-bar")
+
+        // Tick: both, in one go; the selection stays.
+        tap(app, id: "trip-select-tick")
+        XCTAssertTrue(waitUntil { self.words(progress) == "2/7" }, "Tick did not tick both: '\(words(progress))'")
+        XCTAssertTrue(isOn(app.buttons["trip-line-0"]) && isOn(app.buttons["trip-line-1"]), "a selected line is not ticked")
+        XCTAssertEqual(words(count), "2 selected", "Tick dropped the selection")
+        shot(app, night ? "select-2-ticked-night" : "select-2-ticked")
+
+        // Esc clears the selection — and the trip stays open.
+        sleep(1)
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(waitUntil { !bar.exists && self.pickedLines(app).isEmpty }, "Esc did not clear the selection: \(pickedLines(app))")
+        XCTAssertNotNil(find(app, "trip-detail"), "Esc closed the trip instead of clearing the selection")
+
+        // A plain click still ticks just its line, and selects nothing.
+        pickLine(app, 2, [], near: "trip-line-1")
+        XCTAssertTrue(waitUntil { self.words(progress) == "3/7" }, "a plain click did not tick its line: '\(words(progress))'")
+        XCTAssertTrue(pickedLines(app).isEmpty && !bar.exists, "a plain click selected the line")
+
+        // ⌘A: every line shown; Space ticks them.
+        app.typeKey("a", modifierFlags: .command)
+        XCTAssertTrue(waitUntil { self.words(count) == "7 selected" }, "⌘A did not select every line: '\(words(count))'")
+        app.typeKey(" ", modifierFlags: [])
+        XCTAssertTrue(waitUntil { (progress.value as? String) == "all packed" }, "Space did not tick the selection: '\(words(progress))'")
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(waitUntil { !bar.exists }, "Esc did not clear the selection after ⌘A")
+        XCTAssertNotNil(find(app, "trip-detail"), "the trip closed")
+        #endif
+    }
+
+    /// ⇧-click selects every line from the last one ⌘-clicked to this one, in the order the list shows them —
+    /// across headings (sorted From where: Bathroom cabinet — Toothbrush 2; Chest of drawers — Passport 0, Phone
+    /// charger 1; Garage — Headlamp 3, Map 6; Hall closet — Hiking boots 4, Rain jacket 5). A second ⇧-click
+    /// moves the end of the range (Finder's way). The line's menu on a selected line acts on all of them; the
+    /// bar's Not this time sets them all aside.
+    func testAShiftClickSelectsTheLinesBetweenAcrossHeadings() throws {
+        #if os(iOS)
+        throw XCTSkip("Selecting several lines is the Mac's (his ask)")
+        #else
+        let app = launch()
+        openSampleTrip(app)
+        let progress = app.staticTexts["trip-progress"]
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/7" })
+        choose(app, "trip-view", 2)                               // From where
+        let count = app.staticTexts["trip-select-count"]
+        pickLine(app, 0, .command, near: "trip-view")
+        pickLine(app, 6, .shift, near: "trip-line-3")
+        XCTAssertTrue(waitUntil { self.words(count) == "4 selected" }, "⇧-click from the Passport to the Map: '\(words(count))'")
+        XCTAssertTrue(waitUntil { self.pickedLines(app) == [0, 1, 3, 6] },
+                      "not the lines between, in the list's order: \(pickedLines(app))")
+        // The end of the range moves back: the Map and the Headlamp leave it.
+        pickLine(app, 1, .shift, near: "trip-line-0")
+        XCTAssertTrue(waitUntil { self.words(count) == "2 selected" && self.pickedLines(app) == [0, 1] },
+                      "a second ⇧-click did not move the end of the range: \(pickedLines(app))")
+
+        // The line's menu on a selected line: Tick ticks both.
+        let passport = app.buttons.matching(identifier: "trip-line-0").firstMatch
+        bringIntoView(app, passport)
+        let tick = contextMenu(app, on: passport, item: "trip-line-0-menu-tick")
+        XCTAssertTrue(tick.exists, "the line's menu has no Tick")
+        XCTAssertEqual(tick.title, "Tick 2 things", "the menu does not act on the selection")
+        menuPick(tick)
+        XCTAssertTrue(waitUntil { self.words(progress) == "2/7" }, "the menu's Tick did not tick both: '\(words(progress))'")
+
+        // The bar's Not this time: both set aside, their ticks gone.
+        tap(app, id: "trip-select-aside")
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/5 · 2 set aside" }, "Not this time: '\(words(progress))'")
+        #endif
+    }
+
+    /// Move to bag: the selected lines go into the bag picked — the trip's bags, in the Bags card's order. The
+    /// Packing day's sample: the carry-on holds five lines, the Day pack the Hiking boots and the Rain jacket;
+    /// sorted Into, the Passport and the Phone charger moved make the Day pack's heading four. Picture
+    /// `select-3-bag-menu`.
+    func testMoveToBagMovesEverySelectedLine() throws {
+        #if os(iOS)
+        throw XCTSkip("Selecting several lines is the Mac's (his ask)")
+        #else
+        let app = launch("-uiTestingPackingDay")
+        openSampleTrip(app)
+        let progress = app.staticTexts["trip-progress"]
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/7" })
+        choose(app, "trip-view", 1)                               // Into
+        func dayPack() -> String {
+            for g in 0..<3 where words(app.staticTexts["trip-group-\(g)-label"]) == "Day pack" {
+                return words(app.descendants(matching: .any).matching(identifier: "trip-group-\(g)-progress").firstMatch)
+            }
+            return ""
+        }
+        XCTAssertTrue(waitUntil { dayPack() == "0 of 2 packed" }, "the Day pack's heading: '\(dayPack())'")
+        pickLine(app, 0, .command, near: "trip-view")
+        pickLine(app, 1, .command, near: "trip-line-0")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-select-count"]) == "2 selected" })
+        let menu = app.descendants(matching: .any).matching(identifier: "trip-select-bag").firstMatch
+        XCTAssertTrue(menu.waitForExistence(timeout: 5), "the bar has no Move to bag")
+        menu.click()
+        let pack = app.descendants(matching: .any).matching(identifier: "trip-select-bag-1").firstMatch
+        XCTAssertTrue(pack.waitForExistence(timeout: 5), "Move to bag lists no second bag")
+        XCTAssertEqual(pack.title, "Day pack", "the trip's bags, in the Bags card's order")
+        shot(app, "select-3-bag-menu", whole: true)
+        pack.click()
+        XCTAssertTrue(waitUntil { dayPack() == "0 of 4 packed" }, "the two lines did not go into the Day pack: '\(dayPack())'")
+        XCTAssertEqual(words(progress), "0/7", "moving ticked something")
+        XCTAssertEqual(words(app.staticTexts["trip-select-count"]), "2 selected", "the selection did not follow its lines")
+        #endif
+    }
+
+    #if os(macOS)
+    /// Click line `n` of the open trip with these keys held (none = a plain click).
+    private func pickLine(_ app: XCUIApplication, _ n: Int, _ keys: XCUIElement.KeyModifierFlags, near: String) {
+        XCTAssertTrue(scrollUntil(app, "trip-line-\(n)", near: near), "line \(n) never appeared")
+        let line = app.buttons.matching(identifier: "trip-line-\(n)").firstMatch
+        bringIntoView(app, line)
+        _ = waitUntil { line.exists && line.isHittable }
+        XCUIElement.perform(withKeyModifiers: keys) { line.click() }
+    }
+    #endif
+
+    /// The lines that show as selected (0.105): each selected row carries a marker `trip-picked-<n>`. One query
+    /// for any n.
+    private func pickedLines(_ app: XCUIApplication) -> [Int] {
+        let marker = NSPredicate(format: "identifier BEGINSWITH 'trip-picked-'")
+        var out = Set<Int>()
+        for query in [app.otherElements, app.groups] {
+            for e in query.matching(marker).allElementsBoundByIndex where e.exists {
+                if let n = Int(e.identifier.dropFirst("trip-picked-".count)) { out.insert(n) }
+            }
+        }
+        return out.sorted()
+    }
+
     // MARK: - Kept at home is chosen (0.64)
 
     /// The thing's Kept at home, as he reads it.
