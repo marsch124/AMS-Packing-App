@@ -165,10 +165,13 @@ final class TemplateRemindersTests: XCTestCase {
         XCTAssertEqual(of("Check the course"), ["Running"])
         let course = due.first { $0.name == "Check the course" }!
         XCTAssertEqual(from[course.id].map { $0.map(Library.icon(of:)) }, [Optional("run")], "the icon is not read from the template")
-        // Sorted by Template, the reminders stand under the same templates.
+        // Sorted by Template, the reminders stand under the same templates — one on two, once, under the
+        // first, "also Rowing" (0.106).
         let groups = lib.linesByTemplate(tripId: trip.id, lines: due)
-        XCTAssertEqual(groups.map(\.label), ["Base", "Running", "Rowing"])
-        XCTAssertEqual(groups.last?.entries.map(\.name), ["Charge the watch"])
+        XCTAssertEqual(groups.map(\.label), ["Base", "Running"])
+        XCTAssertEqual(groups.last?.entries.map(\.name), ["Charge the watch", "Check the course"])
+        let watchLine = due.first { $0.name == "Charge the watch" }!
+        XCTAssertEqual(lib.alsoOnTemplates(tripId: trip.id)[watchLine.id]?.map(\.name), ["Rowing"])
         // Taken off a template later, the trip keeps its line — and names only the template that still has it.
         let mem = lib.reminders(templateId: rowing).first { $0.name == "Charge the watch" }!.memId!
         XCTAssertTrue(lib.removeReminder(templateId: rowing, memId: mem))
