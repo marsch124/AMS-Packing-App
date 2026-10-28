@@ -70,6 +70,8 @@ struct ThingsTable: View {
     @State private var wasBefore: [Item] = []
     @State private var madeAs: [Item] = []
     @State private var didSay = ""
+    /// Change all's step in Edit ▸ Undo (0.105): Undo here takes back that step, as ⌘Z does.
+    @State private var changedStep: UndoStep.ID?
     /// How far the grid has travelled sideways, so the name cells can travel back.
     @State private var across: CGFloat = 0
 
@@ -366,7 +368,7 @@ struct ThingsTable: View {
                     .accessibilityIdentifier("table-clear-chosen")
                 }
                 Spacer()
-                if !wasBefore.isEmpty {
+                if !wasBefore.isEmpty, model.stillUndoable(changedStep) {
                     Button { putBack() } label: {
                         Text("Undo")
                             .font(.system(.footnote, weight: .semibold)).foregroundStyle(AppSection.actions.color)
@@ -380,7 +382,7 @@ struct ThingsTable: View {
             }
             // What the change WAS, on a line of its own — "2 changed: Condition → New".
             // It used to say only "2 changed" (the spec pass, 5 Oct 2026).
-            if !wasBefore.isEmpty {
+            if !wasBefore.isEmpty, model.stillUndoable(changedStep) {
                 Text(didSay).font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
                     .lineLimit(2).fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("table-said")
@@ -398,6 +400,7 @@ struct ThingsTable: View {
         model.change { library in
             for id in ids { _ = library.updateThing(id: id) { thing in what(&thing) } }
         }
+        changedStep = model.lastStep
         madeAs = model.library.items.filter { ids.contains($0.id) }
     }
 
@@ -406,7 +409,8 @@ struct ThingsTable: View {
     private func putBack() {
         let old = wasBefore, made = madeAs
         guard !old.isEmpty else { return }
-        model.change { _ = $0.undoChange(before: old, after: made) }
+        // Through Edit ▸ Undo's history (0.105); not in it (a restore forgot it): as before.
+        if !model.undoStep(changedStep) { model.change { _ = $0.undoChange(before: old, after: made) } }
         wasBefore = []
         madeAs = []
         didSay = ""

@@ -121,7 +121,7 @@ struct VaultCard: View {
             pick()
         }
         #else
-        model.change { _ = $0.askForVaultPage(tripId: tripId) }
+        model.change(undoable: false) { _ = $0.askForVaultPage(tripId: tripId) }
         #endif
     }
 

@@ -45,10 +45,17 @@ public enum StoreSession {
     /// nothing was written. A store that refuses throws, and nothing is believed
     /// written: the caller keeps its old library and its old `held`.
     public static func save(_ next: Library, held: [StoredRecord], to store: LibraryStore) throws -> [StoredRecord]? {
+        try saveReturningChanges(next, held: held, to: store)?.records
+    }
+
+    /// `save`, and what it wrote (0.105: the change is this device's undo step — `UndoBook.record` — and
+    /// is not worked out twice).
+    public static func saveReturningChanges(_ next: Library, held: [StoredRecord],
+                                            to store: LibraryStore) throws -> (records: [StoredRecord], changes: RecordChanges)? {
         let records = next.records()
         let changes = recordChanges(from: held, to: records)
         guard !changes.isEmpty else { return nil }
         try store.apply(changes)
-        return records
+        return (records, changes)
     }
 }

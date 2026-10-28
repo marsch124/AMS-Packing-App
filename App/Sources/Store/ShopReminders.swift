@@ -85,7 +85,7 @@ final class ShopReminders {
         let open = model.library.sentBuyLines().filter { !$0.line.done }
         guard !open.isEmpty, mayRead else { return }
         let ticked = await ticked(open.map(\.reminderId))
-        if !ticked.isEmpty { model.change { _ = $0.takeBought(reminderIds: ticked) } }
+        if !ticked.isEmpty { model.change(undoable: false) { _ = $0.takeBought(reminderIds: ticked) } }
     }
 
     /// Which of these reminders have been ticked. (Under the tests "-pretendShopTicks"

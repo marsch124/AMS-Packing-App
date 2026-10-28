@@ -265,7 +265,7 @@ enum PlaceLabels {
         guard !model.library.isEmpty else { return }
         let missing = places.filter { p in model.library.placeCode(for: p).map { model.library.placeCodes()[$0] == nil } ?? false }
         guard !missing.isEmpty else { return }
-        model.change { lib in for p in missing { _ = lib.givePlaceCode(p) } }
+        model.change(undoable: false) { lib in for p in missing { _ = lib.givePlaceCode(p) } }
     }
 
     static func write(_ places: [String], from library: Library) -> [URL] {

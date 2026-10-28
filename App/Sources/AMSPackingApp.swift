@@ -46,6 +46,8 @@ struct AMSPackingApp: App {
             ThingCommands()
             SettingsAndHelpCommands()
             QuitCommand()
+            // Edit ▸ Undo / Redo (0.105, Store/LibraryUndo.swift): the last change to his library, named.
+            UndoCommands()
         }
         .handlesExternalEvents(matching: ["*"])
         #endif

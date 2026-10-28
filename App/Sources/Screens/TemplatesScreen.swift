@@ -558,6 +558,14 @@ struct TemplateDetail: View {
     var body: some View {
         DraftedPage(live: model) { page in
             TemplatePage(listId: listId, onSmallCore: onSmallCore, page: page)
+                // Its Done in Edit ▸ Undo (0.105): "Edit Hiking", under the name it is saved with.
+                .onAppear {
+                    let id = listId
+                    page.stepName = { [weak page] in
+                        let name = page?.copy.library.templates.first { $0.id == id }?.name ?? ""
+                        return name.isEmpty ? "Edit Template" : "Edit \(name)"
+                    }
+                }
                 #if DEBUG
                 // UI tests: the other device renames the template's first section while its page is
                 // open (0.102).

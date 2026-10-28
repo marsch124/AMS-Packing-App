@@ -397,7 +397,7 @@ struct GrabScreen: View {
         // editing, so Escape is the edit's Cancel and the list stays open: the Mac's own Escape would
         // close the whole sheet (seen in the 0.92 probe).
         .asksBeforeDiscarding(editing && (draft != list.lines || draftSometimes != onlySometimes),
-                              holds: GrabScreen.holdsWhileEditing && editing) {
+                              holds: GrabScreen.holdsWhileEditing && editing, isPage: editing) {
             cancelEdits(); dismiss()
         }
         .accessibilityElement(children: .contain)

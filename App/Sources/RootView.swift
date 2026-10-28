@@ -9,6 +9,8 @@ struct RootView: View {
     @State private var section: AppSection = .home
     @EnvironmentObject var model: LibraryModel
     @Environment(\.scenePhase) private var scenePhase
+    /// The window's undo manager (0.105): on the iPhone it holds his steps for shake to undo (`SystemUndo`).
+    @Environment(\.undoManager) private var undoManager
     #if os(macOS)
     /// For a Dock menu choice made while no window is open (0.86, `GrabQuickActions`).
     @Environment(\.openWindow) private var openWindow
@@ -84,6 +86,10 @@ struct RootView: View {
             PackingReminders.shared.start()
             #if os(iOS)
             SaveNote.shared.watchKeyboard()    // a failed save's note sits above the keyboard (0.93)
+            SystemUndo.shared.use(undoManager, model)            // shake to undo (0.105)
+            #if DEBUG
+            UndoTestHook.install()
+            #endif
             #endif
             // A tapped door check (0.69): its trip, on just what is left.
             DoorChecks.shared.open = { id, kind in
@@ -156,6 +162,9 @@ struct RootView: View {
         // A sync that hangs heals itself (0.104, `SyncHealer`): it looks every 30 s and as the app comes to
         // the front, and restarts the connection when an exchange has hung. Once per run.
         .onAppear { SyncHealer.shared.start(model) }
+        #if os(iOS)
+        .onChange(of: undoManager.map(ObjectIdentifier.init)) { _, _ in SystemUndo.shared.use(undoManager, model) }
+        #endif
         // This device checks in by itself while it syncs (0.101, `SyncWatch.checkInIfDue`): as the app
         // opens, every minute while it runs (a quarter of an hour apart at most), and back in front.
         .task {
@@ -220,13 +229,13 @@ struct RootView: View {
             PackingReminders.shared.open?(next.id)
         }
         if args.contains("-dropOwnGrabListsOnReturn") {
-            model.change { $0.meta[GRAB_OWN_META] = nil }
+            model.change(undoable: false) { $0.meta[GRAB_OWN_META] = nil }
         }
         // The other device put a thing in another bag while its page was open here (0.93):
         // `-bagOnReturn <thing> <bag>`.
         if let n = args.firstIndex(of: "-bagOnReturn"), n + 2 < args.count,
            let id = model.library.items.first(where: { $0.name == args[n + 1] })?.id {
-            model.change { _ = $0.updateThing(id: id) { $0.container = args[n + 2] } }
+            model.change(undoable: false) { _ = $0.updateThing(id: id) { $0.container = args[n + 2] } }
         }
         #if os(iOS)
         // An entry under the app icon tapped while the app waited in the background (0.86).

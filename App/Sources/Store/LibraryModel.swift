@@ -72,6 +72,15 @@ final class LibraryModel: ObservableObject {
     /// What this device saved lately of each block iCloud keeps whole (0.102, `RecentSaves`): the other
     /// device's save of the same block arriving later without our change in it is told, once.
     private var recent = RecentSaves()
+    /// Edit ▸ Undo and Redo (0.105, `UndoBook`, Store/LibraryUndo.swift): every change this device made, as
+    /// steps — in memory, 50 of them, forgotten when the library is replaced or its store reopened.
+    @Published private(set) var book = UndoBook()
+    /// The step the latest change made or joined — a banner's Undo keeps it (the trip's 6 seconds, To do,
+    /// To buy, the table's Change all), so the banner and ⌘Z take back the same step, never twice.
+    private(set) var lastStep: UndoStep.ID?
+    /// Changes of one press — one tap, one Done (a thing's page renames, then writes the rest) — are ONE
+    /// step: open until the run loop turns, as Apple's undo groups changes by event.
+    private var pressOpen = false
     let usesICloud: Bool
     /// Where a forecast comes from — the invented one under the tests.
     let sky: Forecaster
@@ -130,7 +139,7 @@ final class LibraryModel: ObservableObject {
             // Things whose condition the table stored as its LABEL (before 0.62) get
             // the condition's id, which everything else reads. Written once; the
             // same answer on every device, so two devices doing it at once agree.
-            change { _ = $0.repairConditionLabels() }
+            change(undoable: false) { _ = $0.repairConditionLabels() }
         } catch {
             if !keepingScreens { state = .failed(error.localizedDescription) }
         }
@@ -139,15 +148,20 @@ final class LibraryModel: ObservableObject {
     /// The only way anything changes. `stamping` false (0.92): a bag put back as it was — a bag
     /// page's Cancel — keeps the Last edited it is given instead of being stamped now. false (0.94):
     /// the store refused it and nothing of it was kept — a page then keeps holding what it wrote.
+    /// `named` (0.105): what Edit ▸ Undo calls the step ("Tick Hiking"); nil = read from what changed
+    /// ("Tick Passport", "Delete Weekend in the hills"). `undoable` false: the app's own bookkeeping — a
+    /// forecast kept, a device's check-in, a repair, a page written for the vault — is no step of his.
     @discardableResult
-    func change(stamping: Bool = true, _ body: (inout Library) -> Void) -> Bool {
+    func change(named name: String? = nil, undoable: Bool = true, stamping: Bool = true,
+                _ body: (inout Library) -> Void) -> Bool {
         let started = EditTiming.now
+        if !isDraft { lastStep = nil }               // a change that stores nothing makes no step (0.105)
         var next = library
         body(&next)
         // A bag changed by any screen says when (0.90: Your bags' Last edited — BagSorting.swift).
         if stamping { next.stampEditedBags(since: library) }
         let changed = EditTiming.now
-        let kept = commit(next)
+        let kept = commit(next, recording: undoable ? .step(name) : .carried)
         if EditTiming.on { EditTiming.change(model: changed - started, store: EditTiming.now - changed) }
         return kept
     }
@@ -159,8 +173,11 @@ final class LibraryModel: ObservableObject {
     /// photos. Kept because a full comparison can never forget a change; a rewrite
     /// would remember what changed instead (the spec pass, 5 Oct 2026; spec 01 item 15).
     /// false: the store refused the change, and nothing of it was kept (0.93).
+    /// `recording` (0.105): a step of his for Edit ▸ Undo (`step`), the app's own bookkeeping carried into
+    /// the steps it touches (`carried` — an undo then does not take it for the other device's), or
+    /// neither (an undo itself, a restore, the first import).
     @discardableResult
-    private func commit(_ next: Library) -> Bool {
+    private func commit(_ next: Library, recording: Recording = .neither) -> Bool {
         // A page's copy keeps its changes in memory (0.92): the page's Save stores them.
         if isDraft {
             if next != library { library = next }
@@ -168,11 +185,17 @@ final class LibraryModel: ObservableObject {
             return true
         }
         do {
-            guard let records = try StoreSession.save(next, held: held, to: store) else { return true }
-            held = records
+            let old = held
+            guard let saved = try StoreSession.saveReturningChanges(next, held: held, to: store) else { return true }
+            held = saved.records
             recent.note(before: library, after: next)
             library = next
             state = next.isEmpty ? .empty : .ready
+            switch recording {
+            case .step(let name): recordStep(name, old: old, changes: saved.changes)
+            case .carried: book.carry(old: old, changes: saved.changes)
+            case .neither: break
+            }
             return true
         } catch {
             couldNotSave()
@@ -211,6 +234,7 @@ final class LibraryModel: ObservableObject {
             throw NotSaved(words: "Nothing was brought in \u{2014} it couldn't be saved. Try again.")
         }
         recent.forget()                                   // a whole library, not an edit to watch
+        forgetSteps()                                     // …nor a step to take back (0.105)
         imported.installLiveChoices()
         return report
     }
@@ -235,11 +259,11 @@ final class LibraryModel: ObservableObject {
             // would answer with its own days — this week — shown as the trip's. The card says
             // when its forecast comes (`WeatherCard.notYet`); one held can only be of other days.
             if ForecastAsk.comesFrom(startDate: trip.startDate, today: Today.local, utcToday: todayYMD()) != nil {
-                if library.trip(tripId)?.weather != nil { change { _ = $0.dropWeather(tripId: tripId) } }
+                if library.trip(tripId)?.weather != nil { change(undoable: false) { _ = $0.dropWeather(tripId: tripId) } }
                 return
             }
             let days = try await sky.forecast(at: spot, from: trip.startDate, nights: trip.nights, today: Today.local)
-            change { _ = $0.setWeather(tripId: tripId, place: name, lat: spot.lat, lon: spot.lon, snapshot: days) }
+            change(undoable: false) { _ = $0.setWeather(tripId: tripId, place: name, lat: spot.lat, lon: spot.lon, snapshot: days) }
         } catch {
             weatherTrouble[tripId] = error.localizedDescription
         }
@@ -255,7 +279,7 @@ final class LibraryModel: ObservableObject {
     }
 
     private func keepPlace(tripId: String, name: String, spot: Place) {
-        change { lib in
+        change(undoable: false) { lib in
             if let n = lib.trips.firstIndex(where: { $0.id == tripId }) { lib.trips[n].destination = name }
             _ = lib.setPlace(tripId: tripId, lat: spot.lat, lon: spot.lon, label: spot.name)
         }
@@ -271,7 +295,7 @@ final class LibraryModel: ObservableObject {
         for trip in library.placesToFind() {
             do {
                 let spot = try await sky.place(named: jsTrim(trip.destination))
-                change { _ = $0.setPlace(tripId: trip.id, lat: spot.lat, lon: spot.lon, label: spot.name) }
+                change(undoable: false) { _ = $0.setPlace(tripId: trip.id, lat: spot.lat, lon: spot.lon, label: spot.name) }
             } catch {
                 missed.append(trip.destination)
             }
@@ -334,7 +358,7 @@ final class LibraryModel: ObservableObject {
     /// (the tests' memory) is only read again.
     func restartSync() -> RestartOutcome {
         guard !isDraft else { return .refused }
-        guard let cloud = store as? CloudStore else { reload(); return .done }
+        guard let cloud = store as? CloudStore else { reload(); forgetSteps(); return .done }
         do {
             guard try cloud.reconnect() != nil else { return .refused }
         } catch is CloudStore.CannotRestart {
@@ -344,6 +368,7 @@ final class LibraryModel: ObservableObject {
             return .failed
         }
         reload()
+        forgetSteps()                                     // the store reopened: no step of before (0.105)
         return .done
     }
 
@@ -357,7 +382,88 @@ final class LibraryModel: ObservableObject {
             throw NotSaved(words: "Nothing was replaced \u{2014} it couldn't be saved. Try again.")
         }
         recent.forget()                                   // a whole library, not an edit to watch
+        forgetSteps()                                     // …nor a step to take back (0.105)
         reload()
+    }
+
+    // MARK: - Edit ▸ Undo and Redo (0.105, his "⌘Z - yes please", 28 Oct 2026)
+
+    enum Recording { case step(String?), carried, neither }
+
+    private func recordStep(_ name: String?, old: [StoredRecord], changes: RecordChanges) {
+        let joining = pressOpen
+        guard let made = book.record(name: name, old: old, changes: changes, library: library, joining: joining) else {
+            if joining { lastStep = nil; UndoEvents.changed(.reset, self) }   // one press that put back what it did
+            return
+        }
+        lastStep = made.step.id
+        if !pressOpen {
+            pressOpen = true
+            DispatchQueue.main.async { [weak self] in self?.pressOpen = false }
+        }
+        UndoEvents.changed(made.trimmed ? .reset : joining ? .joined(made.step) : .recorded(made.step), self)
+        #if DEBUG
+        OtherDeviceForTests.afterStep(made.step, self)
+        #endif
+    }
+
+    /// Edit ▸ Undo (⌘Z), the iPhone's shake: the last step taken back — only what is still as it left
+    /// it (`Library.reverting`); what the other device changed since is kept and named in a note.
+    /// false: nothing to undo, or the store refused it (the step stays).
+    @discardableResult
+    func undo() -> Bool { takeBack(redo: false) }
+
+    /// Edit ▸ Redo (⇧⌘Z): the last undo put back, by the same rule.
+    @discardableResult
+    func redo() -> Bool { takeBack(redo: true) }
+
+    private func takeBack(redo: Bool) -> Bool {
+        guard !isDraft, let r = redo ? book.redoing(library) : book.undoing(library) else { return false }
+        let before = library
+        if !r.nothing { guard commit(r.library) else { return false } }
+        if redo { book.redone(r) } else { book.undone(r) }
+        lastStep = nil
+        tookBack(r, before: before, redo: redo)
+        UndoEvents.changed(redo ? .redone(r.inverse) : .undone(r.inverse), self)
+        return true
+    }
+
+    /// Is the banner's step still there to be undone? (Gone: ⌘Z took it back already, or the history was
+    /// forgotten.) nil — a banner whose change made no step — counts as there.
+    func stillUndoable(_ id: UndoStep.ID?) -> Bool { id.map(book.holds) ?? true }
+
+    /// A banner's Undo (0.105): its step taken back through the history — the same move as ⌘Z, so the
+    /// two never undo it twice. The last step: exactly ⌘Z (Redo can put it back). An older one: that step
+    /// alone, by the same rule. false: the step is not in the history (forgotten by a restore) — the
+    /// banner then does its own undo, as before 0.105.
+    @discardableResult
+    func undoStep(_ id: UndoStep.ID?) -> Bool {
+        guard let id, book.holds(id) else { return false }
+        if book.undos.last?.id == id { _ = takeBack(redo: false); return true }
+        guard let r = book.undoingOne(id, in: library) else { return false }
+        let before = library
+        if !r.nothing { guard commit(r.library) else { return true } }
+        book.undoneOne(id)
+        tookBack(r, before: before, redo: false)
+        UndoEvents.changed(.reset, self)
+        return true
+    }
+
+    /// After an undo or a redo: the "When" steps and conditions in force follow the library, the shop's
+    /// reminders follow the buy list, and what was kept is said.
+    private func tookBack(_ r: Reverted, before: Library, redo: Bool) {
+        if library.phases != before.phases || library.shared != before.shared { library.installLiveChoices() }
+        ShopReminders.follow(from: before, to: library)
+        if let words = UndoBook.note(r, redo: redo, otherDevice: library.otherDevice(thisOne: SyncCard.device)) {
+            SaveNote.shared.show(words, id: "undo-note", seconds: 8)
+        }
+    }
+
+    /// The library replaced or its store reopened: nothing of before can be undone or redone.
+    func forgetSteps() {
+        book.forget()
+        lastStep = nil
+        UndoEvents.changed(.reset, self)
     }
 }
 

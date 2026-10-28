@@ -195,7 +195,7 @@ final class VaultShelf: ObservableObject {
         }
         trouble = nil
         let plan = written
-        model.change { _ = $0.vaultPageWritten(tripId: tripId, file: plan.fileName, at: nowISO(), beside: plan.beside) }
+        model.change(undoable: false) { _ = $0.vaultPageWritten(tripId: tripId, file: plan.fileName, at: nowISO(), beside: plan.beside) }
         return .written(plan.fileName)
     }
 

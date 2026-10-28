@@ -180,7 +180,7 @@ struct SyncCard: View {
 
     /// Check in: a small note that travels like everything else. Then look again.
     private func syncNow() {
-        model.change { $0.checkIn(device: SyncCard.device) }
+        model.change(undoable: false) { $0.checkIn(device: SyncCard.device) }
         said = "Checked in. On the \(SyncCard.other), Settings shows it within a minute or so if the road is open."
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
             model.reload()
@@ -323,7 +323,7 @@ enum SyncWatch {
     static func checkInIfDue(_ model: LibraryModel) {
         guard on(model), !model.isDraft, model.state == .ready,
               model.library.checkInDue(device: SyncCard.device, now: Date()) else { return }
-        model.change { _ = $0.checkInIfDue(device: SyncCard.device, now: Date()) }
+        model.change(undoable: false) { _ = $0.checkInIfDue(device: SyncCard.device, now: Date()) }
     }
 
     /// UI tests only (`-syncLight insync|sending|receiving|hung|failed|waited|unknown|off`, with a

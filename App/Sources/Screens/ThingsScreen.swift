@@ -1344,7 +1344,8 @@ struct ThingEditor: View {
         // is put on its templates below. One ticked off again is not made.
         let madeHere = newTemplates.filter { lists.contains($0.id) }
         var written = d
-        model.change { lib in
+        // One step in Edit ▸ Undo with the rename above (0.105, one press): "Edit Map"; a thing made here, "Add Map".
+        model.change(named: it == nil ? nil : "Edit \(jsTrim(d.name))") { lib in
             for t in madeHere { lib.saveTemplate(t) }
             // A template's sections changed in its Section list here (0.68), first: the
             // thing's own choice below is made among them as they now are.

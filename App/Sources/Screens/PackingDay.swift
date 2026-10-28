@@ -309,7 +309,7 @@ struct PackingDaySheet: View {
             appeared()
             if byItself {
                 let id = tripId
-                model.change { _ = $0.setWeighOffered(tripId: id) }
+                model.change(undoable: false) { _ = $0.setWeighOffered(tripId: id) }
             }
         }
         .onChange(of: shown) { _, _ in openFirstUnweighed(model.library.packingDay(tripId: tripId)) }

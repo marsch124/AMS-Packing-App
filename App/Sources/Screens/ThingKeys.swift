@@ -219,6 +219,7 @@ final class ThingKeys: ObservableObject {
     static func nameMenuItems() {
         guard let bar = NSApp?.mainMenu else { return }
         ThingKeys.nameGoMenuItems(bar)
+        UndoMenu.nameItems(bar)
         let names: [String: String] = [
             "s": "thing-menu-save", "n": "thing-menu-new", "j": "thing-menu-jump",
             String(UnicodeScalar(UInt16(NSDownArrowFunctionKey))!): "thing-menu-next",
