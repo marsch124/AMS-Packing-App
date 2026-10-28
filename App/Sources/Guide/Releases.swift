@@ -18,6 +18,13 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.104", date: "28 Oct 2026", title: "A line\u{2019}s menu, Before a trip, and sync that mends itself",
+                new: ["Right-click a trip\u{2019}s line on the Mac, or hold it on the iPhone: Show note (with the Swedish name and every note about the thing), Open thing, Tick, Not this time. On the Mac, resting the pointer on a line shows its notes.",
+                      "A thing\u{2019}s page has one frame, Before a trip, right under Notes: Battery, Also pack, Remember, On a plane and Valid until \u{2014} it folds to one line that says what is set.",
+                      "When iCloud sending or receiving hangs, the app restarts its connection by itself; if it cannot, Settings shows Restart sync."],
+                changed: ["\u{201C}Goes with\u{201D} is now \u{201C}Also pack\u{201D}.",
+                          "A tad tighter: the steps row, Before you go, the weather and Bags cards, Notes and the photo buttons take less room.",
+                          "The kit part asks \u{201C}Is this item a pouch or a kit?\u{201D}"]),
         Release(version: "0.103", date: "27 Oct 2026", title: "Keys, and Whose it is",
                 new: ["Group by has a new choice, Whose it is: the trip\u{2019}s lines under Shared first, then each person, and \u{201C}Both have one\u{201D} last \u{2014} tick Shared to pack everything you share on your own.",
                       "Keyboard shortcuts on the Mac: \u{2318}1 to \u{2318}6 change tab (Home, Trips, Templates, Care, To do, Settings) from a new Go menu; \u{2318}, opens Settings.",
