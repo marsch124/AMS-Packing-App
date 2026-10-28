@@ -71,6 +71,9 @@ final class CloudStore: LibraryStore {
     private(set) var saving = false
     /// The store is not open — only for the moment of a restart, or after one that could not open it again.
     struct NotOpen: Error {}
+    /// This store cannot be restarted in place (its coordinator was not caught, or it refused to let the
+    /// store go). Nothing has changed: the store works on as before; quitting and opening is what helps.
+    struct CannotRestart: Error {}
     /// One queue, one look at a time: the launch's look first, then one per notification, in order.
     private let looking: OperationQueue = {
         let q = OperationQueue()
@@ -134,7 +137,8 @@ final class CloudStore: LibraryStore {
     ///     finishes, none waiting starts;
     ///  2. nothing pending in the context (every save ends saved or rolled back, so this is a check);
     ///  3. the store taken off its coordinator. If that is refused, NOTHING has changed — the store works
-    ///     on as before, and nil is returned (nil too during a save, or for a store not opened that way);
+    ///     on as before, and `CannotRestart` is thrown (also for a store whose coordinator was not caught);
+    ///     nil during a save (asked again later);
     ///  4. the old container, its contexts and the history's reader let go — the old one gone before
     ///     the new one opens (never two at once: `StoreConnection` refuses a second opening);
     ///  5. opened again, as at launch. A store that will not open again throws: quitting and opening helps.
@@ -142,7 +146,8 @@ final class CloudStore: LibraryStore {
     /// again afterwards (`LibraryModel.restartSync`).
     func reconnect() throws -> StoreConnection.Closed? {
         dispatchPrecondition(condition: .onQueue(.main))
-        guard !saving, live != nil, connection.canClose else { return nil }
+        guard !saving else { return nil }
+        guard live != nil, connection.canClose else { throw CannotRestart() }
         // No look at the history may run once the store is off its coordinator (reading through a context
         // whose store is gone throws an exception no Swift code catches): no new one is asked for, and the
         // ones asked for are let finish — before anything else.
@@ -156,7 +161,7 @@ final class CloudStore: LibraryStore {
         } catch {
             // Refused: nothing has changed — the store works on as before, and is listened to again.
             if let history = live?.history { listen(history) }
-            return nil
+            throw CannotRestart()
         }
         let released: Bool = autoreleasepool {
             live = nil

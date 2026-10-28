@@ -318,9 +318,10 @@ final class LibraryModel: ObservableObject {
     enum RestartOutcome: Equatable {
         /// Restarted, and the store read again.
         case done
-        /// Not now — a save under way, or a store that cannot be closed in place. Nothing has changed.
+        /// Not now — a save under way. Nothing has changed; asked again later.
         case refused
-        /// Closed, and it would not open again: only quitting and opening Packing helps.
+        /// Not done: the store cannot be restarted in place (nothing changed, it works on), or it was closed
+        /// and would not open again. Either way only quitting and opening Packing helps.
         case failed
     }
 
@@ -333,6 +334,8 @@ final class LibraryModel: ObservableObject {
         guard let cloud = store as? CloudStore else { reload(); return .done }
         do {
             guard try cloud.reconnect() != nil else { return .refused }
+        } catch is CloudStore.CannotRestart {
+            return .failed                                // nothing changed: the store works on as it was
         } catch {
             state = .failed("Restarting the iCloud connection did not work \u{2014} quit Packing and open it again.")
             return .failed
