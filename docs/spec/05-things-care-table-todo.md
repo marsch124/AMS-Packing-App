@@ -1059,7 +1059,7 @@ apart; a field 6 pt under its heading):
      `Metrics.cardInset` below (folded `cardGap`) — the cards' shared tokens (spec 06 §21), so a change of the cards'
      room reaches it too.
    - **Its title line** (at least `Metrics.cardLine` tall): "Before a trip" (Headline, orange; `thing-before-title`, a
-     header), folded the summary after it, and at the right the chevron (`thing-before-fold`, a button, its square
+     header) — AFTER the chevron, which stands at the LEFT (`thing-before-fold`; his words of 28 Oct 2026, "left side", as a trip's headings and Bags card fold; at the right in the helper's first build; folded, the summary follows the title), a button, its square
      `cardLine`; ⌄ open, › folded; label "Fold Before a trip" / "Show Before a trip", value "open" / "folded"). A tap on
      the chevron OR anywhere on the line folds or opens the frame (0.2 s). The line is not a button round its words: on
      the Mac a button folds its words into its own, and the summary is read on its own.

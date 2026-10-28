@@ -377,11 +377,22 @@ struct BeforeATripFrame<Content: View>: View {
         .accessibilityIdentifier("thing-before-frame")
     }
 
-    /// "Before a trip", folded the summary after it, and the chevron at the right (as Before you go's
-    /// on a trip). A tap anywhere on the line folds or opens it. Not a button round its words: on the
-    /// Mac a button folds its words into its own, and the summary is read on its own.
+    /// The chevron at the LEFT (his words, 28 Oct 2026: "left side" — as a trip's headings and its
+    /// Bags card fold), then "Before a trip", folded the summary after it. A tap anywhere on the line
+    /// folds or opens it. Not a button round its words: on the Mac a button folds its words into its
+    /// own, and the summary is read on its own.
     private var title: some View {
         HStack(spacing: Metrics.cardGap * 2) {
+            Button { fold() } label: {
+                SVGPath.path(folded ? "M9 6l6 6-6 6" : "M6 9l6 6 6-6")
+                    .stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
+                    .frame(width: 22, height: 22).foregroundStyle(Theme.muted)
+                    .frame(height: Metrics.cardLine).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).focusEffectDisabled()
+            .accessibilityLabel(folded ? "Show Before a trip" : "Fold Before a trip")
+            .accessibilityValue(folded ? "folded" : "open")
+            .accessibilityIdentifier("thing-before-fold")
             Text("Before a trip").font(.headline).foregroundStyle(tint)
                 .lineLimit(1).fixedSize()
                 .accessibilityAddTraits(.isHeader)
@@ -392,16 +403,6 @@ struct BeforeATripFrame<Content: View>: View {
                     .accessibilityIdentifier("thing-before-summary")
             }
             Spacer(minLength: 0)
-            Button { fold() } label: {
-                SVGPath.path(folded ? "M9 6l6 6-6 6" : "M6 9l6 6 6-6")
-                    .stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
-                    .frame(width: 22, height: 22).foregroundStyle(Theme.muted)
-                    .frame(width: Metrics.cardLine, height: Metrics.cardLine).contentShape(Rectangle())
-            }
-            .buttonStyle(.plain).focusEffectDisabled()
-            .accessibilityLabel(folded ? "Show Before a trip" : "Fold Before a trip")
-            .accessibilityValue(folded ? "folded" : "open")
-            .accessibilityIdentifier("thing-before-fold")
         }
         .frame(minHeight: Metrics.cardLine)
         .contentShape(Rectangle())

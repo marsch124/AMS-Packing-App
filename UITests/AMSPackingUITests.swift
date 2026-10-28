@@ -16310,6 +16310,8 @@ final class AMSPackingUITests: XCTestCase {
         // Folded: one line, saying what is set.
         let fold = app.buttons["thing-before-fold"]
         XCTAssertEqual(fold.value as? String, "open")
+        // His words of 28 Oct 2026, "left side": the chevron before the title, as a trip's headings fold.
+        XCTAssertLessThan(fold.frame.maxX, app.staticTexts["thing-before-title"].frame.minX + 1, "the chevron is not at the left of Before a trip")
         tap(app, id: "thing-before-fold")
         let summary = app.staticTexts["thing-before-summary"]
         XCTAssertTrue(waitUntil { self.words(summary).contains("2 reminders") }, "folded, the line does not count the reminders: '\(words(summary))'")
