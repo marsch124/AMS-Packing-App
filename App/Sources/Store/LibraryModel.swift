@@ -469,7 +469,7 @@ extension LibraryModel {
     ///                           his own (a grab list's headings, 0.85)
     ///  -uiTestingBigLibrary   → a store FILE holding an invented library of his size (`SampleLibrary.big`,
     ///                           for measuring with -timeEdits, 0.91)
-    ///  -uiTestingManyTemplates → memory, the sample + 44 templates in seven areas, names of one and two
+    ///  -uiTestingManyTemplates → memory, the sample + 63 templates in nine areas, names of one and two
     ///                           lines, 18 past trips from them (`SampleLibrary.manyTemplates`: the Templates
     ///                           tab at his size, 0.104.1)
     ///  -uiTestingLostSection  → memory, the sample after two saves of Hiking crossed: its section Lights

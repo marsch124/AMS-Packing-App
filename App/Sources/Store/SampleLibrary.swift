@@ -839,8 +839,9 @@ enum SampleLibrary {
     }
 
     /// A Templates tab of his size and shape (`-uiTestingManyTemplates`, 0.104.1 — the tab's endless
-    /// redraw on his Mac, 28 Oct 2026): the sample + 44 more templates — four always packed, three by
-    /// transport, the rest in the three built-in areas, three areas of his own and Other Templates —
+    /// redraw on his Mac, 28 Oct 2026): the sample + 63 more templates — four always packed, three by
+    /// transport, 56 in the three built-in areas, three areas of his own and Other Templates (one card to
+    /// eight rows of them) —
     /// names of one line and of two, 4 to 30 things each (a thing on several templates, as his are),
     /// and 18 trips built from them over the past year (each card's "Last taken" line). Nothing of his.
     static func manyTemplates() -> Library {
@@ -848,7 +849,9 @@ enum SampleLibrary {
         lib.setActivityAreas(Library.factoryAreas + [ActivityArea(id: "area-sea", name: "Sea and sailing"),
                                                      ActivityArea(id: "area-city", name: "City breaks"),
                                                      ActivityArea(id: "area-work", name: "Work travel")])
-        let areas = ["GA", "WET", "OE", "area-sea", "area-city", "area-work", "", "GA", "WET", "area-sea"]
+        // Areas of very different sizes, as his are: one card to eight rows of them.
+        let areas = [("GA", 15), ("WET", 9), ("OE", 2), ("area-sea", 7), ("area-city", 1), ("area-work", 12), ("", 10)]
+            .flatMap { Array(repeating: $0.0, count: $0.1) }
         let short = ["Golf", "Diving", "Yoga", "Ski", "Cinema", "Sauna", "Kayak", "Office", "Museum", "Climb"]
         let long = ["Long weekend in a mountain hut with the family", "Winter bath and a coffee by the lake",
                     "Overnight bike-packing along the coast road", "Conference week with a client dinner",
@@ -856,9 +859,9 @@ enum SampleLibrary {
         var pool: [String] = []
         for n in 1...300 { pool.append(String(format: "Invented thing %03d", n)) }
         var made: [String] = []
-        for k in 0..<37 {
+        for k in areas.indices {
             let name = k % 3 == 1 ? "\(long[k % long.count]) \(k)" : "\(short[k % short.count]) \(k)"
-            var l = Library.filed(newList(name: name), in: areas[k % areas.count])
+            var l = Library.filed(newList(name: name), in: areas[k])
             l.items = (0..<(4 + (k * 7) % 27)).map { i in newItem(name: pool[(k * 11 + i) % pool.count]) }
             lib.saveTemplate(l)
             made.append(l.id)

@@ -186,11 +186,11 @@ final class AMSPackingUITests: XCTestCase {
     /// The Templates tab at his size lives on when a page closes over it (0.104.1). His Mac froze on
     /// 28 Oct 2026, two minutes after a launch: the main thread at 100 %, the tab's lazy list laid out
     /// again and again while a sheet was closing (spec 04, Traps: the endless redraw on the Mac). Here:
-    /// his size of tab (`-uiTestingManyTemplates`, 44 templates in seven areas), at the top, half way
-    /// down and near the end — a template opened and closed every way there is (Done untouched, Done
-    /// after a thing was added, Cancel; on the Mac Escape and ⌘S too), Refine opened and closed, the
-    /// tab scrolled to its end and back. A frozen app answers no question: the test fails on its
-    /// first look after the close, or runs out of its time.
+    /// his size of tab (`-uiTestingManyTemplates`, 66 templates under nine headings), at the top, half
+    /// way down and further — a template opened and closed every way there is (Done untouched, Done
+    /// after a thing was added, Cancel; on the Mac Escape and ⌘S too); the tab to its end and back up a
+    /// step at a time, three times; Refine opened and closed. A frozen app answers no question: the
+    /// test fails on its first look after the close, or runs out of its time.
     func testTheTemplatesTabLivesOnWhenAPageClosesOverIt() {
         executionTimeAllowance = 600
         let app = launch("-uiTestingManyTemplates")
@@ -214,7 +214,7 @@ final class AMSPackingUITests: XCTestCase {
         // look starts where the last one found a card).
         var from = 0
         func shownCard() -> XCUIElement? {
-            for n in from..<60 {
+            for n in from..<80 {
                 let card = app.buttons["template-row-\(n)"]
                 if card.exists, card.isHittable, onScreen(app, card) { from = n; return card }
             }
@@ -256,12 +256,21 @@ final class AMSPackingUITests: XCTestCase {
             XCTAssertTrue(disappears(app, "template-detail", timeout: 15), "the template did not close (\(way.rawValue), step \(step))")
             alive("after \(way.rawValue) at step \(step)")
         }
-        // To the end of the tab and back to its top, then Refine — a page of its own, opened from the tab.
-        scroll(down: true, times: 12)
-        alive("at the end of the tab")
-        scroll(down: false, times: 16)
-        from = 0
+        // Up and down the tab as a hand goes: to its end in big steps, then back up a step at a time — on
+        // the way back up the iPhone froze on 0.104 (this test, 28 Oct 2026: 100 % in the lazy list's layout).
+        // Three times; the tab must answer all the way.
+        for round in 1...3 {
+            scroll(down: true, times: 10)
+            alive("at the end of the tab, round \(round)")
+            for step in 1...12 {
+                scroll(down: false)
+                XCTAssertTrue(appears(app, "screen-templates", timeout: 15),
+                              "the Templates tab stopped answering on the way up, round \(round), step \(step)")
+            }
+            from = 0
+        }
         alive("back at the top")
+        // Then Refine — a page of its own, opened from the tab.
         let refine = app.buttons["refine-open"]
         XCTAssertTrue(refine.waitForExistence(timeout: 5), "no way into Refine")
         bringIntoView(app, refine)
