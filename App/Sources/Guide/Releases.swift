@@ -18,6 +18,8 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.104.1", date: "28 Oct 2026", title: "The Templates tab no longer freezes",
+                fixed: ["On the Mac, the app no longer freezes on the Templates tab when a template\u{2019}s page closes over it \u{2014} the tab now lays its cards out in plain rows, looking the same as before."]),
         Release(version: "0.104", date: "28 Oct 2026", title: "A line\u{2019}s menu, Before a trip, and sync that mends itself",
                 new: ["Right-click a trip\u{2019}s line on the Mac, or hold it on the iPhone: Show note (with the Swedish name and every note about the thing), Open thing, Tick, Not this time. On the Mac, resting the pointer on a line shows its notes.",
                       "A thing\u{2019}s page has one frame, Before a trip, right under Notes: Battery, Also pack, Remember, On a plane and Valid until \u{2014} it folds to one line that says what is set.",
