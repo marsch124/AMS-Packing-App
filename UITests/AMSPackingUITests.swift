@@ -105,10 +105,11 @@ final class AMSPackingUITests: XCTestCase {
     /// No test switches to night mode: put the simulator in dark mode first
     /// (`xcrun simctl ui <device> appearance dark`) and run the same tests again — how a
     /// build is LOOKED at, day and night, before anyone is told it is done.
-    private func shot(_ app: XCUIApplication, _ name: String) {
+    /// `whole`: on the Mac the whole screen, not the app's window — a menu or a bubble is a window of its own.
+    private func shot(_ app: XCUIApplication, _ name: String, whole: Bool = false) {
         guard let dir = ProcessInfo.processInfo.environment["SHOTS_DIR"], !dir.isEmpty else { return }
         #if os(macOS)
-        let image = app.windows.firstMatch.screenshot()
+        let image = whole ? XCUIScreen.main.screenshot() : app.windows.firstMatch.screenshot()
         #else
         let image = XCUIScreen.main.screenshot()
         #endif
@@ -12406,6 +12407,114 @@ final class AMSPackingUITests: XCTestCase {
                       "Search did not find it by its note: '\(words(app.buttons["search-things-0"]))'")
         XCTAssertEqual(words(app.staticTexts["search-things-0-note"]), "Note: Keep it in the blue pouch with the tickets")
         shot(app, "notes-search")
+    }
+
+    // MARK: - A line's menu (0.104)
+
+    /// His ask (28 Oct 2026): "I sometimes don't understand what the English word means, so I would need
+    /// to have a way to see the notes for an item. I can't click the item … because that would check the
+    /// radio button". A line's menu — right-click on the Mac, a press held on the iPhone: Show note shows
+    /// what is written about its thing (the Passport's own note; the Map's, kept by the Hiking template),
+    /// "No note" is switched off on a line with nothing written, Open thing opens the thing's page over the
+    /// trip and Cancel comes back to it. The menu ticks nothing; a plain tap still ticks and opens no menu.
+    func testALinesMenuShowsItsNoteAndOpensItsThing() {
+        let app = launch("-uiTestingNotes")
+        openSampleTrip(app)
+        let progress = app.staticTexts["trip-progress"]
+        XCTAssertTrue(waitUntil { self.words(progress).contains("/") }, "the trip shows no count")
+        let count = words(progress)
+        XCTAssertTrue(scrollUntil(app, "trip-line-0", near: "trip-view"), "the Passport's line never appeared")
+        let passport = app.buttons.matching(identifier: "trip-line-0").firstMatch
+        XCTAssertTrue(words(passport).contains("Passport"), "line 0 is not the Passport: '\(words(passport))'")
+        let ticked = isOn(passport)
+        #if os(macOS)
+        // The pointer resting on the line: its note as the tooltip (seen in the picture).
+        passport.hover()
+        sleep(3)
+        shot(app, "trip-menu-0-tooltip", whole: true)
+        #endif
+
+        // Show note: the thing's own note, under "Note".
+        let show = contextMenu(app, on: passport, item: "trip-line-0-menu-note")
+        XCTAssertTrue(show.exists, "the line's menu offers no Show note")
+        XCTAssertTrue(show.isEnabled, "Show note is switched off on a thing with a note")
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "trip-line-0-menu-open").firstMatch.exists,
+                      "the line's menu offers no Open thing")
+        shot(app, "trip-menu-1-open", whole: true)
+        menuPick(show)
+        XCTAssertTrue(appears(app, "trip-note", timeout: 5), "Show note showed nothing")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-note-0"]) == "Renew before May\nKeep it in the blue pouch with the tickets" },
+                      "not the Passport's note: '\(words(app.staticTexts["trip-note-0"]))'")
+        XCTAssertEqual(words(app.staticTexts["trip-note-0-label"]), "Note")
+        XCTAssertEqual(words(app.staticTexts["trip-note-name"]), "Passport")
+        shot(app, "trip-menu-2-note", whole: true)
+        tap(app, id: "trip-note-done")
+        XCTAssertTrue(disappears(app, "trip-note", timeout: 5), "Done did not close the note")
+        XCTAssertEqual(isOn(passport), ticked, "the menu ticked or unticked the line")
+        XCTAssertEqual(words(progress), count, "the menu changed the count")
+
+        // The Map: the note its Hiking template keeps, under that template's name.
+        XCTAssertTrue(scrollUntil(app, "trip-line-6", near: "trip-line-5"), "the Map's line never appeared")
+        let map = app.buttons.matching(identifier: "trip-line-6").firstMatch
+        bringIntoView(app, map)
+        menuPick(contextMenu(app, on: map, item: "trip-line-6-menu-note"))
+        XCTAssertTrue(appears(app, "trip-note", timeout: 5), "Show note showed nothing for the Map")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-note-0-label"]) == "Note on the Hiking template" },
+                      "'\(words(app.staticTexts["trip-note-0-label"]))'")
+        XCTAssertEqual(words(app.staticTexts["trip-note-0"]), "The waterproof one, folded in the lid")
+        tap(app, id: "trip-note-done")
+        XCTAssertTrue(disappears(app, "trip-note", timeout: 5))
+
+        // Nothing written about the Headlamp: "No note", switched off.
+        XCTAssertTrue(scrollUntil(app, "trip-line-3", near: "trip-line-2"), "the Headlamp's line never appeared")
+        let headlamp = app.buttons.matching(identifier: "trip-line-3").firstMatch
+        bringIntoView(app, headlamp)
+        let none = contextMenu(app, on: headlamp, item: "trip-line-3-menu-note")
+        XCTAssertTrue(none.exists, "the menu of a line with nothing written has no note entry")
+        XCTAssertFalse(none.isEnabled, "No note is not switched off")
+        XCTAssertEqual(words(none), "No note")
+        closeMenu(app, from: headlamp)
+        XCTAssertTrue(waitUntil { !none.exists }, "the menu did not close")
+
+        // Open thing: the Passport's page over the trip; Cancel, and the trip is where it was.
+        bringIntoView(app, passport)
+        menuPick(contextMenu(app, on: passport, item: "trip-line-0-menu-open"))
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5), "Open thing opened no page")
+        XCTAssertTrue(waitUntil { self.value(app.textFields["thing-name"]) == "Passport" },
+                      "not the Passport's page: '\(value(app.textFields["thing-name"]))'")
+        shot(app, "trip-menu-3-thing", whole: true)
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5), "Cancel did not close the thing's page")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5), "the trip is gone")
+        XCTAssertTrue(waitUntil { passport.exists && passport.isHittable }, "the trip did not come back where it was")
+        XCTAssertEqual(words(progress), count)
+
+        // A plain tap still ticks — and opens no menu.
+        tapVisible(app, passport)
+        XCTAssertTrue(waitUntil { self.isOn(passport) != ticked }, "a tap no longer ticks the line")
+        XCTAssertFalse(app.descendants(matching: .any).matching(identifier: "trip-line-0-menu-note").firstMatch.exists,
+                       "a tap opened the line's menu")
+    }
+
+    /// An entry of an open context menu, chosen: clicked on the Mac, tapped on the iPhone.
+    private func menuPick(_ entry: XCUIElement) {
+        #if os(macOS)
+        entry.click()
+        #else
+        entry.tap()
+        #endif
+    }
+
+    /// An open context menu closed without choosing: Esc on the Mac; on the iPhone a tap on the dimmed
+    /// screen far from the line it was opened on (the menu stands beside the line; the clock's strip at
+    /// the very top takes no tap).
+    private func closeMenu(_ app: XCUIApplication, from line: XCUIElement) {
+        #if os(macOS)
+        app.typeKey(.escape, modifierFlags: [])
+        #else
+        let high = app.frame.height > 0 && line.frame.midY / app.frame.height < 0.5
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: high ? 0.94 : 0.14)).tap()
+        #endif
     }
 
     // MARK: - Kept at home is chosen (0.64)

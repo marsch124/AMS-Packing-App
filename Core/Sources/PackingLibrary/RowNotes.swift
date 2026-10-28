@@ -19,11 +19,17 @@ extension Library {
     /// things and is left out; one note said twice on one template is listed once.
     public func rowNotes(itemId: String) -> [RowNote] {
         guard let thing = items.first(where: { $0.id == itemId }) else { return [] }
+        return Library.rowNotes(of: thing, rows: memberships.filter { $0.itemId == itemId }, templates: templatesForThings())
+    }
+
+    /// The same, from the thing's own rows and the templates already read — a trip's lines ask it
+    /// for every thing on the list at once (`lineNotes(tripId:)`, 0.104).
+    static func rowNotes(of thing: Item, rows mine: [Membership], templates: [PackList]) -> [RowNote] {
         let own = jsTrim(thing.note)
         var notes: [RowNote] = []
-        for template in templatesForThings() {
-            let rows = memberships
-                .filter { $0.templateId == template.id && $0.itemId == itemId }
+        for template in templates {
+            let rows = mine
+                .filter { $0.templateId == template.id && $0.itemId == thing.id }
                 .sorted { $0.order < $1.order }
             for row in rows {
                 let note = jsTrim(row.note)

@@ -1063,7 +1063,11 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
    the trip at To charge); the pen opens Trip settings (every field it holds, Plane or RV and Pack weather gear anyway included, nothing folded, new dates leaving the season as it is — 0.76;
    Save rebuilds, own ticks/additions/what was sent stay; a swipe down closes it only when nothing is changed — 0.62); Start a new trip from this one, and last Clear every tick (asks first; 0.79 — Tick everything gone); the round button's Undo for 6 seconds above the add bar (0.79); Save as
    Excel and Share side by side; folding sections (remembered per trip; 0.101: the two-arrow button beside Group by
-   folds every section at once and, all folded, opens them all; on the Mac Option-click on a section's arrow too); ⊘ not this time (any tick goes — 0.62), ↻ back unticked; (0.101, spec 07 part 21) two lines after the reminder's: a thing's
+   folds every section at once and, all folded, opens them all; on the Mac Option-click on a section's arrow too); ⊘ not this time (any tick goes — 0.62), ↻ back unticked; (0.104, spec 03 "A line's menu") a line's menu — right-click
+on the Mac, held on the iPhone, a tap still ticks: Show note (the Swedish name, the thing's note, its templates'
+notes, the line's note on this trip or for the way home; No note, switched off, when nothing), Open thing (Cancel or
+Save back to the trip), Tick and Not this time as a tap and ⊘; on the Mac the pointer resting on a line shows its
+notes; (0.101, spec 07 part 21) two lines after the reminder's: a thing's
    own reminders — "2 left" in orange on its line, under it once ticked "Before it goes: …" each with its own tick, in
    Before you go's To do at their step as "Camera: …", one tick wherever ticked — and a line "with Camera" that came along
    with another thing (its own bag and place; goes when the camera goes unless a template, another thing or he himself
