@@ -12593,10 +12593,10 @@ final class AMSPackingUITests: XCTestCase {
         closeDropDown(app, "thing-bag")
     }
 
-    /// A thing's page in his order (6 Oct 2026): Name, Notes, (Photos since 0.90) Kind of thing, Whose it is,
+    /// A thing's page in his order (6 Oct 2026): Name, Notes, (0.104) Before a trip — Battery, Also pack,
+    /// Remember, On a plane, Valid until — (Photos since 0.90) Kind of thing, Whose it is,
     /// On these templates, Kept at home, Usually packed in, When, Weight, Brand, Colour,
-    /// Condition, Care, On a plane, Valid until — and On a plane's switches carry their
-    /// words only. Kept at home is chosen from a list, and a new place made there joins
+    /// Condition, Care — and On a plane's switches carry their words only. Kept at home is chosen from a list, and a new place made there joins
     /// Your choices.
     func testAThingsPageReadsInHisOrderAndKeptAtHomeIsChosen() {
         let app = launch()
@@ -12605,10 +12605,12 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "things-detail", timeout: 5))
         tap(app, id: "thing-row-0")
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
-        let order = ["thing-heading-name", "thing-heading-notes", "thing-heading-photos", "thing-category-title", "thing-owner-title",
+        let order = ["thing-heading-name", "thing-heading-notes", "thing-heading-battery", "thing-heading-with",
+                     "thing-heading-remember", "thing-heading-plane", "thing-heading-valid",
+                     "thing-heading-photos", "thing-category-title", "thing-owner-title",
                      "thing-lists-title", "thing-heading-kept", "thing-bag-title", "thing-when-title",
                      "thing-heading-weight", "thing-heading-brand", "thing-heading-colour", "thing-condition-title",
-                     "thing-care-title", "thing-heading-plane", "thing-heading-battery", "thing-heading-valid"]
+                     "thing-care-title"]
         let tops = order.map { id -> CGFloat in
             let e = app.descendants(matching: .any).matching(identifier: id).firstMatch
             XCTAssertTrue(e.waitForExistence(timeout: 5), "no \(id)")
@@ -13542,20 +13544,22 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertEqual(says(app, "thing-name"), "Map case", "the cursor was not at the end of the name")
         // Only on some trips' rows of pills (Season, Transport, Food; no Context off a workout
         // template) since 0.75, where they sit: after the Sections, before Kept at home.
-        let order = ["thing-notes", "thing-category", "thing-owner", "thing-lists", "thing-section-1",
+        // Before a trip's (0.104) right after Notes: Battery, Liquid, Not in the cabin, Valid until.
+        let order = ["thing-notes", "thing-battery", "thing-liquid", "thing-restricted", "thing-expiry",
+                     "thing-category", "thing-owner", "thing-lists", "thing-section-1",
                      "thing-seasons", "thing-transports", "thing-catering", "thing-storage", "thing-bag", "thing-when", "thing-weight", "thing-kit-add", "thing-brand", "thing-colour",
-                     "thing-condition", "thing-care", "thing-care-notes", "thing-liquid", "thing-restricted",
-                     "thing-battery", "thing-expiry", "thing-name"]
+                     "thing-condition", "thing-care", "thing-care-notes", "thing-name"]
         for id in order {
             app.typeKey(.tab, modifierFlags: [])
             XCTAssertTrue(focused(app, id), "Tab did not go on to \(id)")
             if id == "thing-category" { shot(app, "keys-focus-kind-of-thing") }
         }
         app.typeKey(.tab, modifierFlags: .shift)
-        XCTAssertTrue(focused(app, "thing-expiry"), "Shift-Tab from Name did not go round to Valid until")
+        XCTAssertTrue(focused(app, "thing-care-notes"), "Shift-Tab from Name did not go round to the care notes")
         app.typeKey(.tab, modifierFlags: .shift)
-        XCTAssertTrue(focused(app, "thing-battery"), "Shift-Tab did not go back")
+        XCTAssertTrue(focused(app, "thing-care"), "Shift-Tab did not go back")
         // Has a battery (0.75): Space switches it, as Liquid's.
+        tabTo(app, "thing-battery")
         app.typeKey(.space, modifierFlags: [])
         XCTAssertTrue(waitUntil { self.isSwitchOn(app, "thing-battery") }, "Space did not switch Has a battery on")
         // Typing lands where the line says.
@@ -15870,7 +15874,7 @@ final class AMSPackingUITests: XCTestCase {
         let app = launch("-uiTestingThingReminders")
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
         openThing(app, "Camera")
-        XCTAssertTrue(appears(app, "thing-remember", timeout: 5), "the thing's page has no Remember with it")
+        XCTAssertTrue(appears(app, "thing-remember", timeout: 5), "the thing's page has no Remember")
         XCTAssertTrue(scrollWithin(app, "thing-detail", until: "thing-remind-1"), "the camera's second reminder is not there")
         XCTAssertTrue(words(app.buttons["thing-remind-0"]).contains("Empty the SD card"), "'\(words(app.buttons["thing-remind-0"]))'")
         XCTAssertEqual(app.buttons["thing-remind-0"].value as? String, "\u{2265}1 week ahead", "the reminder does not say its When")
@@ -15879,6 +15883,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertEqual(words(app.staticTexts["thing-with-1"]), "Spare battery")
         shot(app, "remind-thing-page")
         func change() {
+            tap(app, id: "thing-remind-new")                         // + Add opens the add row (0.104)
             type("Lens cloth in the bag", into: app.textFields["thing-remind-add-name"])
             tap(app, id: "thing-remind-add")
             XCTAssertTrue(app.buttons["thing-remind-2"].waitForExistence(timeout: 5), "the reminder was not added")
@@ -15906,6 +15911,88 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(scrollWithin(app, "thing-detail", until: "thing-remind-2"), "Save did not keep the new reminder")
         XCTAssertEqual(words(app.staticTexts["thing-with-0"]), "Spare battery", "Save did not keep the cable's removal")
         XCTAssertEqual(words(app.staticTexts["thing-with-1"]), "Map", "Save did not keep the map")
+    }
+
+    /// Before a trip (0.104 — his mix of sketches A and C, 28 Oct 2026): right after Name and Notes,
+    /// before Photos, ONE frame holds Battery, Also pack (Goes with until 0.104), Remember, On a plane
+    /// and Valid until, in that order — a short label beside its controls; Valid until's hint on the
+    /// date's own line. Its title line folds it to ONE line that says what is set; the fold is kept on
+    /// this device, for every thing; a tap opens it again. A switch pressed in it is held until Save
+    /// (Cancel keeps nothing), and the page's general note is one small line at its very foot.
+    func testBeforeATripIsOneFrameInHisOrderThatFolds() {
+        let app = launch("-uiTestingThingReminders")
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        openThing(app, "Camera")
+        func el(_ id: String) -> XCUIElement { app.descendants(matching: .any).matching(identifier: id).firstMatch }
+        XCTAssertTrue(appears(app, "thing-before-frame", timeout: 5), "the thing's page has no Before a trip frame")
+        let frame = find(app, "thing-before-frame")!
+        // After Name and Notes, before Photos.
+        XCTAssertLessThan(el("thing-notes").frame.maxY, frame.frame.minY, "the frame is not after Notes")
+        XCTAssertLessThanOrEqual(frame.frame.maxY, el("thing-heading-photos").frame.minY, "the frame is not before Photos")
+        // His order inside it, each row inside the frame.
+        var above = frame.frame.minY
+        for id in ["thing-heading-battery", "thing-heading-with", "thing-heading-remember", "thing-heading-plane", "thing-heading-valid"] {
+            let e = el(id)
+            XCTAssertTrue(e.waitForExistence(timeout: 5), "no \(id) in the frame")
+            XCTAssertGreaterThan(e.frame.minY, above, "\(id) is out of his order")
+            XCTAssertLessThan(e.frame.maxY, frame.frame.maxY, "\(id) is outside the frame")
+            above = e.frame.minY
+        }
+        XCTAssertEqual(words(el("thing-heading-with")), "Also pack", "Goes with is not called Also pack")
+        // Valid until: the hint on the date's own line, short; no long lines under it.
+        let add = app.buttons["thing-expiry-add"], hint = el("thing-expiry-hint")
+        XCTAssertTrue(hint.waitForExistence(timeout: 5), "Valid until has no hint beside its date")
+        XCTAssertLessThan(abs(hint.frame.midY - add.frame.midY), add.frame.height / 2, "the hint is not on the date's line")
+        XCTAssertFalse(words(hint).contains("Documents"), "the hint is still the long explanation: '\(words(hint))'")
+        // The page's note: one small line at the very foot.
+        let foot = el("thing-foot-note")
+        XCTAssertTrue(foot.waitForExistence(timeout: 5), "the page's note is gone")
+        XCTAssertGreaterThan(foot.frame.minY, app.buttons["thing-delete"].frame.maxY, "the page's note is not at its very foot")
+        XCTAssertLessThan(foot.frame.height, el("thing-heading-plane").frame.height * 1.4, "the page's note takes more than one line")
+        shot(app, "before-a-trip-open")
+
+        // Folded: one line, saying what is set.
+        let fold = app.buttons["thing-before-fold"]
+        XCTAssertEqual(fold.value as? String, "open")
+        tap(app, id: "thing-before-fold")
+        let summary = app.staticTexts["thing-before-summary"]
+        XCTAssertTrue(waitUntil { self.words(summary).contains("2 reminders") }, "folded, the line does not count the reminders: '\(words(summary))'")
+        XCTAssertTrue(words(summary).hasPrefix("Also pack 2 things"), "folded, the line does not say what is packed with it: '\(words(summary))'")
+        XCTAssertEqual(fold.value as? String, "folded")
+        XCTAssertTrue(waitUntil { !app.buttons["thing-remind-0"].exists && !el("thing-heading-plane").exists }, "folded, the frame still shows its rows")
+        XCTAssertLessThan(abs(summary.frame.midY - fold.frame.midY), fold.frame.height / 2, "the summary is not on the fold's one line")
+        shot(app, "before-a-trip-folded")
+        #if os(macOS)
+        // Folded, Tab goes past its fields: from Notes straight on to Kind of thing.
+        tabTo(app, "thing-notes")
+        app.typeKey(.tab, modifierFlags: [])
+        XCTAssertTrue(focused(app, "thing-category"), "folded, Tab still went into Before a trip")
+        #endif
+
+        // Kept on this device, for every thing: another thing's page opens folded — with nothing set.
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        replace("Map", in: app.textFields["things-search"])
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(summary) == "Nothing set" }, "the fold was not kept, or says something of nothing: '\(words(summary))'")
+        // Opened again: the rows are back. A battery and Liquid pressed are held until Save.
+        tap(app, id: "thing-before-fold")
+        XCTAssertTrue(waitUntil { !summary.exists }, "open, the summary stays")
+        setSwitch(app, "thing-battery", on: true)
+        setSwitch(app, "thing-liquid", on: true)
+        tap(app, id: "thing-before-fold")
+        XCTAssertTrue(waitUntil { self.words(summary).hasPrefix("Battery") && self.words(summary).contains("Liquid") },
+                      "the line does not start with the battery and say Liquid: '\(words(summary))'")
+        tap(app, id: "thing-before-fold")
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(switchNamed(app, "thing-battery").exists, "the frame did not stay open")
+        XCTAssertFalse(isSwitchOn(app, "thing-battery"), "Cancel kept the battery")
+        XCTAssertFalse(isSwitchOn(app, "thing-liquid"), "Cancel kept Liquid")
+        tap(app, id: "thing-cancel")
     }
 
     /// `-uiTestingThingReminders`, the trip three days ahead: the camera's "a week ahead" reminder is
