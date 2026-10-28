@@ -12430,7 +12430,8 @@ final class AMSPackingUITests: XCTestCase {
         #if os(macOS)
         // The pointer resting on the line: its note as the tooltip (seen in the picture).
         passport.hover()
-        sleep(3)
+        passport.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.5)).hover()
+        sleep(4)
         shot(app, "trip-menu-0-tooltip", whole: true)
         #endif
 
@@ -12472,7 +12473,8 @@ final class AMSPackingUITests: XCTestCase {
         let none = contextMenu(app, on: headlamp, item: "trip-line-3-menu-note")
         XCTAssertTrue(none.exists, "the menu of a line with nothing written has no note entry")
         XCTAssertFalse(none.isEnabled, "No note is not switched off")
-        XCTAssertEqual(words(none), "No note")
+        // A menu item's words: its label on the iPhone, its title on the Mac.
+        XCTAssertEqual(words(none).isEmpty ? none.title : words(none), "No note")
         closeMenu(app, from: headlamp)
         XCTAssertTrue(waitUntil { !none.exists }, "the menu did not close")
 
