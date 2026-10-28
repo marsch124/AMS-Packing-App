@@ -71,6 +71,7 @@ struct RootView: View {
         .onChange(of: rootPage) { _, page in
             if page != nil { RootPages.opened(windowKey) { rootPage = nil } } else { RootPages.closed(windowKey) }
         }
+        .onDisappear { RootPages.closed(windowKey) }       // a window closed with its page up
         // New Thing under the app icon (iPhone) or in the Dock's menu (Mac), 0.105: Home opens it, as a Spotlight result.
         .onChange(of: model.newThingToOpen, initial: true) { _, asked in if asked { section = .home } }
         // Packing reminders (his idea 7): a tapped one opens its trip on Home; and
