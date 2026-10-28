@@ -86,7 +86,7 @@ final class KeyGuideTests: XCTestCase {
     func testTheLineAtTheTopSaysTheMacFirstThenTheIPhone() {
         XCTAssertTrue(KeyGuide.intro.hasPrefix("These are the Mac"))
         XCTAssertTrue(KeyGuide.intro.contains("iPhone or iPad with a keyboard attached"))
-        XCTAssertEqual(KeyGuide.cards.map(\.id), ["any", "go", "search", "edit", "thing", "lists", "mac"])
+        XCTAssertEqual(KeyGuide.cards.map(\.id), ["any", "go", "search", "edit", "thing", "trip", "lists", "mac"])
         XCTAssertEqual(KeyGuide.cards.first?.reach.words, "Mac, and iPhone or iPad with a keyboard")
         XCTAssertEqual(KeyGuide.cards.first { $0.id == "thing" }?.reach.words, "Mac only")
         // The tab keys are the Mac's Go menu; an iPhone or iPad keeps ⌘S only where a page has a real Save.
