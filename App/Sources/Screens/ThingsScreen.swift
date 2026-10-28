@@ -1095,10 +1095,10 @@ struct ThingEditor: View {
         #if os(macOS)
         // The Mac (0.68): the date is TYPED — "2027-06-30", "30/6 27", "+6m", "+1y" — in a field of its
         // own, where the date picker stood; Add a date or Remove the date beside it. In the frame (0.104)
-        // the field is 230 wide where there is room and narrower where there is not (a sheet at its
-        // narrowest: "Add a date" was squeezed onto three lines).
-        HStack(spacing: Metrics.cardSide) {
-            expiryField.frame(minWidth: 150, maxWidth: 230)
+        // the field is 230 wide where there is room and down to 120 where there is not (the sheet is 520
+        // wide: "Add a date" was squeezed onto three lines, the hint onto two).
+        HStack(spacing: Metrics.cardGap * 2) {
+            expiryField.frame(minWidth: 120, maxWidth: 230)
             Group { if draft.expiry.isEmpty { addDate } else { removeDate } }.fixedSize()
             hint
             Spacer(minLength: 0)

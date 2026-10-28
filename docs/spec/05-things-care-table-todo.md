@@ -1348,7 +1348,7 @@ apart; a field 6 pt under its heading):
      bold words and the selected trait.
    - Always (until 0.104): "The trip warns before it runs out — a document (Documents & money) six months ahead." (14
      muted) — since 0.104 the short hint beside the date (item 3b).
-   - **Mac (0.68)**: the date is TYPED, in a field where the date picker stood (`thing-expiry`, 230 wide, Body with
+   - **Mac (0.68)**: the date is TYPED, in a field where the date picker stood (`thing-expiry`, 230 wide — in Before a trip 120 to 230, as the sheet allows, 0.104 — Body with
      even digits, placeholder "2027-06-30, 30/6 27 or +6m"), on one line with "Add a date" (no date) or "Remove the
      date"; the distance and the quick pills under it as on the iPhone. What he types is read when he leaves the
      field (Tab, a click elsewhere) or saves (`readDate`, spec below): "2027-06-30"; "30/6 27", "30/6/2027", "30.6.27";
