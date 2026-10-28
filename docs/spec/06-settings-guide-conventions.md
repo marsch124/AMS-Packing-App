@@ -2203,7 +2203,7 @@ besides). The Mac hands a sheet its own window, so a page's hidden ⌘S can neve
 | Tab ⇧Tab Space ↑ ↓ ← → Return, letters | the thing page's key walk and its drop-downs | `ThingEditor.key`, `DropDown.answer` (Mac) |
 | ⌘-click, ⇧-click | a trip's line into the selection or out; every line between (0.105) | `TripScreen.select` (Mac) |
 | ⌘A | every line shown on a trip selected — in a field being typed in, its words (0.105) | `TripScreen.selectionKeys` (Mac) |
-| Space, Esc | with lines selected on a trip: tick them (untick, all ticked); let them go — Done gives up Esc meanwhile (0.105) | `TripScreen.selectionKeys` (Mac) |
+| Space, Esc | with lines selected on a trip: tick them (untick, all ticked); let them go — taken, press and release, before the window sees them; Done takes no Esc meant for the selection (0.105) | `SelectionKeys` (TripScreen.swift, Mac) |
 | ⌘Q | quit | `QuitCommand` |
 | ⌘W | closes the All your things window | the system |
 

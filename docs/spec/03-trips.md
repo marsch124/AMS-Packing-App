@@ -1471,8 +1471,7 @@ multi-select is not a small step — and he asked for the Mac). The rules live i
   chosen Group by, across its headings (sorted From where: the Passport ⇧-clicked to the Map takes in the Phone charger
   and the Headlamp, not the Toothbrush above them). A second ⇧-click moves the END of that range (the Finder's way):
   what the first took in and the second leaves out is let go; what was selected before the range stays. **⌘A** selects
-  every line shown — not those under a folded heading. **Esc** lets them go (Done gives up Escape while anything is
-  selected; with nothing selected Esc closes the trip as before). A **plain click** still ticks its line, as always —
+  every line shown — not those under a folded heading. **Esc** lets them go (while anything is selected Esc is the selection's, not Done's; with nothing selected Esc closes the trip as before). A **plain click** still ticks its line, as always —
   and lets a selection go (no selection is needed for normal packing). The keys are the click's own
   (`NSApp.currentEvent.modifierFlags`); a ⌘- or ⇧-click puts away a field's keyboard focus (`makeFirstResponder(nil)`),
   so Space and Esc are the selection's.
@@ -1517,9 +1516,13 @@ multi-select is not a small step — and he asked for the Mac). The rules live i
   typed in, the field's words). With a selection, **Space** ticks it (unticks it when all are ticked) and **Esc**
   clears it — read by a key monitor before the window sees them, and taken (`SelectionKeys`, TripScreen.swift): only in
   the trip's own window (`WindowReader`) while it is in front, never while a field is typed in (Space types a space,
-  Esc is the field's), never with ⌘ ⌥ ⌃ ⇧ held. 🪤 First built as hidden shortcuts: on GitHub's Mac (28 Oct 2026)
-  Space ticked the selection AND reached the button that had the keyboard's focus — the next Esc closed the trip
-  ("the trip closed"); a monitor that takes the key leaves nothing for a focused button. Keyboard shortcuts in How it works has them on the card "A
+  Esc is the field's), never with ⌘ ⌥ ⌃ ⇧ held — and the RELEASE of a key whose press it took is taken too. Done keeps
+  Escape, but an Esc that reaches it while lines are selected, or within 0.8 s of an Esc that let them go, only
+  clears the selection (`SelectionKeys.isSelectionsEscape`). 🪤 GitHub's Mac (28 Oct 2026, six probes): an Esc after a
+  Space closed the trip — with Space and Esc as hidden shortcuts (Done's Escape switched off meanwhile), and again with
+  a monitor taking only the presses; the first Esc, after a click, never did. Taking the releases and guarding Done
+  made it pass, day and night; which of the two it needed was not split apart. The keys' state rides on a selected
+  line's marker under the tests (`trip-picked-<n>`'s label), for a failure's words. Keyboard shortcuts in How it works has them on the card "A
   trip's list" (spec 06 §7b).
 - Tests: model `LineSelectionTests` (3: ⌘-click / ⇧-click in the list's order with the range's end moving, ⌘A, Esc,
   a folded heading's lines leaving; Tick / Untick / Not this time on exactly the lines given; Move to bag on this
@@ -1791,7 +1794,8 @@ offers no Show note".
 UI (0.105, the Mac only; each skipped on the iPhone): `testSeveralLinesAreSelectedOnTheMacAndTickedInOneGo` (`-uiTesting`:
 ⌘-click line 0 → `trip-picked-0`, not ticked, no bar; ⌘-click line 1 → `trip-select-count` "2 selected"; Tick → "2/7",
 both ticked, still "2 selected"; Esc → no bar, no `trip-picked-`, the trip still open; a plain click on line 2 → "3/7",
-nothing selected; ⌘A → "7 selected", Space → all packed; pictures `select-1-bar`, `select-2-ticked`, and `-night`),
+nothing selected; ⌘A → "7 selected", Space → all packed, still "7 selected" and the trip open 2 s later; Space
+again → "0/7"; Esc → the trip stays; ⌘A, Space, Esc all packed → the trip stays; pictures `select-1-bar`, `select-2-ticked`, and `-night`),
 `testAShiftClickSelectsTheLinesBetweenAcrossHeadings` (From where: ⌘-click the Passport, ⇧-click the Map → "4
 selected", lines 0, 1, 3, 6; ⇧-click the Phone charger → lines 0, 1; the line's menu on the Passport says "Tick 2
 things" and ticks both → "2/7"; the bar's Not this time → "0/5 · 2 set aside"), `testMoveToBagMovesEverySelectedLine`
