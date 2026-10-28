@@ -12699,18 +12699,31 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { (progress.value as? String) == "all packed" }, "Space did not tick the selection: '\(words(progress))'")
         // Space is the selection's alone: it pressed no other button (GitHub's Mac, 28 Oct 2026: the Esc after it
         // closed the trip).
-        sleep(1)
+        sleep(2)
         XCTAssertEqual(words(count), "7 selected", "Space dropped the selection")
         XCTAssertEqual(progress.value as? String, "all packed", "Space also pressed another button")
-        XCTAssertNotNil(find(app, "trip-detail"), "Space closed the trip")
-        let keysAfter = pickedSaid(app)
+        XCTAssertNotNil(find(app, "trip-detail"), "the trip closed by itself, all packed")
+        // Space again: all ticked, so it unticks them; Esc then lets them go and the trip stays.
+        app.typeKey(" ", modifierFlags: [])
+        XCTAssertTrue(waitUntil { self.words(progress) == "0/7" }, "a second Space did not untick them: '\(words(progress))'")
+        sleep(1)
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(waitUntil { !bar.exists }, "Esc did not clear the selection after ⌘A")
+        XCTAssertNotNil(find(app, "trip-detail"), "Esc closed the trip, nothing packed")
+        // All packed by Space, then Esc: the trip stays too.
+        app.typeKey("a", modifierFlags: .command)
+        XCTAssertTrue(waitUntil { self.words(count) == "7 selected" })
+        app.typeKey(" ", modifierFlags: [])
+        XCTAssertTrue(waitUntil { (progress.value as? String) == "all packed" })
+        sleep(1)
+        let keysAfter = pickedSaid(app)
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(waitUntil { !bar.exists }, "Esc did not clear the selection, all packed")
         if find(app, "trip-detail") == nil {
             shot(app, "select-9-closed", whole: true)
-            print("SELECT-KEYS before the last Esc: \(keysAfter)\n" + String(app.debugDescription.prefix(6000)))
+            print("SELECT-KEYS before the last Esc: \(keysAfter)")
         }
-        XCTAssertNotNil(find(app, "trip-detail"), "the trip closed (\(keysAfter))")
+        XCTAssertNotNil(find(app, "trip-detail"), "Esc closed the trip, all packed (\(keysAfter))")
         #endif
     }
 
