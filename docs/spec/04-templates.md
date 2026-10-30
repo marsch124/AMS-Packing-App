@@ -205,7 +205,9 @@ sheet here can be swiped down, except a template's page while arranging (`intera
   and two lines, 18 past trips), at the top, half way down and further: a template opened and closed every way (Done
   untouched, Done after a thing was added, Cancel; on the Mac Escape and ⌘S too); the tab to its end and back up in
   short steps, a page opened and closed on the way; Refine opened and closed, then Home — the tab must answer after
-  every close and every step (Traps, below). About 4 minutes on the iPhone simulator.
+  every close and every step (Traps, below). About 4 minutes on the iPhone simulator. A card on screen is found from
+  ONE snapshot of the list (0.107): until then each card was asked on its own, half the test's time — on a slow
+  GitHub Mac it ran past the 5 minutes a Mac test may take (0.105's full run, twice, at its very last step).
 - **Not covered:** the "By Transport" and "Other Templates" headings' words (the 0.104.1 sample shows both; no
   test reads them), the exact summary wording on screen.
 

@@ -226,14 +226,31 @@ final class AMSPackingUITests: XCTestCase {
             #endif
             usleep(150_000)
         }
-        // A card on screen, looked for from the last one found outwards — the list moves a little
-        // between looks, so it is near (asking all 66 every time takes long).
+        // A card on screen, the one nearest the last one found — the list moves a little between looks.
+        // ONE picture of the list (a snapshot) says which cards it holds and where; only the chosen card is
+        // asked again. Until 0.107 each card from the last one outwards was asked on its own (is it there,
+        // can it be tapped, is it in the list's visible part — each a question to the app): half the test's
+        // time, 95 s of 192 on a quick runner and 185 of 300 on a slow one, where the Mac's 5 minutes a test
+        // ran out at the very end (0.105's full run, twice). A frozen app answers no snapshot either.
         var from = 0
         func cardNear() -> XCUIElement? {
-            for d in 0..<80 {
-                for n in d == 0 ? [from] : [from - d, from + d] where n >= 0 {
-                    let card = app.buttons["template-row-\(n)"]
-                    if card.exists, card.isHittable, onScreen(app, card) { from = n; return card }
+            guard let picture = try? list.snapshot() else { return nil }
+            var view = picture.frame
+            let window = app.windows.firstMatch
+            if window.exists { view = view.intersection(window.frame) }
+            var shown: [Int] = []
+            func walk(_ s: XCUIElementSnapshot) {
+                if s.elementType == .button, s.identifier.hasPrefix("template-row-"),
+                   let n = Int(s.identifier.dropFirst("template-row-".count)),
+                   view.insetBy(dx: 0, dy: 6).contains(CGPoint(x: s.frame.midX, y: s.frame.midY)) { shown.append(n) }
+                s.children.forEach(walk)
+            }
+            walk(picture)
+            for n in shown.sorted(by: { abs($0 - from) < abs($1 - from) }) {
+                // The copy the query finds must be the one in view (the Mac can keep a stale copy of a row far below).
+                let card = app.buttons["template-row-\(n)"]
+                if card.exists, card.isHittable, view.contains(CGPoint(x: card.frame.midX, y: card.frame.midY)) {
+                    from = n; return card
                 }
             }
             return nil
@@ -4980,9 +4997,10 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "break-sheet", timeout: 5), "Take a break did not open")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["break-packed"]) == "1 of 7 packed" },
                       "the overview says '\(words(app.staticTexts["break-packed"]))'")
-        // His Sorting's groups: the base template with the Passport ticked, and Hiking.
+        // His Sorting's groups: the base template with the Passport ticked, and Hiking. A line on both templates
+        // counts once, under the first (0.106, as Group by Template shows it — `linesByTemplate`): 1 + 3 + 3 = 7.
         let groups = [words(element(app, "break-group-0")), words(element(app, "break-group-1"))]
-        XCTAssertEqual(Set(groups), ["Common base 3 left", "Hiking 4 left"], "the groups say \(groups)")
+        XCTAssertEqual(Set(groups), ["Common base 3 left", "Hiking 3 left"], "the groups say \(groups)")
         XCTAssertFalse(element(app, "break-group-2").exists, "a third group")
         XCTAssertFalse(app.staticTexts["break-charge"].exists, "To charge on a trip a month ahead")
         // The choices, from 14:00: in an hour, this evening, tomorrow at 18:00, or just pause.
@@ -5586,6 +5604,29 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "grab-menu-1")
         XCTAssertTrue(appears(app, "grab-detail", timeout: 10), "choosing in the menu did not open that grab list")
     }
+
+    #if os(macOS)
+    /// A launch on the Mac shows ONE window at once, as his does (0.107). The test runner ends the app before each
+    /// launch by force, and since 0.105 nothing is brought back under the tests: GitHub's Mac then opened NO window
+    /// (every launch of 0.105's and 0.106's full runs — `launch()` pressed ⌥⌘N each time, and the tests that launch
+    /// the app themselves found nothing to tap). Launched here as those tests do — after a forced end, twice, and
+    /// once after ⌘Q, a normal quit, after which the Mac opens a window of its own and the app must add none.
+    func testAMacLaunchOpensOneWindow() {
+        for (n, after) in ["a forced end", "a forced end", "a quit by ⌘Q"].enumerated() {
+            let app = XCUIApplication()
+            app.launchArguments += ["-uiTesting"]
+            app.launch()
+            XCTAssertTrue(appears(app, "screen-home", timeout: 10), "launch \(n + 1), after \(after): no window")
+            sleep(2)                                                   // a second window would have come by now
+            let tabs = app.buttons.matching(identifier: "tab-settings").count
+            XCTAssertEqual(tabs, 1, "launch \(n + 1), after \(after): \(tabs) windows")
+            if n == 1 {
+                app.typeKey("q", modifierFlags: .command)              // no page open: it quits without asking
+                XCTAssertTrue(app.wait(for: .notRunning, timeout: 15), "⌘Q did not quit")
+            }
+        }
+    }
+    #endif
 
     #if os(iOS)
     /// Grab lists by holding the app icon (0.86, his yes of 15 Oct 2026): an entry under the
@@ -15719,8 +15760,12 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts["trip-line-7-kit-missing"].exists,
                        "a thing taken out on purpose is said missing in red: '\(words(app.staticTexts["trip-line-7-kit-missing"]))'")
         tap(app, id: "trip-line-7-kit")
-        let cord = app.descendants(matching: .any)["trip-line-7-kit-1"]
-        XCTAssertTrue(waitUntil { cord.value as? String == "taken out" }, "the fold does not show the cord taken out: '\(cord.value ?? "")'")
+        // Taken out, its row in the fold offers Put back; the others Take out. (Read off the row's button: the
+        // row's own value, "taken out", sits on a container, and on the Mac a container's value never reaches
+        // the tests — GitHub's Mac, 0.106: '' every time.)
+        let cord = app.buttons["trip-line-7-kit-1-out"]
+        XCTAssertTrue(waitUntil { self.words(cord) == "Put back" }, "the fold does not show the cord taken out: '\(words(cord))'")
+        XCTAssertEqual(words(app.buttons["trip-line-7-kit-0-out"]), "Take out", "the lighter, still inside, is shown taken out")
         shot(app, "kit-trip-missing")
     }
 
@@ -15741,12 +15786,16 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { app.descendants(matching: .any)["trip-line-7-kit-2"].exists }, "the arrow does not show what is inside")
         XCTAssertTrue(words(app.staticTexts["trip-line-7-kit-warning-0"]).contains("Plasters"), "the plasters' date is not said on the kit")
         shot(app, "kit-trip-open")
+        let lighter = app.buttons["trip-line-7-kit-0-out"]
+        XCTAssertEqual(words(lighter), "Take out", "the lighter is inside, yet its row offers '\(words(lighter))'")
         tap(app, id: "trip-line-7-kit-0-out")
         XCTAssertTrue(waitUntil { self.words(pouch).contains("2 inside") }, "'\(words(pouch))'")
-        XCTAssertEqual(app.descendants(matching: .any)["trip-line-7-kit-0"].value as? String, "taken out", "the lighter is not shown taken out")
+        // Taken out = its row offers Put back (the row's value sits on a container, which the Mac's tests never see).
+        XCTAssertTrue(waitUntil { self.words(lighter) == "Put back" }, "the lighter is not shown taken out: '\(words(lighter))'")
         XCTAssertFalse(app.staticTexts["trip-line-7-kit-missing"].exists, "taken out on the trip, a red \"1 missing\" under the line")
         tap(app, id: "trip-line-7-kit-0-out")
         XCTAssertTrue(waitUntil { self.words(pouch).contains("3 inside") }, "put back, not counted inside: '\(words(pouch))'")
+        XCTAssertTrue(waitUntil { self.words(lighter) == "Take out" }, "put back, the lighter still offers '\(words(lighter))'")
         tap(app, id: "trip-done")
 
         // Care's heaviest things: the Wash bag (208 g with its things) and the pouch (190 g)

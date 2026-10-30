@@ -865,7 +865,7 @@ inside (the kit in the place of a thing that is on a template on its own), a kit
 template or on two templates still one line, a rebuild and a change to a thing never bring a content back, the
 checked kit's ticking rules, the checks before you go looking inside. UI (0.70, `-uiTestingKits`):
 `testAKitIsOneLineOnATripAndWeighsWhatIsInside` (8 lines, "3 inside", no ninth line; Bags 2.4 kg; the arrow opens
-three rows; the plasters' warning; Take out → "2 inside", the lighter "taken out" in the fold and no `trip-line-7-kit-missing` (0.105.1); Put back → "3 inside"; Care's heaviest:
+three rows; the plasters' warning; Take out → "2 inside", the lighter taken out in the fold — its row's `trip-line-7-kit-0-out` says "Put back" (0.107; the row's own value "taken out" sits on a container, which the Mac's tests never read) — and no `trip-line-7-kit-missing` (0.105.1); Put back → "3 inside", "Take out" again; Care's heaviest:
 Wash bag then Camp pouch at rows 2 and 3), `testAKitCheckedBeforeEachTripIsPackedWhenAllInsideIsTicked` (the
 wash bag open with two ticks and "2 to go"; its own tap does not tick it; the second tick does). A past trip (0.73):
 model `testAReviewedTripKeepsWhatWasInsideItsKitsAndALiveTripFollowsThem`,

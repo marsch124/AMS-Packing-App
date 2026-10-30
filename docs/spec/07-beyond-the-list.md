@@ -672,7 +672,8 @@ started again keeping the copy (3 failures, e.g. "("["Lighter", "Spare cord", "P
 UI (`-uiTestingKits`: the sample + a Camp pouch on Hiking with a Lighter, Spare cord and Plasters, and a Wash bag on
 no template, checked before each trip, with the Toothbrush — still on Common base — and Soap):
 `testAKitsPageHoldsItsThingsTakesOneOutAndAddsAnother` (190 g; the cord taken out → 110 g; the Map added → 170 g;
-kept after Save; the trip says "3 inside", the cord struck through in the fold, no red line since 0.105.1), `testAKitIsOneLineOnATripAndWeighsWhatIsInside`,
+kept after Save; the trip says "3 inside", the cord struck through in the fold — its row offers "Put back"
+(`trip-line-7-kit-1-out`, 0.107), the lighter's "Take out" — no red line since 0.105.1), `testAKitIsOneLineOnATripAndWeighsWhatIsInside`,
 `testAKitCheckedBeforeEachTripIsPackedWhenAllInsideIsTicked`, `testAThingInsideAKitSaysSoAndIsTakenOutFromItsPage`.
 Each was seen red with a planted fault: Save not writing the kit ("Save did not keep the map inside"), the bags not
 weighing the contents ("… '2.1 kg'"), the kit's tick not refused ("the kit was packed before what is inside it was
@@ -1904,7 +1905,8 @@ notification — `trip-message-break` / `-onsite` / `-review`, `trip-message-non
 plays a tapped one for the first trip with lines; under the tests Add to Calendar shows what it would hand over,
 `break-calendar-said`, instead of the system's window or Calendar):
 `testTakeABreakSaysHowFarHeHasCome` (`-clockAt 14:00:00`; sorted by Template, the Passport ticked: `trip-break` "Take a
-break"; the sheet "1 of 7 packed", the pills "Common base 3 left" and "Hiking 4 left" and no third, no To charge a month
+break"; the sheet "1 of 7 packed", the pills "Common base 3 left" and "Hiking 3 left" — the Headlamp, on both templates,
+counted once under the first since 0.106 ("Hiking 4 left" until then) — and no third, no To charge a month
 ahead; In an hour "15:0…", This evening "19:00", Tomorrow, Just pause, no Add to Calendar yet; everything ticked → no
 pill), `testABreakRemindsHimOnceAndGoesWhenEverythingIsPacked` (This evening → "Back to packing at 19:00…", chosen;
 Add to Calendar would hand over "Back to packing Weekend in the hills · <today> 19:00–19:30 · 1 of 7 packed · 6
