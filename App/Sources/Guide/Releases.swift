@@ -18,6 +18,11 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.107", date: "30 Oct 2026", title: "Your choices fold, and a kind can go",
+                new: ["Settings \u{2192} Your choices has a part for your kinds of thing.",
+                      "A kind your things still have can be removed \u{2014} in Your choices or in a thing\u{2019}s Kind of thing list. The app asks where its things go (Other to begin with) and keeps it only with Done or Save. Reminders too: it does not come back."],
+                changed: ["Each part of Your choices folds with its own arrow; all start folded and say how many they hold.",
+                          "The Refine your templates card shows only when your trip reviews have found something to refine."]),
         Release(version: "0.106", date: "28 Oct 2026", title: "Not this time, and once under Template",
                 changed: ["A thing you don\u{2019}t bring this time shows a small, faint \u{201C}no\u{201D} sign instead of an empty circle.",
                           "Group by Template: a thing on two templates shows once, under the first, and says \u{201C}also\u{201D} with the other template\u{2019}s icon \u{2014} a kit is no longer open twice."]),
