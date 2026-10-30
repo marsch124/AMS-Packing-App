@@ -154,8 +154,10 @@ final class ChoiceEditsTests: XCTestCase {
         XCTAssertEqual(Library(records: lib.records()).categories(), lib.categories())
         // …and in a backup.
         XCTAssertEqual(Importer.library(from: lib.backupFile(exportedAt: "2026-10-01T12:00:00.000Z")).0.categories(), lib.categories())
-        // In use, it stays; unused, it goes; the list back as shipped stores nothing.
-        XCTAssertEqual(lib.removeChoice("categories", key: "Gadgets"), "Gadgets is still used by 2 things, so it stays.")
+        // In use, it stays here — the drop-down says where it goes with its things moved (0.107: Your choices);
+        // unused, it goes; the list back as shipped stores nothing.
+        XCTAssertEqual(lib.removeChoice("categories", key: "Gadgets"),
+                       "Gadgets is still used by 2 things. Your choices in Settings removes it and moves its things to another kind.")
         XCTAssertNil(lib.removeChoice("categories", key: "Camping"))
         XCTAssertTrue(lib.moveChoice("categories", key: "Clothing", by: 1))
         XCTAssertTrue(lib.moveChoice("categories", key: "Clothing", by: -1))

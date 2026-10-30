@@ -15,7 +15,9 @@ import PackingCore
 /// The `itemType` of a reminder (the web app's word).
 public let REMINDER_TYPE = "reminder"
 /// The kind of thing a reminder made here is filed under — the web app's own
-/// "Reminders" category, the last of `CATEGORIES`.
+/// "Reminders" category, the last of `CATEGORIES` — while he has it: since 0.107 he may remove
+/// it (Your choices), and a reminder made after gets `reminderKind()` instead. A reminder is
+/// known by its `itemType`, never by this kind.
 public let REMINDERS_CATEGORY = "Reminders"
 
 extension Library {
@@ -62,7 +64,7 @@ extension Library {
 
     /// Put a reminder on a template, last among its rows. A reminder of that name he
     /// already has (on another template) is put on this one too — one reminder, two
-    /// places, as a thing is; otherwise a new one is made: kind "Reminders", no bag,
+    /// places, as a thing is; otherwise a new one is made: kind "Reminders" (`reminderKind`), no bag,
     /// no weight, and on the Quick list so a quick trip brings it too. Refused (nil)
     /// for any `reminderNameProblem`, or a template that does not exist. Returns the
     /// row as the template now shows it.
@@ -187,7 +189,8 @@ extension Library {
     // MARK: Helpers
 
     private mutating func madeReminder(_ name: String, phase: String) -> Item {
-        var cat = catalogItemFromResolved(newItem(name: name, category: REMINDERS_CATEGORY, container: "",
+        // Reminders while he has it, never a kind he removed (0.107, `reminderKind`).
+        var cat = catalogItemFromResolved(newItem(name: name, category: reminderKind(), container: "",
                                                   phase: phase, itemType: REMINDER_TYPE, shortList: true))
         cat.id = PackingEnv.makeId()
         items.append(cat)

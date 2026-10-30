@@ -319,6 +319,18 @@ struct ThingEditor: View {
     @State private var choiceLists: [String: ChoiceEdits] = [:]
     /// A bag whose page was asked for from Usually packed in ("Open the bag", 0.69).
     @State private var bagPage: String?
+    /// A kind of thing his things still have, whose Remove was pressed in Kind of thing (0.107 — his words,
+    /// 30 Oct 2026: "I need the ability to delete a Kind of thing, even if there are items that are connected to
+    /// this very Kind of thing choice"): the card asks where its things go (`KindRemoveCard`, as in Your choices).
+    @State private var kindAsk: KindAsk?
+    private struct KindAsk {
+        let key: String
+        let label: String
+        let use: KindUse
+        /// The page's key of the kind its things go to.
+        var to: String
+        let options: [(value: String, label: String)]
+    }
     /// The page as it was loaded (0.92, `ThingKept`).
     @State private var atLoad: ThingKept?
     /// Duplicate this thing (0.92): the page has turned to the copy — its name brought into sight
@@ -395,7 +407,7 @@ struct ThingEditor: View {
         let templates = self.templates
         let owners = model.library.ownerChoices()          // each once (his screenshot, 2026-09-26)
         // His own lists, as their drop-downs show them while this page holds their changes.
-        let kinds = drop("categories", chosen: draft.category, words: "your kinds of thing")
+        let kinds = kindsDrop()
         let whose = drop("owners", chosen: draft.ownedBy, words: "your owners")
         let bags = drop("bags", chosen: draft.container, words: "your bags",
                         open: DropDownOpen(title: "Open the bag") { name in openBag(name) })
@@ -406,14 +418,16 @@ struct ThingEditor: View {
                 Button("Cancel") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
                     .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.muted)
-                    .keyboardShortcut(.cancelAction)            // Escape = Cancel, never Save (Escape everywhere, 5 Oct 2026)
+                    // Escape = Cancel, never Save (Escape everywhere, 5 Oct 2026) — while the Remove card asks, the card's (0.107).
+                    .keyboardShortcut(kindAsk == nil ? .cancelAction : nil)
                     .accessibilityIdentifier("thing-cancel")
                 Spacer()
                 Button("Save") { save() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.care.color, filled: true)).focusEffectDisabled()
                     .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.care.color)
                     #if os(iOS)
-                    .keyboardShortcut("s", modifiers: .command)  // ⌘S = Save (0.92); the Mac's is the Thing menu's
+                    // ⌘S = Save (0.92); the Mac's is the Thing menu's. Not while the Remove card asks (0.107).
+                    .keyboardShortcut(kindAsk == nil ? KeyboardShortcut("s", modifiers: .command) : nil)
                     #endif
                     .accessibilityIdentifier("thing-save")
             }
@@ -622,6 +636,18 @@ struct ThingEditor: View {
         .environment(\.dropDownKeys, keyHome.drop)
         .onChange(of: typing) { old, now in typed(from: old, to: now) }
         .onChange(of: draft.expiry) { _, now in expiryText = now; expiryProblem = "" }
+        #endif
+        // A kind of thing his things still have, removed from Kind of thing: where they go, asked over the page (0.107).
+        .overlay {
+            if let a = kindAsk {
+                KindRemoveCard(label: a.label, use: a.use, options: a.options,
+                               to: Binding(get: { kindAsk?.to ?? a.to }, set: { kindAsk?.to = $0 }), keptBy: "Save",
+                               cancel: { withAnimation(.easeOut(duration: 0.15)) { kindAsk = nil } },
+                               remove: { removeAskedKind(a) })
+            }
+        }
+        #if os(macOS)
+        .onChange(of: kindAsk == nil) { _, none in keyHome.asking = !none }
         #endif
         // A swipe down with something changed asks first (0.92, the app's rule; spec 06 §20a) — until
         // then a swipe was Cancel without a word.
@@ -973,6 +999,49 @@ struct ThingEditor: View {
                  blank: "Not said", other: true, same: { normName($0) == normName($1) },
                  newEntry: places.newEntry("A new place", needs: "Type the place first.") { draft.storage = $0 },
                  tools: places.tools, ring: ring(.storage)) { draft.storage = $0 }
+    }
+
+    /// Kind of thing's list (0.107): Remove on a kind his things still have asks over the page.
+    private func kindsDrop() -> ChoiceDrop {
+        var kinds = drop("categories", chosen: draft.category, words: "your kinds of thing")
+        let rows = kinds.rows
+        kinds.asks = { key in askKind(key, rows: rows) }
+        return kinds
+    }
+
+    /// Remove pressed on a kind in Kind of thing (0.107). Documents & money has no Remove; the last kind, one
+    /// made on this page and one nothing has are asked about inside the list as before. One his things have —
+    /// this thing counted by what the page says — gets the card: how many, and where they go (his Other, else
+    /// Comfort & misc, else his first other kind — as the list shows them now).
+    private func askKind(_ key: String, rows: [ChoiceRow]) -> Bool {
+        let lib = model.library
+        guard !ChoiceEdits.isAdded(key), lib.kindRemoveProblem(key) == nil else { return false }
+        var use = lib.kindUse(key, except: shown)
+        if draft.category == key || normName(draft.category) == normName(key) { use.things += 1 }
+        guard use.inUse else { return false }
+        let others = rows.filter { !$0.removed && $0.key != key }
+        guard let at = Library.fallbackKindIndex(others.map(\.label)) else { return false }
+        let label = rows.first { $0.key == key }?.label ?? key
+        withAnimation(.easeOut(duration: 0.15)) {
+            kindAsk = KindAsk(key: key, label: label, use: use, to: others[at].key,
+                              options: others.map { (value: $0.key, label: $0.label) })
+        }
+        return true
+    }
+
+    /// The card's Remove: held with the page's other list changes (`ChoiceEdits.moves`) — struck out in the list
+    /// with Put back, made on Save by `removeKind` with the rest of the page, in its one step; Cancel throws it
+    /// away. This thing, if it was that kind, takes the kind chosen now.
+    private func removeAskedKind(_ a: KindAsk) {
+        let listKey = ThingEditor.choiceKey("categories")
+        var e = choiceLists[listKey] ?? ChoiceEdits(kind: "categories")
+        e.removed.insert(a.key)
+        e.moves[a.key] = a.to
+        // A kind already moved into this one goes on to where this one goes.
+        for (from, into) in e.moves where into == a.key { e.moves[from] = a.to }
+        choiceLists[listKey] = e
+        if draft.category == a.key || normName(draft.category) == normName(a.key) { draft.category = a.to }
+        withAnimation(.easeOut(duration: 0.15)) { kindAsk = nil }
     }
 
     /// One of his lists as its drop-down here shows it, with the changes this page holds.
@@ -1480,6 +1549,8 @@ final class ThingKeyHome {
     let drop = DropDownKeys()
     /// The next focus move came from a click: no scrolling.
     var quiet = false
+    /// The Remove card of a kind of thing asks (0.107): its own buttons take the keys; the page's wait.
+    var asking = false
     /// The letters typed on the template pills, and when the last came.
     var ahead = ""
     var aheadAt = Date.distantPast
@@ -1945,6 +2016,15 @@ extension ThingEditor {
         guard e.window === mine || drop.open != nil else { return e }
         let mods = e.keyModifiers
         let code = e.keyCode
+
+        // The Remove card of a kind of thing (0.107): Escape is its Cancel, Tab and Space its own; the page's
+        // commands (⌘S, ⌘N, ⌘J, Return) wait until it has its answer.
+        if keyHome.asking {
+            let letter = e.charactersIgnoringModifiers?.lowercased() ?? ""
+            if mods == .command && ["s", "n", "j"].contains(letter) { return nil }
+            if mods.isEmpty && (code == KeyCode.returnKey || code == KeyCode.enter) { return nil }
+            return e
+        }
 
         // The page's commands, from anywhere on it — the Thing menu's keys.
         if mods == .command {

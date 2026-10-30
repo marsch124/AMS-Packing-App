@@ -38,6 +38,7 @@
 		3D4AE8C84A4E77073F4D65B0 /* QuickOpen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CB52607947F12194AEDF4B6 /* QuickOpen.swift */; };
 		3F92FF6665ADB7BD4437005C /* Vault.swift in Sources */ = {isa = PBXBuildFile; fileRef = F99A5CDDEE7077CDDBCB185D /* Vault.swift */; };
 		3FC3ACFD520FB3DB0B17F719 /* VaultCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = D588E84D41CE3E84D62CA76F /* VaultCard.swift */; };
+		45AD045844971CD00DEEEE1E /* KindRemoveCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 648AFDD703D25071725F2F8F /* KindRemoveCard.swift */; };
 		467EBA0027C10637FEA9E9B8 /* AMSPackingUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E85BCAD34C27EEF9C85A644 /* AMSPackingUITests.swift */; };
 		4AD76B6494FA68210153D99C /* DropDown.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1750ABC86D97A97B07370949 /* DropDown.swift */; };
 		4D8BC6C9156CCE2B2D8024DA /* FirstRunView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D92F0E3A8310A4DC718C68EB /* FirstRunView.swift */; };
@@ -186,6 +187,7 @@
 		5A986BF2DF0FA5E39E42559C /* Words.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Words.swift; sourceTree = "<group>"; };
 		5D88FA9EA0BC448F857072B9 /* WorldMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorldMap.swift; sourceTree = "<group>"; };
 		61946E344209EE542B58B829 /* QuickActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickActions.swift; sourceTree = "<group>"; };
+		648AFDD703D25071725F2F8F /* KindRemoveCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KindRemoveCard.swift; sourceTree = "<group>"; };
 		6C33289BF160D459176D7669 /* SmallDelete.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmallDelete.swift; sourceTree = "<group>"; };
 		6CC01537D593379C8EF1B84F /* RefineScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefineScreen.swift; sourceTree = "<group>"; };
 		6E6040E9224EB629B23E6372 /* Keys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keys.swift; sourceTree = "<group>"; };
@@ -421,6 +423,7 @@
 				8DCA03D292255B391659C37C /* Headings.swift */,
 				403A4735005582B356D67F55 /* HomeScreen.swift */,
 				6E6040E9224EB629B23E6372 /* Keys.swift */,
+				648AFDD703D25071725F2F8F /* KindRemoveCard.swift */,
 				112E88E5E56E46CAA3F002CE /* KitDashboard.swift */,
 				F4B594AF144EDDECFF9CF7B3 /* Laundry.swift */,
 				258F81799F958E5C5EF112C5 /* ListsScreen.swift */,
@@ -619,6 +622,7 @@
 				6A2E2EBA4741768E52BD87B0 /* HomeScreen.swift in Sources */,
 				1F964649144F502707139E0C /* Keys.swift in Sources */,
 				5E3EE86BE15A9EC0181D6153 /* KeysGuide.swift in Sources */,
+				45AD045844971CD00DEEEE1E /* KindRemoveCard.swift in Sources */,
 				D0D4A2EA2FA240B7D980E71C /* KitDashboard.swift in Sources */,
 				A95973A9F2025DB491456F72 /* Laundry.swift in Sources */,
 				B1070E8FEA2D20959B29BA24 /* LibraryModel.swift in Sources */,

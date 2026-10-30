@@ -36,10 +36,14 @@ public struct ChoiceEdits: Equatable, Sendable {
     /// New entries, as typed, in the order they were added; each keyed `addedKey(n)`, and
     /// renamed, moved and taken back by that key like any other.
     public var added: [String] = []
+    /// Kinds of thing removed while his things have them (0.107): the removed key → the key of the
+    /// kind its things move to (as the page shows the list: a stored key or an added one's
+    /// `addedKey`). Written on Save by `removeKind`; Put back drops it.
+    public var moves: [String: String] = [:]
 
     public init(kind: String, bag: String = "") { self.kind = kind; self.bag = bag }
 
-    public var isEmpty: Bool { names.isEmpty && order == nil && removed.isEmpty && added.isEmpty }
+    public var isEmpty: Bool { names.isEmpty && order == nil && removed.isEmpty && added.isEmpty && moves.isEmpty }
 
     /// The key of the `n`th entry added on the page and not made yet (made on Save).
     public static func addedKey(_ n: Int) -> String { "\u{0}+\(n)" }
@@ -96,10 +100,17 @@ extension Library {
         return first.compactMap { byKey[$0] } + rows.filter { !first.contains($0.key) }
     }
 
-    /// Why an entry of a list cannot be renamed, moved or removed at all — nil for nearly
-    /// all. (Documents & money and Reminders: the app reads them by their words.)
+    /// Why an entry of a list cannot be RENAMED — nil for nearly all. (Documents & money and
+    /// Reminders: the app knows them by their words.)
     public func choiceFixed(_ kind: String, _ key: String) -> String? {
         kind == "categories" ? Library.fixedCategory(key) : nil
+    }
+
+    /// An entry a drop-down gives no tools at all (no pen, no ↑ ↓, no Remove): Documents & money, which
+    /// Before you go reads, so it neither changes its name nor goes. (Reminders had none either until
+    /// 0.107; now it may be moved and removed — its pen says why it keeps its name.)
+    public func choiceLocked(_ kind: String, _ key: String) -> Bool {
+        kind == "categories" && normName(key) == normName(DOCUMENTS_CATEGORY)
     }
 
     /// What is wrong with `name` as the new name of entry `key` while the page holds `e` —
@@ -180,11 +191,18 @@ extension Library {
     /// trip, and on none of his templates as something he packs; otherwise its page asks.
     public func choiceRemoveProblem(_ kind: String, key: String, label: String, bag: String = "",
                                     except: String? = nil, pageSays: Bool = false) -> String? {
-        if let fixed = choiceFixed(kind, key) { return fixed }
+        // A kind of thing (0.107): Documents & money and the last kind stay; Reminders may go.
+        if kind == "categories", let why = kindRemoveProblem(key) { return why }
+        if kind != "categories", let fixed = choiceFixed(kind, key) { return fixed }
         // An activity area names the templates still in it, and the workout area stays (0.89).
         if kind == "areas" { return areaRemoveProblem(key, label: label) }
         var use = choiceUse(kind, key: key, bag: bag, except: except)
         if pageSays { use.things += 1 }
+        // A kind of thing in use goes from Your choices, which asks where its things go (0.107) — said here.
+        if kind == "categories", use.inUse {
+            return use.refusal(label).replacingOccurrences(of: ", so it stays.",
+                                                           with: ". Your choices in Settings removes it and moves its things to another kind.")
+        }
         if kind == "bags" {
             if use.inUse {
                 return use.refusal(label).replacingOccurrences(of: ", so it stays.", with: ". Its page asks where they go instead.")
@@ -371,11 +389,16 @@ extension Library {
     }
 
     /// The page's removals, after its thing is written. One still in use by then (the
-    /// other device) stays.
+    /// other device) stays — unless it is a kind of thing whose things were given a kind to
+    /// move to (0.107, `moves`): then `removeKind` moves them all and takes it away.
     public mutating func applyChoiceRemovals(_ e: ChoiceEdits, renamed map: [String: String] = [:]) {
         for key in e.removed.sorted() {
             let now = map[key] ?? key
             if ChoiceEdits.isAdded(key) { continue }
+            if e.kind == "categories", let to = e.moves[key] {
+                _ = removeKind(now, moveTo: map[to] ?? to)
+                continue
+            }
             _ = removeChoice(e.kind, key: now, bag: e.bag)
         }
     }
