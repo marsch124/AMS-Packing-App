@@ -10,7 +10,8 @@ import PackingLibrary
 // of thing, Whose it is, Kept at home, Usually packed in, a bag's Pocket, When, Condition —
 // on a thing's page and on a template's row: ONE mechanism (DropDown's row tools), fed by
 // the page's held `ChoiceEdits` and written on Save by the lists' own functions
-// (ChoiceEdits.swift). An entry still in use is not removed: the list says what uses it.
+// (ChoiceEdits.swift). An entry still in use is not removed: the list says what uses it — except
+// a kind of thing (0.107), whose Remove asks on the page where its things go (`asks`).
 
 /// One of his lists as a drop-down shows it while the page holds its edits.
 struct ChoiceDrop {
@@ -31,6 +32,9 @@ struct ChoiceDrop {
     /// For a list changed AT ONCE (`atOnce`): the key a new entry was made under, found by
     /// its name once `keep` has written it. nil = held: it waits under its `addedKey`.
     var made: ((String) -> String?)? = nil
+    /// Remove asked on the page instead of inside the list (0.107: a kind of thing his things
+    /// still have — the card that says where they go): true when the page took the question.
+    var asks: ((String) -> Bool)? = nil
 
     var rows: [ChoiceRow] { library.choicesAsEdited(edits) }
     var options: [(value: String, label: String)] { rows.map { ($0.key, $0.label) } }
@@ -45,7 +49,8 @@ struct ChoiceDrop {
         let mine = Set(rows.map(\.key))
         func order() -> [String] { lib.choicesAsEdited(e).map(\.key) }
         return DropDownRowTools(
-            applies: { mine.contains($0) && lib.choiceFixed(kind, $0) == nil },
+            // Documents & money has none; Reminders has them since 0.107 (its pen says why it keeps its name).
+            applies: { mine.contains($0) && !lib.choiceLocked(kind, $0) },
             rename: { key, name in
                 if let problem = lib.choiceNameProblem(e, key: key, name: name) { return problem }
                 var next = e
@@ -72,7 +77,7 @@ struct ChoiceDrop {
             },
             isRemoved: { e.removed.contains($0) },
             remove: { key in var next = e; next.removed.insert(key); keep(next) },
-            putBack: { key in var next = e; next.removed.remove(key); keep(next) },
+            putBack: { key in var next = e; next.removed.remove(key); next.moves[key] = nil; keep(next) },
             question: { key in "Remove \(label(key)) from \(listWords)? Nothing uses it." },
             orders: Library.choiceOrders(kind),
             refusal: { key in
@@ -80,7 +85,8 @@ struct ChoiceDrop {
                                         pageSays: !chosen.isEmpty && same(chosen, key))
             },
             open: open,
-            nameHint: "Name")
+            nameHint: "Name",
+            asksOnPage: asks)
     }
 
     /// "A new …" at the foot: one he already has is simply chosen; a new one waits for Save

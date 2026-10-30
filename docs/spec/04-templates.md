@@ -2387,14 +2387,16 @@ base, a new trip packs its Fins; Replace: his Swim stays role "" in WET with the
 
 ### Purpose and origin
 "The lists he authors himself: storage places, owners, packers, conditions and the 'When' timeline. They belong to
-the account, so both devices show the same; an entry still in use cannot be removed by accident." Renamed from "Your
+the account, so both devices show the same; an entry still in use cannot be removed by accident." (Since 0.107 a
+kind of thing — a sixth part — can be, after a question that moves its things; and every part folds: spec 06 §2.)
+Renamed from "Your
 lists" in 0.34 so it never clashes with Your templates; the explanations are his test K.3 (1 Oct 2026: "a line or
 two of explanations for each choice … so that this is totally clear to the user").
 His activity areas (0.89) are not here: they are the Templates tab's headings and are changed there, on the
 Activity areas page (§1a), with the same tools.
 
 ### How it is reached and left
-Settings → "Your choices" card ("Storage places, owners, packers, conditions, \"When\" steps"; id `settings-lists`).
+Settings → "Your choices" card ("Places, kinds, owners, packers, conditions, When" since 0.107; id `settings-lists`).
 Since 0.92 on a copy of the library until Done (spec 06 §2.3, §20a): left by "Done" (`lists-done`, filled slate,
 ⌘S) — what was changed is kept — or "Cancel" (`lists-cancel`, top left, outlined muted; Escape too) or a swipe (with
 something changed it asks "Discard changes?" first, spec 06 §20a)
@@ -2403,7 +2405,8 @@ down — nothing changed here is kept. Container `lists-detail`. Mac: min 520 ×
 ### What is on screen
 - Cancel · "Your choices" (22 heavy ink, `choices-title`) · Done.
 - Intro (15 medium muted, `choices-intro`): "The words the app offers you as buttons. Add your own with the field under
-  each part; one that is still in use somewhere cannot be removed."
+  each part; one that is still in use somewhere cannot be removed." (0.107's words, with the folds and Kinds of thing:
+  spec 06 §2.4, the full and current description of this page.)
 - A problem line when a removal was refused (15 semibold red, `lists-problem`).
 - Five parts, in order, each: a heading band in slate (`choices-heading-<kind>`), a hint (15 medium, ink 85 %,
   `choices-hint-<kind>`), the entries, and an add row.

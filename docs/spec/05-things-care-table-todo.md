@@ -1449,7 +1449,11 @@ When (`phases`) and Condition (`conditions`). Care is not one of his lists (a nu
   A bag goes from here only as its page would let it go without a question (nothing packed in it, on no trip, on
   none of his templates as a thing he packs); otherwise the card says so ("… Its page asks where they go instead.")
   and offers **Open the bag** (`-open`), which closes the list and opens the bag's page (`BagDetail`) over the
-  thing's. Documents & money and Reminders have no tools: the app reads them by their words.
+  thing's. **A kind of thing his things still have (0.107)** is not refused: Remove closes the list and the page asks
+  with the card of Your choices — how many have it, Move them to, "Nothing is kept until you press Save." — and holds
+  the removal (struck out, Put back) until Save, which moves every thing and trip line of the kind; this thing takes
+  the kind chosen at once (spec 07 part 13, "0.107"; the card: spec 06 §2.4). Documents & money has no tools here (Before
+  you go reads it); Reminders has them since 0.107, its pen refused (the app gives that kind to its reminders).
 - **"A new …"** at every foot: "A new kind" ("Type the kind first."), "A new owner" ("Type the name first."), "A new
   place", "A new bag" ("Type the bag's name first."), "A new pocket" ("Type the pocket's name first."), "A new step"
   ("Type the step first."), "A new condition" ("Type the condition first."). One he has (as the list shows them) is

@@ -1060,7 +1060,9 @@ web app (and the parity check, 211/211 unchanged — PackingCore is not touched)
   rows are numbered 0, 1, 2… again and only changed numbers are written. Things keep their places. Arrange shows
   things only (`arrangeLines` leaves reminders out); a reminder keeps its relative place when things are dragged.
 - **Remove** takes the membership away; a reminder on no other template is deleted with it. Trips keep their line.
-- **A new reminder item:** kind "Reminders", no bag (`container` ""), no weight, `shortList` true — so a Quick trip
+- **A new reminder item:** kind "Reminders" — since 0.107 while it is on his kinds (`reminderKind()`: once he has
+  removed it in Your choices, his Other, else Comfort & misc, else his first kind; never a kind he removed; spec 06
+  §2.6) — no bag (`container` ""), no weight, `shortList` true — so a Quick trip
   brings it too. Its line on a template with its own bag carries that bag's name, but no screen shows it.
 - **Adding to a template does not reach trips already made** — as for things: Trip settings → Save rebuilds.
 - **Not among his things.** A reminder that sits on a template is left out of Your things, the table, Search,
@@ -1173,6 +1175,33 @@ review) and the table's menus. (A reminder's When was left out until 0.73 — be
 own words, showing a renamed kind as an unknown one). `setCategories` stores nothing while the list is the app's.
 **Documents & money** and **Reminders** keep their names and have no tools (`fixedCategory`): Before you go and
 a template's reminders read them by their words. PackingCore is untouched (parity unchanged).
+
+**0.107 — a kind in use is removed, here and in Your choices.** His words, 30 Oct 2026: "I need the ability to delete
+a Kind of thing, even if there are items that are connected to this very Kind of thing choice. Example: I don't
+understand why I defined Reminders. I want them gone" — with two screenshots: Your choices, and this list on a thing's
+page, where he had tried. Your choices got a sixth part, Kinds of thing (spec 06 §2). In Kind of thing here:
+- **Remove on a kind his things still have** (`DropDownRowTools.asksOnPage` → `ChoiceDrop.asks` → the page's
+  `askKind`): the list closes and the page shows the card of Your choices (`KindRemoveCard`, spec 06 §2.4) —
+  "Remove “Reminders”?", "2 reminders have this kind." (this thing counted by what the page says, `kindUse(key,
+  except:)` + 1), **Move them to** (the kinds as the list shows them now, the struck-out ones and the kind itself left
+  out; chosen at first by `Library.fallbackKindIndex`: Other, else Comfort & misc, else the first), "Nothing is kept
+  until you press Save.", Cancel · Remove. Remove holds it with the page's other list changes: `ChoiceEdits.removed`
+  plus `moves[key] = <the kind chosen>` (a kind already moved into this one goes on to where it goes); the row is
+  struck out with Put back (which drops the move); this thing, if it was that kind, takes the kind chosen at once.
+  **Save**: renames and new kinds first, then the thing, then `applyChoiceRemovals`, which calls `removeKind(now,
+  moveTo: map[to] ?? to)` for a held move (the target followed through a rename or a new kind made on the page) —
+  every thing and trip line of the kind moved, the kind gone — all in the Save's one step ("Edit Map"). **Cancel**
+  throws it away. While the card is up the page's Cancel loses Escape (the card's Cancel has it), its ⌘S (iPhone) and,
+  on the Mac, the page's keys hold ⌘S, ⌘N, ⌘J and Return (`ThingKeyHome.asking`).
+- Not asked on the page (in the list as before): a kind nothing has ("Remove X from your kinds of thing? Nothing uses
+  it."), a kind made on this page, the last kind ("… is your only kind of thing, so it stays." — `choiceRemoveProblem`
+  now asks `kindRemoveProblem` first for a kind). A removal held with no move (none is made by the screen) is still
+  refused at Save while in use — its words, if ever shown: "Clothing is still used by 1 thing. Your choices in Settings
+  removes it and moves its things to another kind."
+- **Reminders** has tools here now (`choiceLocked`: only Documents & money has none): ↑ ↓, Remove, and a pen whose
+  name is refused (`fixedCategory`, new words: "Reminders is the kind the app gives its reminders, so it keeps its name
+  — remove it, and they get another kind."). A reminder is known by its `itemType`, never by its kind, and a reminder
+  made later gets `reminderKind()`. Documents & money keeps no tools (Before you go reads it).
 
 ### The Mac
 
@@ -2479,7 +2508,8 @@ aside — a ticked one may be written again).
 
 **A To do written on the trip — the rules** (`Library.addTripTodo(tripId:name:today:)`):
 1. It is the web app's own reminder line on the trip: `itemType` "reminder", `custom` true (no template behind it —
-   a rebuild keeps it, as "Add a thing to this trip" does), not ticked, in no bag (`container` ""), kind "Reminders",
+   a rebuild keeps it, as "Add a thing to this trip" does), not ticked, in no bag (`container` ""), kind "Reminders"
+   (since 0.107 `reminderKind()`: another kind once he removed Reminders),
    its name trimmed, appended last — and marked **written on the trip**: the line's extra key `tripTodo` = true
    (`TRIP_TODO_KEY`; never written false). So the trip's list shows it as any reminder ("To do" in the bag's place,
    under "To do" sorted by Into, under "Added on the trip" sorted by Template).
@@ -4139,6 +4169,7 @@ set aside"). Pictures `remind-thing-page`, `remind-thing-page-changed`, `remind-
 | 28 Oct 2026 | **0.105.1, no red "1 missing" under a kit — his words.** Packing with some cameras and drones left at home on purpose, his screenshot of "Camera kit · 3 inside" over "1 missing: Camera Action" in red: "This red text is far too dominant. This is not needed." The line under a kit is gone (`KitLineParts`); a thing taken out shows only struck through in the kit's fold (value "taken out"), and "N inside" already leaves it out. `KitOnLine.missingWords` stays in the model (tests), shown nowhere. Four UI tests now assert no `trip-line-<n>-kit-missing` — red on 0.105, where it was there. |
 | 28 Oct 2026 | **0.105.2, a bag with one pocket never asks — his words.** His screenshot while packing: a lone "MaxPack" pill under the Regular mouse in his Carry-on Bellroy; "What does MaxPack mean? Do we need that?" — told it is that bag's one pocket, offered after each tick; his answer: "Yes, please change that so a bag with only one pocket never asks." `Library.asksPocket` (two or more) gates the pills after a tick and on Pack to go home; a line's menu still offers the one pocket (asked for). |
 | 28 Oct 2026 | **0.106, a faint "no" sign for Not this time, and a thing once under Template — his picks D and B.** Packing for Torremolinos, his screenshots: a set-aside line's empty ring "needs something… a small gray-out strike-through that is visually pleasing"; and the EDC Tech kit, on Travel short and Plane (base), shown open under both with Group by Template — "you cannot display the same item twice… It's impossible to pack in that way. How do you solve that?" Shown a picture of five circles (A–E) and three ways (A–C), he answered "1D 2B": `NotThisTimeMark` replaces the ring of a set-aside line; `linesByTemplate` puts a line under its first template only and `alsoOnTemplates` feeds its marks ("also" + the other templates' icons). |
+| 30 Oct 2026 | **Your choices folds; a kind of thing in use can be removed (0.107, two asks with screenshots).** Every part of Your choices has a chevron at the left of its heading (the look of Before a trip), the whole heading line folds or opens it, folded it says how many entries it holds ("Storage places · 12"); every part starts folded and keeps its own fold per device (`ChoicesFold`). A sixth part, Kinds of thing, joined; ✕ on a kind his things still have asks first — how many, and Move them to (his Other, else Comfort & misc, else his first kind: the data has no "no kind", an empty kind reads as Comfort & misc) — held on the page's copy, kept by Done in one ⌘Z step ("Change Your Choices"), thrown away by Cancel. The same card in a thing's Kind of thing drop-down (his second screenshot, where he had tried): held in the page's `ChoiceEdits.moves`, made on Save in its one step, thrown away by Cancel. Reminders may go; reminders stay reminders (`itemType`) and a new one never brings the kind back (`reminderKind`). Documents & money stays; the other five parts keep "in use stays". | "Could we design the Your choices areas with a toggle so that the user can fold. The list is too long unfolded." — "The Kind of things list needs to be adjusted: I need the ability to delete a Kind of thing, even if there are items that are connected to this very Kind of thing choice. Example: I don't understand why I defined Reminders. I want them gone, because I dont know how to use them." Spec 06 §2; spec 07 parts 12 and 13. UI tests seen RED on 0.106. |
 
 ## Open questions
 

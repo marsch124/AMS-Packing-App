@@ -353,13 +353,15 @@ extension Library {
         return true
     }
 
-    /// Why a kind of thing keeps its name and its place in the list — nil for any other.
-    /// The app reads two by their words: Documents & money (Before you go) and
-    /// Reminders (a template's reminders).
+    /// Why a kind of thing keeps its name — nil for any other. (Inside a drop-down it keeps its place too: no
+    /// tools there.) The app knows two by their words: Documents & money (read by Before you go, so it also stays —
+    /// `kindRemoveProblem`) and Reminders, the kind it gives the reminders it makes. Since 0.107 Reminders may be
+    /// removed in Your choices (his words, 30 Oct 2026: "I don't understand why I defined Reminders. I want them
+    /// gone"): a reminder is known by its `itemType`, and one made after gets another kind (`reminderKind`).
     public static func fixedCategory(_ name: String) -> String? {
         switch normName(name) {
         case normName(DOCUMENTS_CATEGORY): return "\(DOCUMENTS_CATEGORY) is read by Before you go, so it keeps its name."
-        case normName(REMINDERS_CATEGORY): return "\(REMINDERS_CATEGORY) holds the reminders of your templates, so it keeps its name."
+        case normName(REMINDERS_CATEGORY): return "\(REMINDERS_CATEGORY) is the kind the app gives its reminders, so it keeps its name \u{2014} remove it, and they get another kind."
         default: return nil
         }
     }

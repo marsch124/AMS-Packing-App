@@ -3807,6 +3807,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "screen-settings"))
         tap(app, id: "settings-lists")
         XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        openChoicePart(app, "places")
         XCTAssertTrue(app.staticTexts["list-places-name-11"].waitForExistence(timeout: 5))
         type("Attic shelf", into: app.textFields["list-places-add-name"])
         tap(app, id: "list-places-add")
@@ -3822,6 +3823,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "screen-settings"))
         tap(app, id: "settings-lists")
         XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        openChoicePart(app, "places")
         XCTAssertTrue(app.staticTexts["list-places-name-11"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.staticTexts["list-places-name-12"].exists, "the place never confirmed with Done was kept when the app ended")
         tap(app, id: "lists-cancel")
@@ -8087,6 +8089,7 @@ final class AMSPackingUITests: XCTestCase {
         tab(app, "settings")
         tap(app, id: "settings-lists")
         XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        openChoicePart(app, "places")
         type("Attic shelf", into: app.textFields["list-places-add-name"])
         tap(app, id: "list-places-add")
         XCTAssertTrue(app.staticTexts["list-places-name-12"].waitForExistence(timeout: 5))
@@ -8097,6 +8100,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(disappears(app, "lists-detail", timeout: 5))
         tap(app, id: "settings-lists")
         XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        openChoicePart(app, "places")
         XCTAssertTrue(app.staticTexts["list-places-name-11"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.staticTexts["list-places-name-12"].exists, "Discard kept the place")
         tap(app, id: "lists-cancel")
@@ -8190,6 +8194,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "screen-settings"))
         tap(app, id: "settings-lists")
         XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        openChoicePart(app, "places")
         XCTAssertTrue(app.buttons["lists-cancel"].waitForExistence(timeout: 5), "Your choices has no Cancel")
         shot(app, "cancel-choices")
         XCTAssertTrue(app.staticTexts["list-places-name-11"].waitForExistence(timeout: 5))
@@ -8203,6 +8208,7 @@ final class AMSPackingUITests: XCTestCase {
 
         tap(app, id: "settings-lists")
         XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        openChoicePart(app, "places")
         XCTAssertTrue(app.staticTexts["list-places-name-11"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.staticTexts["list-places-name-12"].exists, "Cancel kept the place")
         type("Attic shelf", into: app.textFields["list-places-add-name"])
@@ -8214,6 +8220,7 @@ final class AMSPackingUITests: XCTestCase {
 
         tap(app, id: "settings-lists")
         XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        openChoicePart(app, "places")
         let kept = app.staticTexts["list-places-name-12"]
         XCTAssertTrue(kept.waitForExistence(timeout: 5), "Done did not keep the place")
         XCTAssertEqual(words(kept), "Attic shelf")
@@ -9520,6 +9527,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "screen-settings"))
         tap(app, id: "settings-lists")
         XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        openChoicePart(app, "owners")
         XCTAssertTrue(app.staticTexts["list-owners-name-1"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.staticTexts["list-owners-me-0"].exists || app.staticTexts["list-owners-me-1"].exists, "a Me tag before any mark")
         tap(app, id: "list-owners-edit-1")
@@ -11502,11 +11510,12 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "screen-settings"))
         tap(app, id: "settings-lists")
         XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        openChoicePart(app, "places", "categories", "owners", "people", "conditions", "phases")
         // Its own name, so it never clashes with Your templates (2026-09-27).
         XCTAssertEqual(words(app.staticTexts["choices-title"]), "Your choices")
         // Each part says what it is and where it is used — a line or two (his K.3).
         XCTAssertTrue(app.staticTexts["choices-intro"].exists, "the page does not say what it is")
-        for kind in ["places", "owners", "people", "conditions", "phases"] {
+        for kind in ["places", "categories", "owners", "people", "conditions", "phases"] {
             let hint = app.staticTexts["choices-hint-\(kind)"]
             XCTAssertTrue(hint.exists, "no explanation for \(kind)")
             XCTAssertGreaterThan(words(hint).count, 80, "\(kind) is explained in too few words: '\(words(hint))'")
@@ -11537,6 +11546,7 @@ final class AMSPackingUITests: XCTestCase {
         tab(app, "settings")
         tap(app, id: "settings-lists")
         XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        openChoicePart(app, "places")
         let remove = app.buttons["list-places-remove-12"]
         XCTAssertTrue(remove.waitForExistence(timeout: 5))
         tapVisible(app, remove)
@@ -11554,6 +11564,7 @@ final class AMSPackingUITests: XCTestCase {
         tab(app, "settings")
         tap(app, id: "settings-lists")
         XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        openChoicePart(app, "places", "phases")
 
         type("garage", into: app.textFields["list-places-add-name"])
         tap(app, id: "list-places-add")
@@ -11586,6 +11597,7 @@ final class AMSPackingUITests: XCTestCase {
         tab(app, "settings")
         tap(app, id: "settings-lists")
         XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        openChoicePart(app, "places")
         XCTAssertEqual(words(app.staticTexts["list-places-name-2"]), "Hall closet")
 
         tap(app, id: "list-places-edit-2")
@@ -11636,6 +11648,240 @@ final class AMSPackingUITests: XCTestCase {
         app.buttons["thing-row-0"].tap()
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
         XCTAssertEqual(keptAtHome(app), "Hall cupboard", "the thing kept the old name")
+    }
+
+    // MARK: - Your choices folds, and a kind of thing in use is removed (0.107)
+
+    /// Your choices' parts start folded (0.107 — his words, 30 Oct 2026: "The list is too long unfolded"): open each
+    /// part named unless it is open already (a part keeps its fold on this device), and wait for its Add.
+    private func openChoicePart(_ app: XCUIApplication, _ kinds: String...) {
+        for kind in kinds {
+            let fold = app.buttons["choices-fold-\(kind)"]
+            XCTAssertTrue(fold.waitForExistence(timeout: 5), "Your choices has no fold for \(kind)")
+            if value(fold) != "open" { tapVisible(app, fold) }
+            XCTAssertTrue(waitUntil { self.value(fold) == "open" }, "\(kind) did not open: '\(value(fold))'")
+            XCTAssertTrue(app.textFields["list-\(kind)-add-name"].waitForExistence(timeout: 5), "\(kind) opened without its Add")
+        }
+    }
+
+    /// His words (30 Oct 2026): "Could we design the Your choices areas with a toggle so that the user can fold. The
+    /// list is too long unfolded." Every part starts folded — its heading with the chevron at the left and how many
+    /// entries it holds ("Storage places · 12"), nothing under it — opens on a tap anywhere on that line, alone, and
+    /// keeps its fold on this device when the page is opened again. Pictures `choices-folded`, `choices-open`.
+    func testYourChoicesStartFoldedAndEachPartKeepsItsOwnFold() {
+        let night = ProcessInfo.processInfo.environment["NIGHT"] == "1" ? ["-AppleInterfaceStyle", "Dark"] : []
+        let app = launch("-uiTesting", night)
+        tab(app, "settings")
+        XCTAssertTrue(appears(app, "screen-settings"))
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        // The sample: the app's 12 places and 12 kinds, the 2 owners and 2 packers its things name, 4 conditions, 7 steps.
+        let counts = [("places", 12), ("categories", 12), ("owners", 2), ("people", 2), ("conditions", 4), ("phases", 7)]
+        for (kind, n) in counts {
+            let fold = app.buttons["choices-fold-\(kind)"]
+            XCTAssertTrue(fold.waitForExistence(timeout: 5), "\(kind) has no fold")
+            XCTAssertEqual(value(fold), "folded", "\(kind) does not start folded")
+            XCTAssertTrue(app.staticTexts["choices-heading-\(kind)"].exists, "\(kind) lost its heading")
+            XCTAssertEqual(words(app.staticTexts["choices-count-\(kind)"]), "\u{00B7} \(n)", "\(kind), folded, does not say how many it holds")
+            XCTAssertFalse(app.textFields["list-\(kind)-add-name"].exists, "\(kind) shows its Add while folded")
+            XCTAssertFalse(app.staticTexts["list-\(kind)-name-0"].exists, "\(kind) shows its entries while folded")
+            XCTAssertFalse(app.staticTexts["choices-hint-\(kind)"].exists, "\(kind) shows its explanation while folded")
+        }
+        let places = app.buttons["choices-fold-places"], title = app.staticTexts["choices-heading-places"]
+        XCTAssertLessThanOrEqual(places.frame.maxX, title.frame.minX + 1, "the chevron is not at the left of its heading")
+        XCTAssertEqual(places.frame.midY, title.frame.midY, accuracy: 4, "the chevron is not on its heading's line")
+        shot(app, "choices-folded")
+
+        // A tap on the heading's words opens it: the whole line is the fold. The others stay folded.
+        tapVisible(app, title)
+        XCTAssertTrue(waitUntil { self.value(places) == "open" }, "a tap on Storage places did not open it: '\(value(places))'")
+        XCTAssertTrue(app.staticTexts["list-places-name-0"].waitForExistence(timeout: 5), "Storage places opened without its entries")
+        XCTAssertTrue(app.staticTexts["choices-hint-places"].exists, "Storage places opened without its explanation")
+        XCTAssertFalse(app.staticTexts["choices-count-places"].exists, "open, it still says how many")
+        XCTAssertEqual(value(app.buttons["choices-fold-categories"]), "folded", "opening one part opened another")
+        openChoicePart(app, "categories")
+        XCTAssertEqual(words(app.staticTexts["list-categories-name-0"]), "Clothing")
+        XCTAssertEqual(words(app.staticTexts["list-categories-name-11"]), "Reminders")
+        shot(app, "choices-open")
+
+        // Its own fold, kept on this device: Cancel, open the page again — the two still open, the rest folded.
+        tap(app, id: "lists-cancel")
+        XCTAssertTrue(disappears(app, "lists-detail", timeout: 5))
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.value(app.buttons["choices-fold-places"]) == "open" }, "Storage places forgot it was open")
+        XCTAssertEqual(value(app.buttons["choices-fold-categories"]), "open", "Kinds of thing forgot it was open")
+        for kind in ["owners", "people", "conditions", "phases"] {
+            XCTAssertEqual(value(app.buttons["choices-fold-\(kind)"]), "folded", "\(kind) opened by itself")
+        }
+        // …and the chevron folds it again.
+        tap(app, id: "choices-fold-places")
+        XCTAssertTrue(waitUntil { self.value(app.buttons["choices-fold-places"]) == "folded" }, "Storage places did not fold again")
+        XCTAssertTrue(waitUntil { !app.textFields["list-places-add-name"].exists }, "folded, Storage places still shows its Add")
+        XCTAssertEqual(words(app.staticTexts["choices-count-places"]), "\u{00B7} 12")
+        tap(app, id: "lists-done")
+        XCTAssertTrue(disappears(app, "lists-detail", timeout: 5))
+    }
+
+    /// His words (30 Oct 2026): "I need the ability to delete a Kind of thing, even if there are items that are
+    /// connected to this very Kind of thing choice. Example: I don't understand why I defined Reminders. I want them
+    /// gone". Its ✕ asks first — how many have the kind, and where they go ("Move them to", his Other when he has
+    /// one); the card's Cancel (Escape on the Mac) keeps it; Remove takes it off the page and its reminders are
+    /// Other's; the page's Cancel puts it all back. Removed with Done, Hiking's reminders are still its reminders.
+    /// (`-uiTestingReminders`: two reminders on Hiking, of the kind Reminders, the last of the twelve.) Picture
+    /// `choices-remove-ask`.
+    func testAKindInUseAsksWhereItsThingsGoAndCancelPutsItBack() {
+        let night = ProcessInfo.processInfo.environment["NIGHT"] == "1" ? ["-AppleInterfaceStyle", "Dark"] : []
+        let app = launch("-uiTestingReminders", night)
+        tab(app, "settings")
+        XCTAssertTrue(appears(app, "screen-settings"))
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        openChoicePart(app, "categories")
+        XCTAssertEqual(words(app.staticTexts["list-categories-name-11"]), "Reminders")
+        XCTAssertEqual(words(app.staticTexts["list-categories-uses-11"]), "2", "Reminders' two reminders are not counted")
+        // A kind of his own called Other: where the things go unless he chooses another.
+        type("Other", into: app.textFields["list-categories-add-name"])
+        tap(app, id: "list-categories-add")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["list-categories-name-12"]) == "Other" }, "Other was not added")
+        hideKeyboard(app)
+
+        // ✕ asks — and the card's Cancel keeps it.
+        tap(app, id: "list-categories-remove-11")
+        let question = app.staticTexts["choices-remove-question"]
+        XCTAssertTrue(question.waitForExistence(timeout: 5), "Remove on a kind in use did not ask")
+        XCTAssertFalse(app.staticTexts["lists-problem"].exists, "the kind in use was refused, as before: '\(words(app.staticTexts["lists-problem"]))'")
+        XCTAssertEqual(words(question), "Remove \u{201C}Reminders\u{201D}?")
+        XCTAssertEqual(words(app.staticTexts["choices-remove-says"]), "2 reminders have this kind.")
+        XCTAssertEqual(chosen(app, "choices-remove-to"), "Other", "its reminders do not go to Other")
+        shot(app, "choices-remove-ask")
+        tap(app, id: "choices-remove-no")
+        XCTAssertTrue(waitUntil { !question.exists }, "the card's Cancel did not put the question away")
+        XCTAssertEqual(words(app.staticTexts["list-categories-name-11"]), "Reminders", "the card's Cancel removed it")
+        #if os(macOS)
+        // Escape is the card's Cancel — never the page's.
+        tap(app, id: "list-categories-remove-11")
+        XCTAssertTrue(question.waitForExistence(timeout: 5))
+        pressEscape(app)
+        XCTAssertTrue(waitUntil { !question.exists }, "Escape did not put the question away")
+        XCTAssertNotNil(find(app, "lists-detail"), "Escape closed Your choices instead of the question")
+        XCTAssertEqual(words(app.staticTexts["list-categories-name-12"]), "Other", "Escape threw away what the page held")
+        #endif
+
+        // Remove: off the page, and its two reminders are Other's.
+        tap(app, id: "list-categories-remove-11")
+        XCTAssertTrue(question.waitForExistence(timeout: 5))
+        tap(app, id: "choices-remove-yes")
+        XCTAssertTrue(waitUntil { !question.exists }, "Remove did not put the question away")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["list-categories-name-11"]) == "Other" },
+                      "Reminders is still there: '\(words(app.staticTexts["list-categories-name-11"]))'")
+        XCTAssertFalse(app.staticTexts["list-categories-name-12"].exists, "a kind too many")
+        XCTAssertEqual(words(app.staticTexts["list-categories-uses-11"]), "2", "Other did not take the two reminders")
+
+        // The page's Cancel puts it all back.
+        tap(app, id: "lists-cancel")
+        XCTAssertTrue(disappears(app, "lists-detail", timeout: 5), "Cancel did not close Your choices")
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        openChoicePart(app, "categories")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["list-categories-name-11"]) == "Reminders" }, "Cancel did not put Reminders back")
+        XCTAssertFalse(app.staticTexts["list-categories-name-12"].exists, "Cancel kept Other")
+
+        // With no Other the card offers the app's own Comfort & misc. Done keeps it; the reminders stay reminders.
+        tap(app, id: "list-categories-remove-11")
+        XCTAssertTrue(question.waitForExistence(timeout: 5))
+        XCTAssertEqual(chosen(app, "choices-remove-to"), "Comfort & misc", "with no Other, not the app's own kind")
+        tap(app, id: "choices-remove-yes")
+        XCTAssertTrue(waitUntil { !question.exists })
+        XCTAssertEqual(words(app.staticTexts["list-categories-uses-10"]), "12", "Comfort & misc did not take the two reminders")
+        tap(app, id: "lists-done")
+        XCTAssertTrue(disappears(app, "lists-detail", timeout: 5), "Done did not close Your choices")
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        tap(app, id: "template-row-1")                               // Hiking
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.words(app.buttons["template-reminder-0"]).contains("Check the forecast") },
+                      "Hiking lost its reminder with the kind: '\(words(app.buttons["template-reminder-0"]))'")
+        XCTAssertTrue(words(app.buttons["template-reminder-1"]).contains("Leave a route note"), "Hiking lost its second reminder")
+        tap(app, id: "template-cancel")
+        XCTAssertTrue(disappears(app, "template-detail", timeout: 5))
+        tab(app, "settings")
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        openChoicePart(app, "categories")
+        XCTAssertFalse((0..<13).contains { self.words(app.staticTexts["list-categories-name-\($0)"]) == "Reminders" },
+                       "Done did not keep Reminders away")
+        tap(app, id: "lists-done")
+    }
+
+    /// …kept by Done: every thing of the kind removed takes the kind chosen under "Move them to" — on its own page
+    /// and in Your choices' counts. (The sample's ten things are all Comfort & misc; with no Other of his the card
+    /// offers the first of his kinds, Clothing; Electronics is chosen instead.)
+    func testAKindRemovedWithDoneMovesItsThingsToTheKindChosen() {
+        let app = launch()
+        tab(app, "settings")
+        XCTAssertTrue(appears(app, "screen-settings"))
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        openChoicePart(app, "categories")
+        XCTAssertEqual(words(app.staticTexts["list-categories-name-10"]), "Comfort & misc")
+        XCTAssertEqual(words(app.staticTexts["list-categories-uses-10"]), "10")
+        tap(app, id: "list-categories-remove-10")
+        let question = app.staticTexts["choices-remove-question"]
+        XCTAssertTrue(question.waitForExistence(timeout: 5), "Remove on a kind in use did not ask")
+        XCTAssertEqual(words(app.staticTexts["choices-remove-says"]), "10 things have this kind.")
+        XCTAssertEqual(chosen(app, "choices-remove-to"), "Clothing", "with no Other, not the first of his kinds")
+        XCTAssertEqual(choose(app, "choices-remove-to", 7), "Electronics", "Move them to does not offer his other kinds in order")
+        tap(app, id: "choices-remove-yes")
+        XCTAssertTrue(waitUntil { !question.exists }, "Remove did not put the question away")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["list-categories-name-10"]) == "Reminders" }, "Comfort & misc is still there")
+        XCTAssertEqual(words(app.staticTexts["list-categories-uses-7"]), "10", "Electronics did not take the ten things")
+        pressSave(app, "lists-done")
+        XCTAssertTrue(disappears(app, "lists-detail", timeout: 5), "Done did not close Your choices")
+        openThing(app, "Map")
+        XCTAssertEqual(chosen(app, "thing-category"), "Electronics", "the Map did not move to Electronics")
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+    }
+
+    /// …and Done is ONE step: ⌘Z (shake on the iPhone) takes all of it back — the kind, in its place, and its things.
+    func testUndoTakesARemovedKindBackWithItsThings() {
+        #if os(macOS)
+        let app = launch()
+        #else
+        let app = launch("-uiTesting", ["-undoHookForTests"])
+        #endif
+        tab(app, "settings")
+        XCTAssertTrue(appears(app, "screen-settings"))
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        openChoicePart(app, "categories")
+        tap(app, id: "list-categories-remove-10")                   // Comfort & misc, the sample's ten things
+        XCTAssertTrue(app.staticTexts["choices-remove-question"].waitForExistence(timeout: 5), "Remove on a kind in use did not ask")
+        tap(app, id: "choices-remove-yes")                          // to Clothing
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["list-categories-uses-0"]) == "10" }, "Clothing did not take the ten things")
+        tap(app, id: "lists-done")
+        XCTAssertTrue(disappears(app, "lists-detail", timeout: 5))
+        #if os(macOS)
+        XCTAssertTrue(waitUntil { self.undoTitle(app) == "Undo Change Your Choices" }, "Edit ▸ Undo says '\(undoTitle(app))'")
+        sleep(1)
+        app.typeKey("z", modifierFlags: .command)
+        XCTAssertTrue(waitUntil { self.undoTitle(app, redo: true) == "Redo Change Your Choices" }, "⌘Z did not take Done back: '\(undoTitle(app, redo: true))'")
+        #else
+        let undo = app.buttons["test-undo"]
+        XCTAssertTrue(waitUntil { self.value(undo) == "Change Your Choices" }, "the step is not Done's: '\(value(undo))'")
+        press(undo)
+        XCTAssertTrue(waitUntil { self.value(app.buttons["test-redo"]) == "Change Your Choices" }, "shake did not take Done back")
+        #endif
+        tap(app, id: "settings-lists")
+        XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        openChoicePart(app, "categories")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["list-categories-name-10"]) == "Comfort & misc" },
+                      "the kind is not back in its place: '\(words(app.staticTexts["list-categories-name-10"]))'")
+        XCTAssertEqual(words(app.staticTexts["list-categories-uses-10"]), "10", "its ten things did not come back with it")
+        XCTAssertFalse(app.staticTexts["list-categories-uses-0"].exists, "Clothing kept the things")
+        tap(app, id: "lists-done")
+        XCTAssertTrue(disappears(app, "lists-detail", timeout: 5))
     }
 
     // MARK: - Long lists made easier (their field test, 3 Oct 2026)
@@ -11945,6 +12191,7 @@ final class AMSPackingUITests: XCTestCase {
         tab(app, "settings")
         tap(app, id: "settings-lists")
         XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        openChoicePart(app, "places")
         misses.append(saysWhatIsMissing(app, "list-places-add"))
         tap(app, id: "lists-done")
         XCTAssertTrue(disappears(app, "lists-detail", timeout: 5))
@@ -12075,7 +12322,7 @@ final class AMSPackingUITests: XCTestCase {
         tab(app, "settings")
         tap(app, id: "settings-lists")
         XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
-        for kind in ["places", "owners", "people", "conditions", "phases"] {
+        for kind in ["places", "categories", "owners", "people", "conditions", "phases"] {
             XCTAssertTrue(app.staticTexts["choices-heading-\(kind)"].waitForExistence(timeout: 5), "Your choices lost its heading for \(kind)")
         }
         shot(app, "looks-choices")
@@ -12605,12 +12852,14 @@ final class AMSPackingUITests: XCTestCase {
 
         tap(app, id: "settings-lists")
         XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        openChoicePart(app, "places")
         type("Attic shelf", into: app.textFields["list-places-add-name"])
         pressEscape(app)
         XCTAssertTrue(disappears(app, "lists-detail", timeout: 5), "Escape did not close Your choices")
         XCTAssertNotNil(find(app, "screen-settings"), "Escape took Settings with it")
         tap(app, id: "settings-lists")
         XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        openChoicePart(app, "places")
         XCTAssertTrue(app.staticTexts["list-places-name-11"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.staticTexts["list-places-name-12"].exists, "Escape added the place that was only typed")
         // Since 0.92 Escape is Cancel here: a place ADDED on the page is thrown away too.
@@ -12621,6 +12870,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(disappears(app, "lists-detail", timeout: 5), "Escape did not cancel Your choices")
         tap(app, id: "settings-lists")
         XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        openChoicePart(app, "places")
         XCTAssertTrue(app.staticTexts["list-places-name-11"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.staticTexts["list-places-name-12"].exists, "Escape kept the place added on the page")
         tap(app, id: "lists-done")
@@ -12773,6 +13023,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "screen-settings"))
         tap(app, id: "settings-lists")
         XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        openChoicePart(app, "owners")
         let kim = app.staticTexts["list-owners-name-0"]
         XCTAssertTrue(kim.waitForExistence(timeout: 5), "Owners is empty while his things name owners")
         XCTAssertEqual(words(kim), "Kim")
@@ -12951,6 +13202,7 @@ final class AMSPackingUITests: XCTestCase {
         tab(app, "settings")
         tap(app, id: "settings-lists")
         XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        openChoicePart(app, "places")
         XCTAssertEqual(words(app.staticTexts["list-places-name-5"]), "Garage")
         tap(app, id: "list-places-code-5")
         XCTAssertTrue(appears(app, "place-code-detail", timeout: 5), "the code did not open")
@@ -15177,9 +15429,9 @@ final class AMSPackingUITests: XCTestCase {
         return words(said)
     }
 
-    /// Kind of thing: renamed, moved, an unused kind removed and one in use refused, a new
-    /// kind made — and saved, every thing of the renamed kind says the new name. The two
-    /// kinds the app reads by their words (Documents & money, Reminders) have no tools.
+    /// Kind of thing: renamed, moved, an unused kind removed and one in use asked about (since 0.107 the card
+    /// that says where its things go — its Cancel keeps it), a new kind made — and saved, every thing of the
+    /// renamed kind says the new name. Documents & money, which Before you go reads, has no tools.
     func testKindOfThingIsChangedInsideItsList() {
         let app = launch()
         openThing(app, "Map")
@@ -15199,9 +15451,17 @@ final class AMSPackingUITests: XCTestCase {
         renameInList(app, "thing-category-10", to: "Comfort")
         moveInList(app, "thing-category", 10, by: -1)
         XCTAssertTrue(waitUntil { self.words(app.buttons["thing-category-9"]) == "Comfort" }, "↑ did not move the kind up")
-        XCTAssertTrue(removeIsRefused(app, "thing-category-9").contains("still used by"), "the refusal does not say what uses it")
+        // A kind in use (0.107): Remove asks over the page where its things go; the card's Cancel keeps it.
+        tap(app, id: "thing-category-9-remove")
+        let question = app.staticTexts["choices-remove-question"]
+        XCTAssertTrue(question.waitForExistence(timeout: 5), "Remove on a kind in use did not ask where its things go")
+        XCTAssertEqual(words(question), "Remove \u{201C}Comfort\u{201D}?")
         shot(app, "lists-kind-refused")
-        tap(app, id: "thing-category-9-remove-no")
+        tap(app, id: "choices-remove-no")
+        XCTAssertTrue(waitUntil { !question.exists }, "the card's Cancel did not put the question away")
+        openDropDown(app, "thing-category")
+        XCTAssertEqual(words(app.buttons["thing-category-9"]), "Comfort", "the card's Cancel removed the kind")
+        XCTAssertFalse(app.buttons["thing-category-9-putback"].exists, "the card's Cancel struck the kind out")
         tap(app, id: "thing-category-0-remove")
         XCTAssertTrue(app.staticTexts["thing-category-0-ask"].waitForExistence(timeout: 5), "Remove did not ask first")
         tap(app, id: "thing-category-0-remove-yes")
@@ -15222,6 +15482,80 @@ final class AMSPackingUITests: XCTestCase {
         let last = (0..<30).map { app.buttons["thing-category-\($0)"] }.last { $0.exists }
         XCTAssertEqual(last.map { words($0) }, "Camping", "the new kind did not join the list")
         closeDropDown(app, "thing-category")
+    }
+
+    /// His second screenshot (30 Oct 2026): a thing's Kind of thing list — where he tried to remove Reminders ("I
+    /// want them gone"). Since 0.107 Remove works there for a kind his things still have: the card of Your choices,
+    /// "Nothing is kept until you press Save."; Remove strikes the kind out with Put back and, when it was this
+    /// thing's kind, gives the thing the one chosen; the page's Cancel throws it away; Save moves every thing of that
+    /// kind — on the Mac one ⌘Z step with the Save ("Edit Map") takes it all back. Reminders has a Remove there now;
+    /// Documents & money still none. (`-uiTestingReminders`: Hiking's two reminders are Reminders, the 12th kind;
+    /// the ten things are Comfort & misc, the 11th.) Picture `thing-kind-remove-ask`.
+    func testAKindInUseIsRemovedFromAThingsKindOfThingOnSave() {
+        let night = ProcessInfo.processInfo.environment["NIGHT"] == "1" ? ["-AppleInterfaceStyle", "Dark"] : []
+        let app = launch("-uiTestingReminders", night)
+        openThing(app, "Map")
+        openDropDown(app, "thing-category")
+        XCTAssertFalse(app.buttons["thing-category-8-remove"].exists, "Documents & money can be removed")
+        XCTAssertEqual(words(app.buttons["thing-category-11"]), "Reminders")
+        XCTAssertTrue(app.buttons["thing-category-11-remove"].waitForExistence(timeout: 5), "Reminders has no Remove in Kind of thing")
+        tap(app, id: "thing-category-11-remove")
+        let question = app.staticTexts["choices-remove-question"]
+        XCTAssertTrue(question.waitForExistence(timeout: 5), "Remove on Reminders did not ask where its reminders go")
+        XCTAssertNil(find(app, "thing-category-list"), "the list stayed open under the card")
+        XCTAssertEqual(words(question), "Remove \u{201C}Reminders\u{201D}?")
+        XCTAssertEqual(words(app.staticTexts["choices-remove-says"]), "2 reminders have this kind.")
+        XCTAssertEqual(words(app.staticTexts["choices-remove-kept"]), "Nothing is kept until you press Save.")
+        XCTAssertEqual(chosen(app, "choices-remove-to"), "Comfort & misc", "with no Other, not the app's own kind")
+        shot(app, "thing-kind-remove-ask")
+        tap(app, id: "choices-remove-yes")
+        XCTAssertTrue(waitUntil { !question.exists }, "Remove did not put the question away")
+        openDropDown(app, "thing-category")
+        XCTAssertTrue(app.buttons["thing-category-11-putback"].waitForExistence(timeout: 5), "Reminders is not struck out with Put back")
+        closeDropDown(app, "thing-category")
+
+        // The page's Cancel throws it away.
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5), "Cancel did not close the thing")
+        tap(app, id: "thing-row-0")                                  // the Map again
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        openDropDown(app, "thing-category")
+        XCTAssertTrue(app.buttons["thing-category-11-remove"].waitForExistence(timeout: 5), "Cancel kept Reminders' removal")
+        XCTAssertFalse(app.buttons["thing-category-11-putback"].exists, "Cancel kept Reminders struck out")
+
+        // This thing's own kind, the ten things' Comfort & misc: to Electronics. The Map takes it at once; Save moves the rest.
+        tap(app, id: "thing-category-10-remove")
+        XCTAssertTrue(question.waitForExistence(timeout: 5), "Remove on the thing's own kind did not ask")
+        XCTAssertEqual(words(app.staticTexts["choices-remove-says"]), "10 things have this kind.", "the page's own thing is not counted")
+        XCTAssertEqual(chosen(app, "choices-remove-to"), "Clothing", "with no Other, not the first of his other kinds")
+        XCTAssertEqual(choose(app, "choices-remove-to", 7), "Electronics")
+        tap(app, id: "choices-remove-yes")
+        XCTAssertTrue(waitUntil { !question.exists })
+        XCTAssertTrue(waitUntil { self.chosen(app, "thing-category") == "Electronics" },
+                      "the Map did not take the kind chosen: '\(chosen(app, "thing-category"))'")
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5), "Save did not close the thing")
+        replace("Headlamp", in: app.textFields["things-search"])
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertEqual(chosen(app, "thing-category"), "Electronics", "Save did not move the other things of the kind")
+        openDropDown(app, "thing-category")
+        XCTAssertEqual(words(app.buttons["thing-category-10"]), "Reminders", "Comfort & misc is still a kind")
+        closeDropDown(app, "thing-category")
+        tap(app, id: "thing-cancel")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        #if os(macOS)
+        // One step with the Save: ⌘Z takes the kind and every thing back.
+        XCTAssertTrue(waitUntil { self.undoTitle(app) == "Undo Edit Map" }, "Edit ▸ Undo says '\(undoTitle(app))'")
+        sleep(1)
+        app.typeKey("z", modifierFlags: .command)
+        XCTAssertTrue(waitUntil { self.undoTitle(app, redo: true) == "Redo Edit Map" }, "⌘Z did not take the Save back: '\(undoTitle(app, redo: true))'")
+        tap(app, id: "thing-row-0")                                  // the Headlamp
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.chosen(app, "thing-category") == "Comfort & misc" },
+                      "⌘Z did not move the Headlamp back: '\(chosen(app, "thing-category"))'")
+        tap(app, id: "thing-cancel")
+        #endif
     }
 
     /// Crash B (two TestFlight crash reports from his Mac, 18 Oct 2026, 0.87 — still in 0.99): "Index
@@ -15620,6 +15954,7 @@ final class AMSPackingUITests: XCTestCase {
         tab(app, "settings")
         tap(app, id: "settings-lists")
         XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        openChoicePart(app, "places", "owners")
         XCTAssertEqual(words(app.staticTexts["list-places-name-2"]), "Hall closet")
         let was0 = words(app.staticTexts["list-places-name-0"])
         XCTAssertFalse(grip(app, "list-owners-grip-0").exists, "an owner has a grip")
@@ -15632,6 +15967,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(disappears(app, "lists-detail", timeout: 5))
         tap(app, id: "settings-lists")
         XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        openChoicePart(app, "places")
         XCTAssertEqual(words(app.staticTexts["list-places-name-0"]), "Hall closet", "the dragged order was not kept")
     }
 
@@ -18296,6 +18632,7 @@ final class AMSPackingUITests: XCTestCase {
         // This is me, in Your choices → Owners: the same details, one tap away.
         tap(app, id: "settings-lists")
         XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
+        openChoicePart(app, "owners")
         XCTAssertTrue(app.staticTexts["list-owners-name-0"].waitForExistence(timeout: 5), "no owners in Your choices")
         tap(app, id: "list-owners-edit-0")
         tap(app, id: "list-owners-me")

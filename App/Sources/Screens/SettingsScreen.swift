@@ -40,7 +40,8 @@ struct SettingsScreen: View {
                     DeskDoor().environmentObject(model)
                     CardHairline()
                     Button { lists = true } label: {
-                        SettingsDoorLabel(title: "Your choices", line: "Storage places, owners, packers, conditions, \"When\" steps")
+                        // Short enough for one line on an iPhone (0.107: kinds of thing joined; the old line was cut off already).
+                        SettingsDoorLabel(title: "Your choices", line: "Places, kinds, owners, packers, conditions, When")
                     }
                     .buttonStyle(.plain).focusEffectDisabled()
                     .accessibilityIdentifier("settings-lists")

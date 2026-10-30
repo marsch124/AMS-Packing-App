@@ -100,7 +100,7 @@ walk, `photoIdsInUse`, not one walk per photo). A comment in `body` says so (0.6
 
 ---
 
-## 2. *Your choices* — the lists he authors himself (`ListsScreen`, `SettingsLists.swift`, `SharedRows.swift`)
+## 2. *Your choices* — the lists he authors himself (`ListsScreen`, `SettingsLists.swift`, `KindRemoval.swift`, `SharedRows.swift`)
 
 ### 2.1 Purpose and origin
 "The lists he authors himself: storage places, owners, packers, conditions and the 'When' timeline. They belong
@@ -110,9 +110,19 @@ comment 2026-09-27). Each part got a one- or two-line explanation in 0.46 (his t
 two of explanations for each choice … so that this is totally clear to the user"). The part headings became
 bands in 0.57 (field test 3 Oct 2026: headings "dominant").
 
+**0.107 (30 Oct 2026, two asks of his with screenshots).** (1) "Could we design the Your choices areas with a toggle
+so that the user can fold. The list is too long unfolded." — every part folds, starts folded and keeps its own fold
+on the device; folded, its heading says how many entries it holds. (2) "The Kind of things list needs to be
+adjusted: I need the ability to delete a Kind of thing, even if there are items that are connected to this very
+Kind of thing choice. Example: I don't understand why I defined Reminders. I want them gone, because I dont know how
+to use them." — a sixth part, **Kinds of thing**, joined (until then his kinds were changed only inside a thing's
+Kind of thing drop-down, spec 07 part 13), and a kind his things still have is removed after a question: how many
+have it and the kind they move to. The other five parts keep their rule — an entry in use stays.
+
 ### 2.2 The door on Settings
 A card of one door row (`SettingsDoorLabel` in `.settingsCard()`, §1; 0.67): title **"Your choices"** (Body
-semibold, `Theme.ink`), under it **"Storage places, owners, packers, conditions, "When" steps"** (Footnote,
+semibold, `Theme.ink`), under it **"Places, kinds, owners, packers, conditions, When"** (0.107, with kinds of thing — short enough
+for one line on an iPhone 17 Pro; until 0.107 "Storage places, owners, packers, conditions, "When" steps", cut off there) (Footnote,
 `Theme.muted`, one line — truncated with "…" if too narrow), a drawn chevron on the right. At least `Metrics.row`
 tall (minimum height 60 with 14 horizontal padding until 0.67); whole row tappable; plain style;
 `.focusEffectDisabled()`; id `settings-lists`. Tap → `lists = true` → sheet.
@@ -126,20 +136,38 @@ settings slate, filled: true)`, id `lists-done`, ⌘S), which hands over what wa
 Keep both or Keep mine, §20c), or
 **Cancel** (top left, outlined muted, id `lists-cancel`; Escape too — ⌘. on an iPhone keyboard, §20), which throws the
 copy away; a swipe down on the iPhone closes it while nothing is changed and with something changed asks "Discard
-changes?" first (§20a). Until 0.92 there was only Done (and Escape closed as Done
+changes?" first (§20a). A kind of thing removed on the page (0.107, §2.5) is a change of the copy like any other:
+Done keeps it — its things and trip lines moved — in the one change Done makes (one Edit ▸ Undo step, "Change Your
+Choices", spec 01 §11), Cancel puts it back. Until 0.92 there was only Done (and Escape closed as Done
 did), and every Add, Remove, Rename and move was written at once through `LibraryModel.change`.
 
 ### 2.4 What is on screen, top to bottom
 - Header row (padding 16): **"Your choices"** (22 heavy, ink, id `choices-title`), Spacer, **Done**.
 - Then a `KeyboardAwayScroll` with a `VStack(spacing: 8)`, padding 16 horizontal / 24 bottom:
-  - Intro (15 medium, muted, wraps, id `choices-intro`): **"The words the app offers you as buttons. Add your
-    own with the field under each part; hold the grip ≡ and drag one to its place; the pen renames one or moves it
-    up or down; one that is still in use somewhere cannot be removed."** (the grip sentence 0.70) — the Mac's; on
-    the iPhone (0.72, no ▲ ▼ there) "… the pen renames one; one that is still in use somewhere cannot be removed."
-  - Five parts, in this fixed order (`Kind.allCases`): `places`, `owners`, `people`, `conditions`, `phases`. For each:
-    - A `HeadingBand` (§21) in the Settings slate, 16 pt space above, id `choices-heading-<kind>`. Titles:
-      **"Storage places"**, **"Owners"**, **"Packers"**, **"Item conditions"**, **""When" steps"**.
-    - The hint (15 medium, `Theme.ink` at 85 % opacity, wraps, id `choices-hint-<kind>`):
+  - Intro (15 medium, muted, wraps, id `choices-intro`): **"The words the app offers you as buttons. A tap on a
+    heading opens its part. Add your own with the field under each part; hold the grip ≡ and drag one to its place;
+    the pen renames one or moves it up or down. A kind of thing your things still have asks where they go when you
+    remove it; anything else still in use stays."** (the grip sentence 0.70; the heading and kind sentences 0.107 —
+    until then it ended "…; one that is still in use somewhere cannot be removed.") — the Mac's; on the iPhone (0.72,
+    no ▲ ▼ there) "… the pen renames one. A kind of thing …".
+  - Six parts (five until 0.107), in this fixed order (`ListsPage.Kind.allCases`): `places`, `categories` (0.107),
+    `owners`, `people`, `conditions`, `phases`. For each:
+    - **The heading line** (0.107, the look of Before a trip on a thing's page, spec 05; until 0.107 a `HeadingBand`
+      with 16 pt above): an `HStack(spacing: 8)`, at least `Metrics.tap` tall, 4 pt above — a drawn chevron at the
+      LEFT (`M9 6l6 6-6 6` folded, `M6 9l6 6 6-6` open; stroke 1.8, 22×22, muted; a plain button, id
+      `choices-fold-<kind>`, VoiceOver "Show <title>" / "Fold <title>", value **"folded"** / **"open"**); the title
+      (Headline, Settings slate, wraps; header trait; id `choices-heading-<kind>`): **"Storage places"**, **"Kinds of
+      thing"**, **"Owners"**, **"Packers"**, **"Item conditions"**, **""When" steps"**; FOLDED only, how many entries
+      the part holds — **"· 12"** (Headline, monospaced digits, muted, 3 pt closer to the title; id
+      `choices-count-<kind>`), so it reads "Storage places · 12"; a Spacer. A tap ANYWHERE on the line (its
+      `contentShape`) folds or opens it, as the chevron does (0.2 s ease). Not one button round the words: on the Mac
+      a button folds its words into its own label, and the title and the count are read on their own.
+    - **Folded** (how every part starts): nothing else of the part is shown — no hint, no rows, no Add. **Open**: the
+      hint, the rows and the Add row below, 10 pt under the Add row. Each part's fold is its own and kept on THIS
+      device (`ChoicesFold`: UserDefaults `ams.choices.open.<kind>` = true while open, removed when folded), so the
+      page opens again as he left it; the UI tests remove the six keys at launch (spec 01, "Under the tests";
+      `ChoicesFold.keys`).
+    - The hint (open only; 15 medium, `Theme.ink` at 85 % opacity, wraps, id `choices-hint-<kind>`):
       - places: "Where a thing is kept at home — a cupboard, the garage, the basement. You give a thing its place
         under Kept at home; a trip grouped by From where ("sorted" until 0.101) then lists what to fetch room by room. The square beside a
         place is its code: print its label, and the iPhone's Camera opens the app on that place." (the last
@@ -153,6 +181,9 @@ did), and every Add, Remove, Rename and move was written at once through `Librar
       the codes and makes the files, then the button becomes **Share <n> labels** ("Share 1 label"; white on slate,
       `Metrics.tap` tall, radius 12; id `list-places-labels-share`), a Share of all the PNGs (Save Images → Photos,
       or Save to Files) for Brother's app. The labels: spec 05, "A place's code and its label".
+      - categories (0.107): "What a thing is — clothing, footwear, electronics. You pick it under Kind of thing on a
+        thing. Remove one your things still have, and you choose the kind they move to; Documents & money stays, as
+        Before you go reads it."
       - owners: "Whose a thing is — you, your partner, a child. You pick it under Whose it is on a thing, so on a
         shared trip everyone sees which things are theirs."
       - people: "Who packs a thing. You set it in the All your things table (Packed by), so you can see who is in
@@ -167,7 +198,7 @@ did), and every Add, Remove, Rename and move was written at once through `Librar
       ask testing 0.69: "Can we make the reordering easier for a human by introducing drag and drop?"): hold and
       drag — each place passed is `moveChoice(kind, key, ±1)` at once, exactly the pen's ▲ ▼; the carried row is
       lifted on the card colour with a slate edge and a shadow and follows the finger; then the label (17 medium, ink, id `list-<kind>-name-<n>`); if THINGS use the
-      entry, how many (14 bold, monospaced digits, muted) right after it — things only, also for a "When" step;
+      entry, how many (14 bold, monospaced digits, muted; id `list-<kind>-uses-<n>`, 0.107) right after it — things only, also for a "When" step (for a kind of thing every item of that kind, reminders included);
       on the owner marked "This is me" (0.70), right after its name, a small **"Me"** tag (Caption semibold white on a
       slate capsule, min height 20, padding 8 sideways; id `list-owners-me-<n>`)
       (0.62; until then a step's number added its trip lines and template places); Spacer; (places only, 0.69) the
@@ -215,6 +246,23 @@ did), and every Add, Remove, Rename and move was written at once through `Librar
       `list-<kind>-add-needs`, §20): "Type a name first." or (0.62) "You already have <name>.".
   - Footer (14, muted, 14 pt above): **"These belong to your account, so both your devices show the same."**
 - Whole sheet: `Theme.bg` behind (ignores the safe area), accessibility container id `lists-detail`.
+- **The Remove card** (0.107; over the whole page while a kind of thing his things still have is being removed — the
+  look of a template's "Take it off?" card, spec 04): the page dimmed (black 35 %; a tap there = Cancel); in the
+  middle a card (padding 22, at most 360 wide, card fill, radius 18, 1-pt line, shadow 25 % r 20 y 8, 24 pt from the
+  edges; container id `choices-remove-card`), top to bottom, 14 apart: the drawn ✕ (stroke 2.2, 22×22) in the To-do
+  red on a 48-pt circle of that red at 14 %; **"Remove “<kind>”?"** (Body semibold, ink, centred; id
+  `choices-remove-question`); what has it (`KindUse.says`, Subheadline muted, centred; id `choices-remove-says`) —
+  "10 things have this kind." · "1 thing has this kind." · "2 reminders have this kind." · "3 things and 1 reminder
+  have this kind."; the drop-down (`DropDown`, §21, heading `.title` in slate: **"Move them to"**, or **"Move it
+  to"** for one; ids `choices-remove-to`, list `choices-remove-to-list`, rows `choices-remove-to-<n>`, heading
+  `choices-remove-to-title`) offering his OTHER kinds in his order, chosen at first: `fallbackKind(without:)` — his
+  **Other** (any spelling) if he has one, else **Comfort & misc** (the app's catch-all, `CATEGORY_DEFAULT` — what a
+  thing with no kind reads as; the data has no "no kind": `coerceItem` turns an empty kind into it) if he has it, else
+  the first of his kinds; "Nothing is kept until you press Done." (Footnote muted, centred); then **Cancel**
+  (`HeaderButtonStyle` ink outlined, stretched; id `choices-remove-no`; Escape on the Mac) · **Remove** (filled To-do
+  red `AppSection.actions.color`, stretched, white words; id `choices-remove-yes`). While the card is up the page's
+  own Cancel and Done lose their keys (Escape and ⌘S), so Escape answers the card and never throws the page away.
+  Fades in and out (0.15 s).
 
 ### 2.5 Behaviour
 **Which entries a part shows** (`entries(kind)`):
@@ -222,6 +270,7 @@ did), and every Add, Remove, Rename and move was written at once through `Librar
 | Part | Source | Label | Key (remove, rename, move) | Use looked up by |
 |---|---|---|---|---|
 | places | `library.storagePlaces()` (stored order, or the 12 factory places) | name | the name | `normName(name)` in `usesOf("places")` |
+| categories (0.107) | `library.categories()` (his own list in `meta["categories"]`, or the app's 12 `CATEGORIES`) | name | the name | `usesOf("categories")` — every item, reminders included |
 | owners | `library.owners()` (stored rows, A–Z; none stored → the owners his THINGS name, A–Z, each once — 0.62) | name | the name | `usesOf("owners")` |
 | people | `library.people()` (stored roster; else the packers his things name; else the 2 starters — §2.6) | `name` | `name` | `usesOf("people")` |
 | conditions | `library.conditions()` (stored, or the factory 4) | `label` | `id` | `normName(id)` in `usesOf("conditions")` |
@@ -271,6 +320,15 @@ names alike in their first 60 normalised units are ONE name (0.62): Add says he 
 they were two records under one key and the next load kept only one).
 
 **Remove** (`remove(kind, n)`):
+0. (0.107) A **kind of thing** goes its own way (`removeKind(entry)` in the screen): `kindRemoveProblem(key)` →
+   the reason under the row as in step 2 — **"Documents & money is read by Before you go, so it stays."** or
+   **"<kind> is your only kind of thing, so it stays."**; nothing has it (`kindUse(key).inUse` false) → removed at
+   once (`model.change { removeKind(key, moveTo: "") }`, no question, as any unused entry here; its editor closes);
+   otherwise the Remove card (§2.4) — Cancel / Escape / a tap beside it changes nothing; **Remove** →
+   `model.change { removeKind(key, moveTo: <the kind chosen>) }` on the page's copy (its editor closes): the row goes,
+   the kind chosen counts the things now. Reminders goes this way like any other kind (0.107). The same card asks in a
+   thing's Kind of thing drop-down, held there until the thing's Save (spec 07 part 13, "0.107"). The other five parts
+   follow steps 1–3.
 1. The entries are recomputed; `n` out of range → nothing.
 2. In use (`uses.inUse`) → `problem` = `(kind, key, uses.refusal(label))`, shown under that row: "<label> is still
    used " + the parts that apply, joined ", " and " and " — "by <n> thing(s)", "on <n> trip(s)", "on <n>
@@ -283,7 +341,8 @@ they were two records under one key and the next load kept only one).
    - conditions: `setConditions(conditions().filter { $0.id != key })`
    - phases: `setTimeline(timeline().filter { $0.id != key })`
    The comparison is EXACT (case-sensitive) on the stored spelling. Removing the last remaining entry of places,
-   people, conditions or phases brings the factory list back (an empty list means "the defaults").
+   people, conditions or phases brings the factory list back (an empty list means "the defaults"). (A kind of thing
+   cannot be the last one removed — step 0.)
    No confirmation is asked; there is no undo.
 
 **Rename** (0.62; the pen, then Rename or Return — `library.renameChoice(kind, key:, to:)` inside one
@@ -327,7 +386,14 @@ when reminders come, which is his to decide; rename and reorder were the parts t
 | `ChoiceUse.refusal(label)` | the sentence of a refused remove (§2.5) |
 | `existingChoice(kind, name, except:)` | (0.62) the entry `name` would repeat, as the list spells it, or nil (§2.5 Add step 2); `except` = the key of the entry being renamed |
 | `Library.choiceKey(name)` | (0.62) `jsSlice(normName(name), 0, 60)` — the key a place, owner or packer is stored under |
-| `renameChoice(kind, key:, to:)` | (0.62) §2.5 Rename; returns the refusal in words, or nil when done |
+| `renameChoice(kind, key:, to:)` | (0.62) §2.5 Rename; returns the refusal in words, or nil when done. A kind of thing (0.69) carries every thing and trip line; Documents & money and Reminders keep their names (`fixedCategory`: "Documents & money is read by Before you go, so it keeps its name." · since 0.107 "Reminders is the kind the app gives its reminders, so it keeps its name — remove it, and they get another kind.") |
+| `KindUse` (0.107, `KindRemoval.swift`) | `{ things, reminders }` — items of a kind, reminders (`itemType` "reminder") apart; `inUse`; `says` (the card's line, §2.4); `moveTo` ("Move them to" / "Move it to") |
+| `kindUse(key)` (0.107) | the items whose `category` is `key` by `normName` (any spelling), counted as things or reminders; trip lines not counted (they follow their things) |
+| `fallbackKind(without:)` (0.107) | where the things of a kind go unless he chooses — his Other (by `normName`), else `CATEGORY_DEFAULT` ("Comfort & misc") if on his list, else his first kind, never `without` (by `choiceKey`); his list's spelling |
+| `reminderKind()` (0.107) | the kind a reminder the app makes is given — `addReminder` (a template's) and `addTripTodo` (a trip's own To do): Reminders while it is on his list (his spelling), else `fallbackKind()`. So a kind he removed never comes back with a reminder |
+| `kindRemoveProblem(key)` (0.107) | "Documents & money is read by Before you go, so it stays." · "<kind> is your only kind of thing, so it stays." · nil |
+| `ChoiceEdits.moves`, `choiceLocked(kind, key)`, `Library.fallbackKindIndex(labels)` (0.107) | a thing's Kind of thing: a kind removed with its things' new kind held until Save, written by `applyChoiceRemovals` through `removeKind`; the one entry with no tools in a drop-down (Documents & money); the fallback among the kinds as a page shows them (spec 07 part 13) |
+| `removeKind(key, moveTo:)` (0.107) | refused with `kindRemoveProblem`; otherwise the target is `moveTo` matched to his list by `choiceKey` (his spelling) unless it is blank, none of his kinds or the kind itself — then `fallbackKind(without: key)`; every item (things and reminders) and every line of EVERY trip (done ones too, as a rename carries them) whose `category` is `key` by `normName` takes it, and a trip with a moved line has `updatedAt` stamped; then `setCategories` without it (the list back as the app's twelve stores nothing). A reminder stays a reminder: it is known by its `itemType` |
 | `Library.canMove(kind)` / `moveChoice(kind, key:, by:)` | (0.62) §2.5 Move; false when it cannot move |
 | `setNames(kind, names)` | only `"places"` and `"owners"` (anything else → returns false, changes nothing); trims, drops empties, keeps one name per `choiceKey` (first spelling wins, 0.62), removes every row of the kind, then appends `namesToRows(kind, clean)` unless `isFactoryList(kind, clean)` |
 | `setPeople(list)` | keeps one person per `choiceKey` of the name (0.62); removes every `people` row; appends `peopleToRows(list)` unless factory |
@@ -452,6 +518,46 @@ A sheet on both. Mac only: `.frame(minWidth: 520, minHeight: 600)`.
   point); `place-label-share` (iPhone) / `place-label-save` (Mac); `place-code-open` → `place-detail` "Garage",
   "Everything kept here: 2 things."; both closed; `list-places-labels` there, and on the iPhone a press turns it
   into `list-places-labels-share` reading "Share 12 labels". Pictures `place-code`.
+- 0.107 — folds and Kinds of thing (his words of 30 Oct 2026, §2.1). Every UI test that uses a part opens it first
+  (`openChoicePart(app, kinds…)`: taps `choices-fold-<kind>` unless its value is "open", then waits for its Add).
+  UI `testYourChoicesStartFoldedAndEachPartKeepsItsOwnFold` (every part "folded" with `choices-count-<kind>` "· 12",
+  "· 12", "· 2", "· 2", "· 4", "· 7" and no hint, rows or Add; the chevron left of its title, on its line; a tap on
+  the title opens Storage places alone, without its count; Kinds of thing opened by its chevron reads Clothing …
+  Reminders; Cancel and back: those two still open, the rest folded; the chevron folds it again, "· 12" back;
+  pictures `choices-folded`, `choices-open`), `testAKindInUseAsksWhereItsThingsGoAndCancelPutsItBack`
+  (`-uiTestingReminders`: Reminders `list-categories-uses-11` "2"; Other added; ✕ → no `lists-problem`, the card
+  "Remove “Reminders”?", "2 reminders have this kind.", `choices-remove-to` Other; the card's Cancel keeps it; on the
+  Mac Escape closes the card and not the page; Remove → row 11 is Other with "2"; the page's Cancel brings Reminders
+  back and drops Other; with no Other the card offers Comfort & misc, which counts 12 after Remove; Done; Hiking still
+  shows both its reminders; Reminders not on the page again; picture `choices-remove-ask`),
+  `testAKindInUseIsRemovedFromAThingsKindOfThingOnSave` (his second screenshot: the same card in a thing's Kind of
+  thing — `-uiTestingReminders`, the Map: no Remove on Documents & money; Remove on Reminders closes the list and asks
+  "2 reminders have this kind.", "Nothing is kept until you press Save.", Comfort & misc offered; Remove → Put back in
+  the list; the page's Cancel throws it away; then the Map's own Comfort & misc → "10 things have this kind." (the page's
+  thing counted), Clothing offered, Electronics chosen → the Map's field reads Electronics at once; Save → the Headlamp
+  is Electronics and Comfort & misc is gone; on the Mac ⌘Z "Undo Edit Map" takes the Headlamp back; picture
+  `thing-kind-remove-ask`); `testKindOfThingIsChangedInsideItsList` now meets the card where an in-use kind was refused,
+  and its Cancel keeps it.
+  `testAKindRemovedWithDoneMovesItsThingsToTheKindChosen` (Comfort & misc "10" → "10 things have this kind.",
+  Clothing offered, Electronics chosen (row 7) → Electronics counts 10; Done; the Map's Kind of thing reads
+  Electronics), `testUndoTakesARemovedKindBackWithItsThings` (Done → Edit ▸ Undo "Undo Change Your Choices" on the
+  Mac / the shake hook's "Change Your Choices" on the iPhone → after it Comfort & misc is back at row 10 with "10" and
+  Clothing counts nothing). Model `KindRemovalTests` (10: the move of things and trip lines in any spelling, records
+  and backup; Other → Comfort & misc → first; a target not his or the kind itself not taken; Reminders removed — its
+  reminders stay reminders on the template, the trip and due; the next reminder Other; Documents & money and the last
+  kind stay; an unused kind changes nothing else; the card's words; the drop-down's refusal; handed over by Done with
+  the other device's change kept; one undo step back whole and redo) and `ReminderKindTests` (4: a reminder and a
+  trip's To do made once Reminders is gone get Other / Comfort & misc / the first kind and stay reminders; while he
+  has Reminders, Reminders in his spelling). Seen RED on 0.106: the four UI tests ("places has no fold", "Your choices
+  has no fold for categories" — 0.106 has no folds and no Kinds of thing part), `ReminderKindTests` 8 failures ("the
+  kind he removed came back with a new reminder": "Reminders" not "Other"), `KindRemovalTests` does not compile
+  ("cannot find 'KindUse' in scope", "no member 'removeKind'"); the drop-down test red on 0.106 "Reminders has no Remove
+  in Kind of thing" and `testKindOfThingIsChangedInsideItsList` "Remove on a kind in use did not ask where its things
+  go". Planted faults (Your choices refusing an in-use kind as before; the thing page never taking the question) turned
+  all four removal tests red: "Remove on a kind in use did not ask" (×3), "Remove on Reminders did not ask where its
+  reminders go". Model `KindRemovalTests` also holds `testAThingsKindOfThingHoldsTheRemovalUntilSave` (a held move
+  written after the thing, to a kind renamed or made on the page; no move = still refused; `choiceLocked`; the
+  fallback as a list shows it).
 - **Not covered by any test:** adding to owners, packers, conditions or steps from this screen; the packer
   colour rotation; removing an entry that is NOT in use; removing the last entry (factory list returns); the
   needs line disappearing on typing (tested only on *Your things*); renaming or moving on screen for any part but

@@ -67,7 +67,7 @@ extension Library {
 
     /// Write a To do on THIS trip — "Name tag for the Day pack", "Buy euros": a reminder line of
     /// the trip's own (no template behind it, so a rebuild keeps it), not ticked, in no bag, kind
-    /// "Reminders", marked as written on the trip (`TRIP_TODO_KEY`): due at once, so it shows in
+    /// "Reminders" while he has it (`reminderKind`, 0.107), marked as written on the trip (`TRIP_TODO_KEY`): due at once, so it shows in
     /// Before you go's To do now; ticked there or on the list, it is done. It counts on the list as
     /// any reminder does — the trip's count, and Pack, wait for it. Refused (nil) for any
     /// `tripTodoProblem`, or a trip that does not exist.
@@ -75,7 +75,7 @@ extension Library {
     public mutating func addTripTodo(tripId: String, name: String, today: String) -> Item? {
         guard tripTodoProblem(tripId: tripId, name: name) == nil,
               let t = trips.firstIndex(where: { $0.id == tripId }) else { return nil }
-        var line = newItem(name: jsTrim(name), category: REMINDERS_CATEGORY, container: "",
+        var line = newItem(name: jsTrim(name), category: reminderKind(), container: "",
                            phase: todoWhen(tripId: tripId, today: today), itemType: REMINDER_TYPE)
         line.custom = true
         line.checked = false

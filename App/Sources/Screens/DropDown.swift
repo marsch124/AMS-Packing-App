@@ -70,6 +70,10 @@ struct DropDownRowTools {
     var open: DropDownOpen? = nil
     /// The grey words of a row's name field.
     var nameHint = "Section name"
+    /// Remove asked on the PAGE, not inside the list (0.107 — a kind of thing his things still have:
+    /// the card that says how many and where they go). Answers true when the page took the question;
+    /// the list then closes. nil, or false, = asked inside the list as before.
+    var asksOnPage: ((String) -> Bool)? = nil
 }
 
 /// A button under a refusal that opens the page where the row can be dealt with.
@@ -619,6 +623,17 @@ struct DropDown: View {
     /// Remove pressed: the question, or what still uses the row — with the first of its
     /// buttons lit for the keys (Remove, or OK).
     private func ask(_ tools: DropDownRowTools, _ value: String) {
+        // A kind of thing in use (0.107): the page asks, over itself, with room for its own drop-down.
+        if let page = tools.asksOnPage, page(value) {
+            asking = nil
+            keyTool(nil)
+            #if os(macOS)
+            close()
+            #else
+            open = false
+            #endif
+            return
+        }
         asking = value
         keyTool(0)
     }

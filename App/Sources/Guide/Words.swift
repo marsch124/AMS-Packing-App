@@ -38,7 +38,7 @@ enum Words {
         Entry(term: "Keep · Drop", meaning: "In Refine. Keep: it stays on the template and is not asked about again. Drop: off that one template — the thing itself stays.", section: .templates),
         Entry(term: "To do", meaning: "The tab for getting ready: things to sort out before you go, and — on its other side — To buy, with worn-out or run-down things suggested.", section: .actions),
         Entry(term: "Before you start", meaning: "On a trip you have not started packing, one door at the top: what to buy (on To buy, worn out, running out, used up last time), what to get ready ahead (the reminders before the day you leave) and what to charge. It goes with the first thing you pack.", section: .events),
-        Entry(term: "Your choices", meaning: "Your own lists in Settings: storage places, owners, packers, conditions and the When steps.", section: .settings),
+        Entry(term: "Your choices", meaning: "Your own lists in Settings: storage places, kinds of thing, owners, packers, conditions and the When steps. Each part folds.", section: .settings),
         Entry(term: "Care", meaning: "Looking after your things: services that fall due, weights, bags. The Care tab.", section: .care),
     ]
 }
