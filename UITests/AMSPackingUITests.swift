@@ -1514,6 +1514,17 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "refine-done")
         XCTAssertTrue(disappears(app, "refine-screen", timeout: 5))
         XCTAssertTrue(waitUntil { (door.value as? String) == "1" }, "the door did not follow: '\(door.value as? String ?? "")'")
+        // The last one settled: nothing left to refine, so no card (0.107, his words: "Only show
+        // \"Refine your template\" when there is something to refine").
+        tap(app, id: "refine-open")
+        XCTAssertTrue(appears(app, "refine-screen", timeout: 5))
+        tap(app, id: "refine-row-0-keep")
+        XCTAssertTrue(waitUntil { self.words(count) == "0" || !app.staticTexts["refine-row-0-name"].exists }, "Keep did not settle the last one")
+        XCTAssertTrue(app.descendants(matching: .any)["refine-screen"].exists, "settling the last one closed the page under him")
+        tap(app, id: "refine-done")
+        XCTAssertTrue(disappears(app, "refine-screen", timeout: 5))
+        XCTAssertTrue(waitUntil { !app.buttons["refine-open"].exists }, "nothing left to refine, and the card still shows")
+        shot(app, "refine-no-card")
         tab(app, "care")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["care-line"]).hasPrefix("10 things") }, "Drop must not delete the thing")
     }
