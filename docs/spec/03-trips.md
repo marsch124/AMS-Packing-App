@@ -3317,7 +3317,8 @@ good; Drop takes it off that ONE list (it asks first)." `minTrips` stays 2 (web 
 not evidence".
 
 **How it is reached and left.** Templates tab → the violet **Refine your templates** card (`RefineDoor`,
-id `refine-open`, value = waiting count or ""; Templates spec). Sheet; **Done** (filled violet,
+id `refine-open`, value = waiting count or ""; Templates spec) — since 0.107 only while something waits (or the page is
+open); the trip's Refine station always reaches it. Sheet; **Done** (filled violet,
 `refine-done`; Escape too, ⌘. on an iPhone keyboard — 0.62). Screen id `refine-screen`; Mac minimum 520 × 600.
 
 ### What is on screen

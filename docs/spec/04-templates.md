@@ -116,7 +116,9 @@ magnifier.
    - "+ New" — Subheadline semibold white on a violet capsule, `Metrics.chip` tall, horizontal padding 12, id
      `templates-new` → opens `NewList` (§5) as a sheet.
 2. **Refine door** (`RefineDoor`, id `refine-open`, bottom padding 4): violet card "Refine your templates" with a
-   count of waiting suggestions; owns its own sheet (`RefineScreen`). Documented in the Refine spec.
+   count of waiting suggestions; owns its own sheet (`RefineScreen`). Since 0.107 only while there is something to
+   refine (`refineSuggestions()` not empty) or its page is open (his words, 30 Oct 2026: "Only show \"Refine your
+   template\" when there is something to refine"); nothing at all otherwise. Documented in the Refine spec.
 3. For each **activity area** (see Behaviour) in order:
    - Heading — `AreaBlock.title`: `Library.areaWords` (0.89; `areaHeading`/`groupHeading` until then) =
      `"<CODE> · <Name>"` for a built-in under its own name, otherwise his words alone ("Mountains", or a built-in he

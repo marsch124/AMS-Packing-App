@@ -122,13 +122,20 @@ struct RefineScreen: View {
 }
 
 /// The way in, on Your lists: a slim line that says how many are waiting — and owns
-/// its own sheet (Your lists already carries three).
+/// its own sheet (Your lists already carries three). Only while there is something to
+/// refine (0.107, his words 30 Oct 2026: "Only show \"Refine your template\" when there
+/// is something to refine") — and while its page is open, so settling the last one does
+/// not pull the page away under him. Refine is still a station of every trip's loop.
 struct RefineDoor: View {
     @EnvironmentObject var model: LibraryModel
     @State private var open = false
 
     var body: some View {
         let waiting = model.library.refineSuggestions().count
+        if waiting > 0 || open { door(waiting) }
+    }
+
+    @ViewBuilder private func door(_ waiting: Int) -> some View {
         // His test F.6: "make it pop and make a symbol like constant improving, so
         // that the eyes are drawn to it". Steps going up: better, trip after trip.
         let violet = AppSection.templates.color
@@ -162,6 +169,7 @@ struct RefineDoor: View {
         .buttonStyle(.plain).focusEffectDisabled()
         .accessibilityIdentifier("refine-open")
         .accessibilityValue(waiting == 0 ? "" : "\(waiting)")
+        .padding(.bottom, 4)
         .sheet(isPresented: $open) { RefineScreen().environmentObject(model) }
     }
 }

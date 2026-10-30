@@ -105,9 +105,9 @@ struct TemplatesScreen: View {
                     #if !os(macOS)
                     header(flat)
                     #endif
-                    // What his trip reviews say a list carries for nothing (roadmap stop E).
+                    // What his trip reviews say a list carries for nothing (roadmap stop E) —
+                    // only while there is something to refine (0.107).
                     RefineDoor().environmentObject(model)
-                        .padding(.bottom, 4)
                     if let said = news { newsCard(said) }
                     ForEach(areas) { area in
                         // A built-in under its own name keeps its code beside it, as the web app
