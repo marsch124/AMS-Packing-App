@@ -200,6 +200,8 @@ final class PackingMacDelegate: NSObject, NSApplicationDelegate {
         if AMSPackingApp.testing, let n = args.firstIndex(of: "-AppleInterfaceStyle"), n + 1 < args.count, args[n + 1] == "Dark" {
             NSApp.appearance = NSAppearance(named: .darkAqua)
         }
+        // Under the UI tests: a window, if the launch brought none (0.107, AMSPackingApp.swift).
+        AMSPackingApp.openAWindowIfNoneCame()
     }
 
     /// Right-click (or hold) the Dock icon while the app runs: New Thing (0.105), then every grab list,

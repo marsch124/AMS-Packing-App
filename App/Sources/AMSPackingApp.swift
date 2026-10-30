@@ -97,6 +97,30 @@ extension AMSPackingApp {
             }
         }
     }
+
+    /// Under the UI tests a launch shows ONE window, as his launch from the Dock or Raycast does (0.107). Since 0.105
+    /// nothing comes back from the launch before under the tests (`restorationBehavior` above) — and the test runner
+    /// ends the app before by force, so the Mac takes the next launch for a comeback after a crash: it brings back
+    /// what was kept (nothing) and opens no new window. GitHub's full runs of 0.105 and 0.106: every launch had no
+    /// window — `launch()` in the tests waited 5 s and pressed ⌥⌘N each time (some 200 times a group), and the tests
+    /// that launch the app themselves (a Shortcut, the Action button's menu, reminders blocked, a deleted reminder)
+    /// found no window at all. So: if no main window has come a second after the launch, File ▸ New Window — what
+    /// the tests pressed. For him nothing changes (`testing` only; his Mac brings his windows back as always).
+    @MainActor
+    static func openAWindowIfNoneCame(looks: Int = 4) {
+        guard testing else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            let shown = GrabQuickActions.mainWindows > 0
+                || NSApp.windows.contains { $0.identifier?.rawValue.hasPrefix(mainWindowId) == true }
+                || NSApp.windows.contains { $0.isVisible && $0.styleMask.contains(.titled) && !($0 is NSPanel) }
+            if shown { return }
+            if looks > 1 { openAWindowIfNoneCame(looks: looks - 1); return }
+            guard let file = NSApp.mainMenu?.items.compactMap(\.submenu).first(where: { menu in
+                      menu.items.contains { $0.title == "New Window" } }),
+                  let at = file.items.firstIndex(where: { $0.title == "New Window" }) else { return }
+            file.performActionForItem(at: at)
+        }
+    }
     #endif
 }
 

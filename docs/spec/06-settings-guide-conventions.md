@@ -2891,6 +2891,21 @@ label (`quickstart-step-<n>`, `loop-step-<n>`).
    `.restorationBehavior(.disabled)` and `.defaultLaunchBehavior(.suppressed)` (0.58: every later UI test failed).
 7. Frames, not `isHittable`: the runner calls a control below the window "hittable"; tests judge by frames.
 8. The Mac UI job runs on macOS 26: on the older runner's SwiftUI a click on a pill "succeeded" and selected nothing.
+9. Under the UI tests the main window is never restored (0.105: windows a test left open came back, and every `tab-…`
+   matched twice) — and a launch by the test runner, which ends the app before by force, then opened NO window: the
+   Mac takes it for a comeback after a crash, brings back what was kept (nothing) and opens no new one. Every launch
+   of 0.105's and 0.106's full runs on GitHub's Mac had none; `launch()` waited 5 s and pressed ⌥⌘N each time, and
+   the tests that launch the app themselves (`testAShortcutOpensAGrabListOrTheNextTrip`,
+   `testTheActionButtonMenuOpensTheChosenGrabList`, `testRemindersSayWhenTheDeviceBlocksThem`,
+   `testALineWhoseReminderWasDeletedCanBeSentAgain`) found nothing to tap. Since 0.107 the app itself opens one
+   (`AMSPackingApp.openAWindowIfNoneCame`, from `PackingMacDelegate.applicationDidFinishLaunching`, testing only): if
+   no main window has come a second after the launch, File ▸ New Window. Test `testAMacLaunchOpensOneWindow` (Mac):
+   three launches — after a forced end twice, after ⌘Q once (where the Mac opens its own window) — each ONE window.
+   For him nothing changes: his Mac restores his windows as always. `launch()` keeps its ⌥⌘N as a fallback.
+10. A value on a container (`.accessibilityElement(children: .contain)` with `.accessibilityValue`) never reaches the
+   Mac's tests (they read ''); the iPhone's do. Read a control inside instead — a kit's row in a trip's fold is read
+   by its `trip-line-<n>-kit-<k>-out` button, "Put back" when the thing is taken out (0.107; 0.105.1's kit tests read
+   the row's value and were red on the Mac).
 
 ---
 
@@ -2986,7 +3001,8 @@ screen and the number TestFlight shows can never disagree"; `marketing` = the sh
 | `-spotlightForReal` | (DEBUG, testing only) the device's own Spotlight instead of the memory one, to look at real results on a simulator (§3d) | 0.92 |
 | `-importFile <path>` | DEBUG builds only, not testing: import a backup into an EMPTY library at launch | keeps real data out of the repository |
 
-Under testing, `usesICloud` is false, the forecast is `InventedForecast`, the rescue copies are deleted at launch,
+Under testing on the Mac, no window is restored, and a launch that brought no window opens one after a second
+(`openAWindowIfNoneCame`, 0.107 — §23, Mac rule 9). Under testing, `usesICloud` is false, the forecast is `InventedForecast`, the rescue copies are deleted at launch,
 reminders never touch the system, grab-list state is not persisted (`GrabStore(persistent: false)`), and these
 `UserDefaults` keys are removed so every test starts from the same screen: `ams.table.columns`, `ams.table.sort`,
 `ams.table.down`, `ams.table.then`, `ams.table.filters`, `ams.care.view`, `ams.view`, `ams.trip.folded`,
