@@ -261,7 +261,10 @@ did), and every Add, Remove, Rename and move was written at once through `Librar
   the first of his kinds; "Nothing is kept until you press Done." (Footnote muted, centred); then **Cancel**
   (`HeaderButtonStyle` ink outlined, stretched; id `choices-remove-no`; Escape on the Mac) · **Remove** (filled To-do
   red `AppSection.actions.color`, stretched, white words; id `choices-remove-yes`). While the card is up the page's
-  own Cancel and Done lose their keys (Escape and ⌘S), so Escape answers the card and never throws the page away.
+  own Cancel and Done lose their keys (Escape and ⌘S), so Escape answers the card and never throws the page away. On
+  the Mac the card takes Escape itself, before anything else sees it (`CardEscape`: a key monitor on the page's own
+  window while the card is up; in the open Move them to list Escape still closes the list) — GitHub's Mac (probe
+  41032982318, 30 Oct 2026) showed the switched-off page Cancel still closing Your choices on Escape.
   Fades in and out (0.15 s).
 
 ### 2.5 Behaviour
@@ -542,7 +545,7 @@ A sheet on both. Mac only: `.frame(minWidth: 520, minHeight: 600)`.
   Clothing offered, Electronics chosen (row 7) → Electronics counts 10; Done; the Map's Kind of thing reads
   Electronics), `testUndoTakesARemovedKindBackWithItsThings` (Done → Edit ▸ Undo "Undo Change Your Choices" on the
   Mac / the shake hook's "Change Your Choices" on the iPhone → after it Comfort & misc is back at row 10 with "10" and
-  Clothing counts nothing). Model `KindRemovalTests` (10: the move of things and trip lines in any spelling, records
+  Clothing counts nothing). Model `KindRemovalTests` (11 with the one below: the move of things and trip lines in any spelling, records
   and backup; Other → Comfort & misc → first; a target not his or the kind itself not taken; Reminders removed — its
   reminders stay reminders on the template, the trip and due; the next reminder Other; Documents & money and the last
   kind stay; an unused kind changes nothing else; the card's words; the drop-down's refusal; handed over by Done with
