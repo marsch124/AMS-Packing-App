@@ -2902,6 +2902,7 @@ label (`quickstart-step-<n>`, `loop-step-<n>`).
    no main window has come a second after the launch, File ▸ New Window. Test `testAMacLaunchOpensOneWindow` (Mac):
    three launches — after a forced end twice, after ⌘Q once (where the Mac opens its own window) — each ONE window.
    For him nothing changes: his Mac restores his windows as always. `launch()` keeps its ⌥⌘N as a fallback.
+   Seen RED on 0.106 (Mac probe run 41030047421), green with the fix (run 41031574792, 16 of 16).
 10. A value on a container (`.accessibilityElement(children: .contain)` with `.accessibilityValue`) never reaches the
    Mac's tests (they read ''); the iPhone's do. Read a control inside instead — a kit's row in a trip's fold is read
    by its `trip-line-<n>-kit-<k>-out` button, "Put back" when the thing is taken out (0.107; 0.105.1's kit tests read
