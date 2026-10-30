@@ -20,6 +20,11 @@ struct KindRemoveCard: View {
     let keptBy: String
     let cancel: () -> Void
     let remove: () -> Void
+    #if os(macOS)
+    /// Escape on the Mac is the CARD's Cancel, taken before anything else sees it (GitHub's Mac, 30 Oct 2026: with
+    /// the page's Cancel's Escape switched off and the card's Cancel holding it, Escape still closed Your choices).
+    @State private var escape = CardEscape()
+    #endif
 
     var body: some View {
         ZStack {
@@ -72,5 +77,26 @@ struct KindRemoveCard: View {
             .accessibilityIdentifier("choices-remove-card")
         }
         .transition(.opacity)
+        #if os(macOS)
+        .background(WindowReader { w in escape.window = w })
+        .onAppear {
+            let cancel = cancel, escape = escape
+            escape.monitor.start { e in
+                // Only on the page's own window: in the open "Move them to" list Escape closes that list.
+                guard e.keyCode == KeyCode.escape, e.keyModifiers.isEmpty, let w = escape.window, e.window === w else { return e }
+                cancel()
+                return nil
+            }
+        }
+        .onDisappear { escape.monitor.stop() }
+        #endif
     }
 }
+
+#if os(macOS)
+/// The card's own Escape (Mac): its window, and the keys it watches while it is up.
+final class CardEscape {
+    weak var window: NSWindow?
+    let monitor = KeyMonitor()
+}
+#endif

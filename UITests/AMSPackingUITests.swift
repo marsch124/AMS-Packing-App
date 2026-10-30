@@ -15508,6 +15508,16 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertEqual(words(app.staticTexts["choices-remove-kept"]), "Nothing is kept until you press Save.")
         XCTAssertEqual(chosen(app, "choices-remove-to"), "Comfort & misc", "with no Other, not the app's own kind")
         shot(app, "thing-kind-remove-ask")
+        #if os(macOS)
+        // Escape is the card's Cancel — never the thing page's (GitHub's Mac, 30 Oct 2026: on Your choices it closed the page).
+        pressEscape(app)
+        XCTAssertTrue(waitUntil { !question.exists }, "Escape did not put the question away")
+        XCTAssertNotNil(find(app, "thing-detail"), "Escape closed the thing's page instead of the question")
+        openDropDown(app, "thing-category")
+        XCTAssertFalse(app.buttons["thing-category-11-putback"].exists, "Escape removed Reminders")
+        tap(app, id: "thing-category-11-remove")
+        XCTAssertTrue(question.waitForExistence(timeout: 5), "Remove on Reminders did not ask again")
+        #endif
         tap(app, id: "choices-remove-yes")
         XCTAssertTrue(waitUntil { !question.exists }, "Remove did not put the question away")
         openDropDown(app, "thing-category")
@@ -15954,15 +15964,19 @@ final class AMSPackingUITests: XCTestCase {
         tab(app, "settings")
         tap(app, id: "settings-lists")
         XCTAssertTrue(appears(app, "lists-detail", timeout: 5))
-        openChoicePart(app, "places", "owners")
+        // Only Storage places open while it is dragged (0.107): opening Owners first scrolled the Mac's page
+        // (GitHub's Mac, 30 Oct 2026) and the first place's grip — where the drag ends — went out of sight.
+        openChoicePart(app, "places")
         XCTAssertEqual(words(app.staticTexts["list-places-name-2"]), "Hall closet")
         let was0 = words(app.staticTexts["list-places-name-0"])
-        XCTAssertFalse(grip(app, "list-owners-grip-0").exists, "an owner has a grip")
         drag(app, "list-places-grip-2", to: "list-places-grip-0")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["list-places-name-0"]) == "Hall closet" },
                       "the place dragged up did not move: '\(words(app.staticTexts["list-places-name-0"]))'")
         XCTAssertEqual(words(app.staticTexts["list-places-name-1"]), was0)
         shot(app, "drag-choices")
+        openChoicePart(app, "owners")
+        XCTAssertTrue(app.staticTexts["list-owners-name-0"].exists, "Owners opened without its owners")
+        XCTAssertFalse(grip(app, "list-owners-grip-0").exists, "an owner has a grip")
         tap(app, id: "lists-done")
         XCTAssertTrue(disappears(app, "lists-detail", timeout: 5))
         tap(app, id: "settings-lists")
