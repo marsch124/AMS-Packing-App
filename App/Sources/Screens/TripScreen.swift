@@ -186,8 +186,6 @@ struct TripScreen: View {
                 SVGPath.path(all ? "M7 9l5-5 5 5 M7 15l5 5 5-5" : "M7 4l5 5 5-5 M7 20l5-5 5 5")
                     .stroke(style: StrokeStyle(lineWidth: 2.6, lineCap: .round, lineJoin: .round))
                     .onGrid(18)
-                    .accessibilityElement()
-                    .accessibilityIdentifier("trip-fold-all-glyph")
                 #if os(macOS)
                 Text(all ? "Unfold all" : "Fold all").font(.system(.subheadline, weight: .semibold)).lineLimit(1)
                 #endif

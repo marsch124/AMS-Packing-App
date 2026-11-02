@@ -6970,7 +6970,10 @@ final class AMSPackingUITests: XCTestCase {
     }
 
     /// Fold all's arrows sit in the middle of their pill (0.108, his words of 2 Nov 2026: "The Fold All and
-    /// Unfold All pill looks terrible. The arrows are not centered."), folded and open.
+    /// Unfold All pill looks terrible. The arrows are not centered."), folded and open. Measured in a picture
+    /// of the pill: in a thin band down the arrows' middle (the pill's middle on the iPhone; on the Mac, where
+    /// its words follow, 19 pt in — 10 padding + half the 18-pt glyph), the rows that differ from the fill
+    /// must sit as far from the top as from the bottom.
     func testFoldAllsArrowsAreCentredInTheirPill() {
         let app = launch()
         tab(app, "events")
@@ -6979,18 +6982,58 @@ final class AMSPackingUITests: XCTestCase {
         let pill = app.buttons["trip-fold-all"]
         XCTAssertTrue(pill.waitForExistence(timeout: 5), "no Fold all")
         for round in 0..<2 {
-            let glyph = app.descendants(matching: .any)["trip-fold-all-glyph"]
-            XCTAssertTrue(glyph.waitForExistence(timeout: 5), "Fold all's arrows are not found")
-            let g = glyph.frame, p = pill.frame
-            XCTAssertLessThanOrEqual(abs(g.midY - p.midY), 1, "round \(round): the arrows sit \(g.midY - p.midY) pt off the pill's middle")
-            XCTAssertTrue(p.contains(g), "round \(round): the arrows stick out of the pill: \(g) in \(p)")
+            _ = waitUntil(timeout: 2) { self.settled(pill) }
             #if os(iOS)
-            XCTAssertLessThanOrEqual(abs(g.midX - p.midX), 1, "round \(round): the arrows sit \(g.midX - p.midX) pt off-centre across")
+            let mid = pill.frame.width / 2
+            #else
+            let mid: CGFloat = 19
             #endif
+            guard let ink = inkRows(pill, midX: mid) else { XCTFail("round \(round): no arrows drawn in the pill"); return }
+            let above = ink.top, below = pill.frame.height - ink.bottom
+            XCTAssertLessThanOrEqual(abs(above - below), 1.5,
+                                     "round \(round): the arrows are \(above) pt from the top and \(below) pt from the bottom")
             shot(app, "fold-all-\(round)")
             tap(app, id: "trip-fold-all")
             _ = waitUntil(timeout: 2) { pill.isSelected == (round == 0) }
         }
+    }
+
+    /// In a picture of `e`, a 6-pt band around `midX`: the first and last rows (in points from its top) with a
+    /// pixel unlike the fill, the ring left out (3 pt at the top and bottom). nil when nothing is drawn there.
+    private func inkRows(_ e: XCUIElement, midX: CGFloat) -> (top: CGFloat, bottom: CGFloat)? {
+        let shot = e.screenshot().image
+        #if os(iOS)
+        guard let cg = shot.cgImage else { return nil }
+        #else
+        guard let cg = shot.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
+        #endif
+        let w = cg.width, h = cg.height
+        var px = [UInt8](repeating: 0, count: w * h * 4)
+        guard let ctx = CGContext(data: &px, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                                  space: CGColorSpaceCreateDeviceRGB(),
+                                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
+        ctx.draw(cg, in: CGRect(x: 0, y: 0, width: w, height: h))
+        let k = CGFloat(w) / max(e.frame.width, 1)
+        func at(_ x: Int, _ y: Int) -> (Int, Int, Int) {
+            let i = (y * w + x) * 4; return (Int(px[i]), Int(px[i + 1]), Int(px[i + 2]))
+        }
+        let x0 = max(0, Int((midX - 3) * k)), x1 = min(w - 1, Int((midX + 3) * k))
+        let y0 = Int(3 * k), y1 = h - 1 - Int(3 * k)
+        // The fill: the band's own colour at its top, just inside the ring.
+        let fill = at((x0 + x1) / 2, y0)
+        var top: Int?, bottom: Int?
+        for y in y0...y1 {
+            for x in x0...x1 {
+                let c = at(x, y)
+                if abs(c.0 - fill.0) + abs(c.1 - fill.1) + abs(c.2 - fill.2) > 90 {
+                    if top == nil { top = y }
+                    bottom = y
+                    break
+                }
+            }
+        }
+        guard let t = top, let b = bottom else { return nil }
+        return (CGFloat(t) / k, CGFloat(b + 1) / k)
     }
 
     /// Once he has set off, no weather card on the trip (0.108, his words of 2 Nov 2026, on site: four rain

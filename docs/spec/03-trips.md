@@ -1203,7 +1203,8 @@ left, the choice beside it) are kept.
   tall in the trip's green (1.4 pt ring): a drawn glyph of two chevrons, 18 pt (drawn on the 24-point grid and
   scaled, `onGrid(18)`, so it sits in the pill's middle — 0.108, his words "The arrows are not centered": framed
   straight at 18 until then, it hung off-centre; 2.6-pt strokes on the grid, about 2 pt shown; id
-  `trip-fold-all-glyph`, UI `testFoldAllsArrowsAreCentredInTheirPill` — within 1 pt of the pill's middle), round strokes — closing on
+  UI `testFoldAllsArrowsAreCentredInTheirPill` measures it in a picture of the pill: the drawn rows in a 6-pt band
+  down the arrows' middle sit as far from the top as from the bottom, within 1.5 pt), round strokes — closing on
   the middle (`M7 4l5 5 5-5 M7 20l5-5 5 5`, Fold all) while any heading of this sorting is open, opening from it
   (`M7 9l5-5 5 5 M7 15l5 5 5-5`, Unfold all) once all are folded; green on a 10 % green fill, and white on full
   green while all are folded. On the iPhone the glyph alone, at least `Metrics.tap` + 6 wide — with its words the
