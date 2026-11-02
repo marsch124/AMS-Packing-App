@@ -57,8 +57,20 @@ struct TripScreen: View {
     /// The line just ticked whose bag has pockets: its pockets show under it (0.69) —
     /// "<group>|<line id>", the copy tapped (0.74–0.105 a line could stand under two templates).
     @State private var pocketing: String?
-    /// Only the lines still unticked — a tapped door check opens the trip so (0.69).
-    @State private var onlyUnticked = false
+    /// Only the lines still to pack — unticked, not set aside — under the same headings: "Still to pack"
+    /// beside "Everything" under Group by (0.108, his ask of 2 Nov 2026: "a mode where I just see all the
+    /// items that are not packed, but of course, I need to be able to group them"). Kept per trip on this
+    /// device (the trip ids it is on for); a tapped door check turns it on (0.69).
+    @AppStorage(TripScreen.onlyLeftKey) private var onlyLeftRaw = ""
+    static let onlyLeftKey = "ams.trip.onlyLeft"
+    private var onlyUnticked: Bool {
+        get { onlyLeftRaw.split(separator: ",").contains { $0 == tripId } }
+        nonmutating set {
+            var ids = onlyLeftRaw.split(separator: ",").map(String.init).filter { $0 != tripId }
+            if newValue { ids.append(tripId) }
+            onlyLeftRaw = ids.joined(separator: ",")
+        }
+    }
     /// A tapped door check for the way home: On site opens, and in it Pack to go home.
     @State private var homeFromDoor = false
     /// The last press that ticked or unticked many lines — a heading's round tick, Clear every
@@ -431,7 +443,14 @@ struct TripScreen: View {
                     TripMessageList(tripId: tripId).padding(.horizontal, 16).padding(.top, 4)
                 }
                 #endif
-                if onlyUnticked { untickedBar }
+                if p.total > 0 { showRow(left: p.total - p.done) }
+                if onlyUnticked && placeFilter == nil && shownLines.isEmpty {
+                    Text("Everything is packed. Everything shows the whole list.")
+                        .font(.system(.subheadline)).foregroundStyle(Theme.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.horizontal, 16).padding(.top, 10)
+                        .accessibilityIdentifier("trip-left-none")
+                }
                 if placeFilter != nil && shownLines.isEmpty {
                     Text("Nothing on this trip is kept here. Tap the place above to see every line.")
                         .font(.system(.subheadline)).foregroundStyle(Theme.muted)
@@ -1160,22 +1179,30 @@ struct TripScreen: View {
         }
     }
 
-    /// "Only what is still unticked", and Show all — while a door check's view is on.
-    private var untickedBar: some View {
-        HStack(spacing: 8) {
-            Text("Only what is still unticked")
-                .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.events.color)
-                .accessibilityIdentifier("trip-unticked-only")
-            Spacer(minLength: 8)
-            Button { onlyUnticked = false } label: {
-                Text("Show all").font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.events.color)
-                    .padding(.horizontal, 10).frame(minHeight: Metrics.chip)
-                    .overlay(Capsule().stroke(AppSection.events.color, lineWidth: 1.2))
+    /// Everything, or Still to pack (0.108): two halves of one capsule right under Group by, the chosen
+    /// one filled the trip's green. Still to pack says how many are left. Until 0.108 a door check's
+    /// view had a line of its own, "Only what is still unticked" with Show all.
+    private func showRow(left: Int) -> some View {
+        let tint = AppSection.events.color
+        func half(_ title: String, on: Bool, id: String, _ act: @escaping () -> Void) -> some View {
+            Button(action: act) {
+                Text(title).font(.system(.subheadline, weight: .semibold)).lineLimit(1)
+                    .foregroundStyle(on ? Color.white : tint)
+                    .frame(maxWidth: .infinity, minHeight: Metrics.chip)
+                    .background(Capsule().fill(on ? tint : Color.clear))
                     .contentShape(Capsule())
             }
             .buttonStyle(.plain).focusEffectDisabled()
-            .accessibilityIdentifier("trip-show-all")
+            .accessibilityIdentifier(id)
+            .accessibilityAddTraits(on ? .isSelected : [])
         }
+        return HStack(spacing: 2) {
+            half("Everything", on: !onlyUnticked, id: "trip-show-all") { onlyUnticked = false }
+            half(left > 0 ? "Still to pack \u{00B7} \(left)" : "Still to pack", on: onlyUnticked, id: "trip-show-left") { onlyUnticked = true }
+        }
+        .padding(2)
+        .overlay(Capsule().stroke(tint, lineWidth: 1.2))
+        .frame(maxWidth: 420)
         .padding(.horizontal, 16).padding(.top, 6)
     }
 

@@ -4752,12 +4752,49 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["door-check-none"].waitForExistence(timeout: 8), "a door check with everything ticked: '\(words(out))'")
     }
 
+    /// Still to pack (0.108, his ask of 2 Nov 2026, packing: "a mode where I just see all the items that are
+    /// not packed, but of course, I need to be able to group them"): under Group by, Everything or Still to
+    /// pack. On Still to pack a ticked line and a set-aside one go, the rest stay under the same headings
+    /// whatever the grouping; the trip keeps it when opened again; Everything brings all back.
+    func testStillToPackShowsOnlyWhatIsLeftUnderAnyGrouping() {
+        let app = launch()
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let left = app.buttons["trip-show-left"], all = app.buttons["trip-show-all"]
+        XCTAssertTrue(left.waitForExistence(timeout: 5), "no Still to pack under Group by")
+        XCTAssertTrue(isOn(all), "a trip does not open on Everything")
+        XCTAssertTrue(words(left).contains("7"), "Still to pack does not say how many: '\(words(left))'")
+        tap(app, id: "trip-line-0")
+        XCTAssertTrue(waitUntil { self.words(left).contains("6") }, "the count did not follow the tick: '\(words(left))'")
+        tap(app, id: "trip-line-1-aside")
+        tap(app, id: "trip-show-left")
+        XCTAssertTrue(waitUntil { self.isOn(left) && !app.buttons["trip-line-0"].exists }, "the ticked line is still shown")
+        XCTAssertFalse(app.buttons["trip-line-1"].exists, "the set-aside line is still shown")
+        XCTAssertTrue(app.buttons["trip-line-2"].exists, "a line still to pack went")
+        shot(app, "trip-still-to-pack")
+        // Grouped another way: still only what is left.
+        XCTAssertEqual(choose(app, "trip-view", 1), "Into")
+        XCTAssertTrue(waitUntil { app.buttons["trip-line-2"].exists && !app.buttons["trip-line-0"].exists },
+                      "grouped by Into, the ticked line came back")
+        // Kept for this trip: closed and opened again, still on Still to pack.
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["trip-show-left"]) && !app.buttons["trip-line-0"].exists },
+                      "the trip forgot Still to pack")
+        tap(app, id: "trip-show-all")
+        XCTAssertTrue(waitUntil { app.buttons["trip-line-0"].exists }, "Everything did not bring the ticked line back")
+    }
+
     /// A tapped door check opens the trip on just the unticked lines (Show all brings the
     /// rest back); the way home's opens Pack to go home on what is not in a bag yet.
     func testATappedDoorCheckOpensTheTripOnWhatIsLeft() {
         let app = launch("-uiTestingPockets", ["-tapDoorCheck", "out"])
         XCTAssertTrue(appears(app, "trip-detail", timeout: 10), "the tapped door check did not open its trip")
-        XCTAssertTrue(app.staticTexts["trip-unticked-only"].waitForExistence(timeout: 5), "the trip did not open on just what is left")
+        XCTAssertTrue(waitUntil { app.buttons["trip-show-left"].exists && self.isOn(app.buttons["trip-show-left"]) },
+                      "the trip did not open on Still to pack")
         XCTAssertTrue(app.buttons["trip-line-1"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["trip-line-0"].exists, "the ticked Passport is still shown")
         shot(app, "door-tapped-trip")
@@ -16409,7 +16446,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "trip-beforego-part-charge", timeout: 5), "the trip opened without its To charge")
         XCTAssertTrue(waitUntil { app.buttons["trip-charge-0"].exists && app.buttons["trip-charge-0"].isHittable },
                       "To charge is not in view")
-        XCTAssertFalse(app.staticTexts["trip-unticked-only"].waitForExistence(timeout: 2), "Charge tonight opened on just the unticked lines")
+        XCTAssertFalse(isOn(app.buttons["trip-show-left"]), "Charge tonight opened on Still to pack")
         XCTAssertFalse(appears(app, "review-detail", timeout: 1), "Charge tonight opened the review")
         shot(app, "charge-tonight-tapped")
     }
