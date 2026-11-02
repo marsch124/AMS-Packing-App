@@ -64,7 +64,16 @@ struct GrabDoodle: View {
 
     var body: some View {
         let k = size / 64
-        if icon.isEmpty, !initial.isEmpty {
+        if let d = GrabDoodle.templatePath(icon) {
+            // A template icon he chose for the list (0.108): its 24-point drawing, a little inside
+            // the doodle's box (the doodles reach its edges), one stroke as on a template's cover.
+            let t = size * 0.88 / 24
+            SVGPath.path(d)
+                .applying(CGAffineTransform(scaleX: t, y: t))
+                .stroke(style: StrokeStyle(lineWidth: 1.9 * t, lineCap: .round, lineJoin: .round))
+                .frame(width: size * 0.88, height: size * 0.88)
+                .frame(width: size, height: size)
+        } else if icon.isEmpty, !initial.isEmpty {
             Text(initial.prefix(1).uppercased())
                 .font(.system(size: size * 0.5, weight: .heavy))
                 .frame(width: size, height: size)
@@ -75,6 +84,13 @@ struct GrabDoodle: View {
                 .frame(width: size, height: size)
         }
     }
+}
+
+extension GrabDoodle {
+    /// A template icon chosen for the list (0.108, "icon:<key>"): its 24-point drawing; nil = the
+    /// list's doodle or its initial. Outside the struct, so `tools/grab-icons.sh` (which copies the
+    /// struct alone) can give it the drawings itself.
+    static func templatePath(_ icon: String) -> String? { Library.grabTemplateIcon(icon)?.path }
 }
 
 /// This device's ticks and skips, list by list. In a UI test they live in memory
@@ -193,6 +209,10 @@ struct GrabScreen: View {
     @FocusState private var namingHeading: Int?
     /// While editing: which names are marked "only sometimes", by their plain form.
     @State private var draftSometimes: Set<String> = []
+    /// While editing (0.108): the list's icon as chosen in Icon — saved with Save, gone with Cancel.
+    @State private var draftIcon = ""
+    /// Icon's picker is up (0.108).
+    @State private var choosingIcon = false
     /// "Delete <name>?" is up, at the foot of the editor.
     @State private var askingToDelete = false
     /// The list as it was, while its sheet slides away after Delete — so the
@@ -240,7 +260,7 @@ struct GrabScreen: View {
                         .keyboardShortcut(.cancelAction)
                         .accessibilityIdentifier("grab-cancel")
                 }
-                GrabDoodle(icon: list.icon, size: 36, initial: list.label).foregroundStyle(tint)
+                GrabDoodle(icon: editing ? draftIcon : list.icon, size: 36, initial: list.label).foregroundStyle(tint)
                 Text(list.title).font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
                     .lineLimit(1).minimumScaleFactor(0.7)
                     .accessibilityIdentifier("grab-title")
@@ -396,7 +416,7 @@ struct GrabScreen: View {
         // without it (0.92, the app's rule; spec 06 §20a). On the Mac the sheet holds still while
         // editing, so Escape is the edit's Cancel and the list stays open: the Mac's own Escape would
         // close the whole sheet (seen in the 0.92 probe).
-        .asksBeforeDiscarding(editing && (draft != list.lines || draftSometimes != onlySometimes),
+        .asksBeforeDiscarding(editing && (draft != list.lines || draftSometimes != onlySometimes || draftIcon != list.icon),
                               holds: GrabScreen.holdsWhileEditing && editing, isPage: editing) {
             cancelEdits(); dismiss()
         }
@@ -546,6 +566,7 @@ struct GrabScreen: View {
         VStack(spacing: 0) {
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 4) {
+                    iconRow
                     Text(ReorderArrows.shown ? "Tap a name to change it · ≡ drag or ▲▼ move · ✕ remove. A thing goes under the heading above it. Hold a thing (right-click on the Mac) for a heading above it. Saved for both your devices."
                                              : "Tap a name to change it · hold ≡ and drag to move · ✕ remove. A thing goes under the heading above it. Hold a thing (right-click on the Mac) for a heading above it. Saved for both your devices.")
                         .font(.system(.footnote)).foregroundStyle(Theme.muted)
@@ -662,6 +683,39 @@ struct GrabScreen: View {
         }
     }
 
+    /// Icon (0.108) — his question, 2 Nov 2026: "Regarding grab lists: how do I change icons?" The
+    /// first row of Edit: the icon the list wears and what it is; a tap opens the picker a template's
+    /// page has (the same drawings, the same search, ⌘F on the Mac). The choice is the edit's, kept
+    /// by Save and thrown away by Cancel, as the rest of the edit is.
+    private var iconRow: some View {
+        Button { choosingIcon = true } label: {
+            HStack(spacing: 10) {
+                GrabDoodle(icon: draftIcon, size: 28, initial: list.label).foregroundStyle(tint)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Icon").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
+                    Text(GrabIconPicker.words(draftIcon, list: list)).font(.system(.footnote)).foregroundStyle(Theme.muted)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 8)
+                Text("Change").font(.system(.subheadline, weight: .semibold)).foregroundStyle(tint)
+                SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
+                    .frame(width: 16, height: 16).foregroundStyle(Theme.faint)
+            }
+            .padding(.horizontal, 10).padding(.vertical, 4)
+            .frame(minHeight: Metrics.row)
+            .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .padding(.bottom, 6)
+        .accessibilityIdentifier("grab-icon")
+        .accessibilityLabel("Icon")
+        .accessibilityValue(GrabIconPicker.words(draftIcon, list: list))
+        .sheet(isPresented: $choosingIcon) {
+            GrabIconPicker(list: list, current: draftIcon) { draftIcon = $0 }
+        }
+    }
+
     /// Delete one of HIS lists (4 Oct 2026: there was no way to). It goes from Home
     /// and from Grab Lists with everything on it; nothing else in the app changes.
     @ViewBuilder private var deleteList: some View {
@@ -730,6 +784,8 @@ struct GrabScreen: View {
     }
 
     private func startEditing() {
+        draftIcon = list.icon
+        choosingIcon = false
         draft = list.lines
         draftOpened = list.lines
         rowKeys = Array(0..<draft.count)
@@ -874,9 +930,12 @@ struct GrabScreen: View {
         // marks are saved together or not at all.
         var saved = false
         let opened = draftOpened, marked = marksOpened
+        // The icon chosen in Icon (0.108) goes with the same Save, one change.
+        let icon = draftIcon, iconWas = list.icon, listId = listId
         model.change {
             saved = keepMine ? $0.saveGrabEdit(id: listId, lines: lines, sometimes: sometimes)
                 : $0.saveGrabEdit(id: listId, opened: opened, openedSometimes: marked, lines: lines, sometimes: sometimes)
+            if saved, icon != iconWas { _ = $0.setGrabListIcon(id: listId, icon: icon) }
         }
         guard saved else { saveNeeds = "Put at least one thing on the list first."; return }
         #if DEBUG

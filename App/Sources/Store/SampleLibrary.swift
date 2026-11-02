@@ -183,6 +183,47 @@ enum SampleLibrary {
         return lib
     }
 
+    /// The sample library with its trip on Home's "On your trip" card (`-uiTestingOnTrip <when>`,
+    /// 0.108). Every line but the Map was ticked on the way out (six went along).
+    ///  "away"    — it began yesterday and ends in three days (Day 2 of 5): a forecast for today at
+    ///              Seaside (sunny, 23°) and a to-do written on the trip, "Book the taxi" — under way;
+    ///  "lastday" — it began five days ago and ends tomorrow (Day 6 of 7), "I leave at" 10:00 for
+    ///              home, two lines packed for home, the Headlamp with a battery not charged yet —
+    ///              going home tomorrow;
+    ///  "home"    — it began six days ago and ended yesterday, not reviewed, and Autumn swim 24 days
+    ///              ahead — back home, the next trip counted down under the card.
+    static func onTrip(_ when: String) -> Library {
+        var lib = make()
+        let cal = Calendar(identifier: .gregorian)
+        func day(_ n: Int) -> String {
+            let c = cal.dateComponents([.year, .month, .day], from: cal.date(byAdding: .day, value: n, to: Today.now)!)
+            return String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!)
+        }
+        guard !lib.trips.isEmpty else { return lib }
+        let id = lib.trips[0].id
+        let span: (Int, Int) = when == "lastday" ? (-5, 1) : when == "home" ? (-6, -1) : (-1, 3)
+        lib.trips[0].startDate = day(span.0)
+        lib.trips[0].endDate = day(span.1)
+        lib.trips[0].destination = "Seaside"
+        for line in lib.trips[0].entries where line.name != "Map" { _ = lib.setChecked(true, tripId: id, entryId: line.id) }
+        switch when {
+        case "lastday":
+            _ = Library.setLeaveTime(&lib.trips[0], "10:00", home: true)
+            for line in lib.homeLines(tripId: id).prefix(2) { _ = lib.setPackedHome(true, tripId: id, entryId: line.id) }
+            if let lamp = lib.items.first(where: { $0.name == "Headlamp" })?.id { _ = lib.setThingBattery(id: lamp, true) }
+        case "home":
+            var swim = newEvent(name: "Autumn swim", startDate: day(24), endDate: day(26))
+            swim.activities = lib.templates.filter { $0.name == "Swim" }.map(\.id)
+            _ = lib.createTrip(swim)
+        default:
+            let sky = WeatherSnapshot(place: "Seaside, ES", lat: 36.6, lon: -4.5, fetchedAt: nowISO(),
+                                      daily: (-1...3).map { WeatherDay(date: day($0), code: 0, tmax: 23, tmin: 15) })
+            _ = lib.setWeather(tripId: id, place: "Seaside", lat: 36.6, lon: -4.5, snapshot: sky)
+            _ = lib.addTripTodo(tripId: id, name: "Book the taxi", today: day(0))
+        }
+        return lib
+    }
+
     /// The sample library for a place's code (`-uiTestingPlaces <when>`, 0.69): the
     /// Garage's code is G4R (as if its label were printed), and its trip is moved:
     /// "soon" = it starts in 2 days, inside the packing week, so a code opens it on that

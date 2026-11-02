@@ -172,10 +172,10 @@ extension Library {
     /// one, and waits in Grab Lists only while Home is full. A drawing or a colour
     /// this app does not have becomes the standard look a list made here gets — its
     /// initial, in blue — instead of the runner and the slate grey it was drawn in
-    /// until 5 Oct 2026.
+    /// until 5 Oct 2026. A template icon the list was given (0.108, "icon:<key>") comes with it.
     @discardableResult
     public mutating func importGrab(_ g: GrabShare) -> GrabDefinition? {
         addGrabList(label: g.name.isEmpty ? "Shared" : g.name, tone: GRAB_TONES.contains(g.tone) ? g.tone : "blue",
-                    icon: GRAB_ICONS.contains(g.icon) ? g.icon : "", items: g.items)
+                    icon: Library.isGrabIcon(g.icon) ? g.icon : "", items: g.items)
     }
 }

@@ -45,6 +45,15 @@ enum DrawGrabIcons {
             }
         }
 
+        // A template icon he chose for a list (0.108): its 24-point drawing, one 1.9 stroke, as on a
+        // template's cover — `TemplatePaths` is the catalog's, copied out by grab-icons.sh.
+        for icon in TemplatePaths.all {
+            let path = SVGPath.path(icon.path).cgPath
+            try pdf(named: "grab-icon-\(icon.key)", in: out) { ctx in
+                stroke(path, unit: 24, width: 1.9, in: ctx)
+            }
+        }
+
         // Any other initial: the Home tab's suitcase (Sections.swift, `AppSection.home.mark`).
         var suitcase = Path(roundedRect: CGRect(x: 4, y: 7.5, width: 16, height: 12.5), cornerRadius: 2.2)
         suitcase.addPath(SVGPath.path("M9 7.5V5.6A1.6 1.6 0 0 1 10.6 4h2.8A1.6 1.6 0 0 1 15 5.6V7.5M9.5 11v5.5M14.5 11v5.5"))

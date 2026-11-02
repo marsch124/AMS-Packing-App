@@ -72,13 +72,34 @@ struct HomeScreen: View {
     /// What Create said was missing, after a press with something missing.
     @State private var stillNeeded = ""
     @FocusState private var naming: Bool
+    /// The minute Home was last drawn at (0.108): "On your trip" turns with the clock — the last
+    /// day, the time he leaves, the day after — so Home is drawn again each minute, and whenever
+    /// the app comes back to the front.
+    @State private var minute = Date()
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         let choices = model.library.activityChoices()
         let flat = choices.flatMap(\.lists)
         let anyWorkout = flat.contains { $0.group == "WET" && activities.contains($0.id) }
+        // On a trip, going home, or just back (0.108, his words, 2 Nov 2026: "I am currently on a
+        // trip, but I can't see it on the home page."). Read at this minute (`minute`).
+        let _ = (minute, scenePhase)
+        let onTrip = model.library.onTripCard(today: Today.local, time: Today.time)
         KeyboardAwayScroll {
             VStack(alignment: .leading, spacing: 10) {
+                // The trip he is on, first on Home — as in the picture he called "excellent" (2 Nov
+                // 2026): while he is away, going home and back home until the trip is reviewed.
+                if let card = onTrip {
+                    OnTripCard(card: card,
+                               openTrip: { openTrip(card.id, LibraryModel.TripFocus(tripId: card.id, home: false, onSite: true)) },
+                               packHome: { openTrip(card.id, LibraryModel.TripFocus(tripId: card.id, home: true)) },
+                               whereIs: { searching = true },
+                               openToDo: { openTrip(card.id, nil) },
+                               openCharge: { openTrip(card.id, LibraryModel.TripFocus(tripId: card.id, home: false, charge: true)) },
+                               review: { openTrip(card.id, LibraryModel.TripFocus(tripId: card.id, home: false, review: true)) })
+                        .padding(.top, Metrics.screenTop)
+                }
                 // Home's two parts lead with real headings (field test, 3 Oct 2026: "the
                 // headings … dominant"); they were small and grey, smaller than the
                 // headings inside Create new trip.
@@ -119,11 +140,15 @@ struct HomeScreen: View {
                 }
                 .homeCard(id: "home-grab-frame")
                 // The first block starts where every tab's first line does (as Settings' first card).
-                .padding(.top, Metrics.screenTop)
+                .padding(.top, onTrip == nil ? Metrics.screenTop : 0)
 
                 // The trip he leaves on next, counted down (his idea 6) — under the grab
-                // lists, which keep their place at the top.
-                if let next = model.library.nextTrip(today: Today.local, time: Today.time) {
+                // lists, which keep their place at the top. While he is away or going home the
+                // trip card stands in its place (0.108); back home, the next trip is counted down
+                // under it as before — never the trip on the card itself (on its first day, after
+                // he has left, `nextTrip` still names it).
+                if let next = model.library.nextTrip(today: Today.local, time: Today.time),
+                   onTrip == nil || (onTrip?.moment == .backHome && onTrip?.id != next.id) {
                     CountdownCard(next: next) { openedPlace = nil; opened = next.id }
                 }
 
@@ -282,6 +307,8 @@ struct HomeScreen: View {
             }
             else { whenFree { placeShown = o } }
         }
+        // "On your trip" turns with the clock (0.108): Home is drawn again each minute.
+        .onReceive(Timer.publish(every: 60, on: .main, in: .common).autoconnect()) { minute = $0 }
         .sheet(isPresented: $showingGrabLists) { GrabCollectionScreen().environmentObject(model) }
         // The Action button's "Choose a grab list" (field test 2.3): the menu of them all.
         .sheet(isPresented: $menuShown) { GrabMenuScreen().environmentObject(model) }
@@ -321,6 +348,14 @@ struct HomeScreen: View {
     }
 
     private struct GrabOpened: Identifiable { let list: GrabDefinition; var id: String { list.id } }
+
+    /// The trip on Home's "On your trip" card, opened (0.108): at its On site step, at Pack to go
+    /// home, at its To charge, or on its review — the focus the trip takes as it opens.
+    private func openTrip(_ id: String, _ focus: LibraryModel.TripFocus?) {
+        model.tripFocus = focus
+        openedPlace = nil
+        opened = id
+    }
 
     /// Grab and go's line, the first inside its frame (0.91): the heading, then — on one
     /// centre line with it — the search (iPhone; the Mac's is in the title bar strip) and

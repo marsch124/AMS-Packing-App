@@ -2019,8 +2019,9 @@ drawn with a bare `SVGPath.path` must be framed at exactly 24 × 24.
 
 **The pictures under the app icon** (0.86, spec 02 §13b). The iPhone's Home Screen entries can only wear a picture
 from the app's asset catalog (or an SF Symbol), so the grab lists' own drawings are written there once as template
-PDFs — `Assets.xcassets/GrabIcons`: the six doodles, a list's initial (A–Z, Å Ä Ö Ü, 0–9) and the Home tab's suitcase
-— by `tools/grab-icons.sh` from GrabDoodle's path data and `SVGPath` (§30). No SF Symbol there either.
+PDFs — `Assets.xcassets/GrabIcons`: the six doodles, a list's initial (A–Z, Å Ä Ö Ü, 0–9), the Home tab's suitcase
+and (0.108) every template icon a list may be given (`grab-icon-<key>`) — by `tools/grab-icons.sh` from GrabDoodle's
+path data, the template icon catalog's and `SVGPath` (§30). No SF Symbol there either.
 
 **Data emoji.** Emoji that are DATA (a phase's or template's emoji imported from the web app) are not drawn, with one
 exception: a template's `Cover` shows `list.emoji` as text when the template has no icon (his covers "are his data").
@@ -3599,8 +3600,12 @@ none), writes each to `crash-reports/<n>-<date>.txt` and always uploads the fold
   (from its `struct` line to the brace that closes it at the start of a line) and compiled with `SVGPath.swift` and
   `tools/grab-icons/main.swift`; each picture is a 35 × 35-point PDF, template rendering — the six doodles stroked
   4.5 of 64 units with round ends inside a 2-point margin, `grab-initial-<hex>` for A–Z, Å Ä Ö Ü and 0–9 in the
-  system font, heavy, 23 points, centred, and `grab-list`, the Home tab's suitcase (stroke 1.9 of 24 units). Run it
-  after a doodle changes, and commit the pictures.
+  system font, heavy, 23 points, centred, and `grab-list`, the Home tab's suitcase (stroke 1.9 of 24 units); since
+  0.108 also `grab-icon-<key>`, each of the 132 template icons (a list's Icon, spec 02 §7b), read out of
+  `Core/Sources/PackingLibrary/TemplateIconCatalog.swift` line by line (`i("<key>", "<label>", .<group>, "<path>")`
+  → `TemplatePaths`, which also gives the copied GrabDoodle its `templatePath`; fewer than 100 found stops the
+  script) and stroked 1.9 of 24 units. Run it after a doodle or a template icon changes, and commit the NEW
+  pictures (it rewrites every PDF; the ones already there differ only in the date inside).
 - `private/` and `*backup*.json` are git-ignored: real data never enters the public repository.
 
 ## 31. The parity check against the web app (`Core/Sources/parity`, `tools/parity/`)

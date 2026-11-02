@@ -1155,6 +1155,10 @@ struct TripScreen: View {
             homeFromDoor = true
             // After this window has finished arriving: one cannot come up while another still is.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { onSite = true }
+        } else if focus.onSite {
+            // Home's "On your trip" card (0.108): the trip at its On site step, every line kept.
+            homeFromDoor = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { onSite = true }
         } else {
             onlyUnticked = true
         }

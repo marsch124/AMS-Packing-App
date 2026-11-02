@@ -12,7 +12,9 @@
 #   grab-initial-<hex>   a list of his own wears its initial, as on its tile: A–Z, Å Ä Ö Ü,
 #                        0–9 in the system font's heaviest weight (<hex> = the letter's code)
 #   grab-list            any other initial: the Home tab's suitcase (Sections.swift)
-# Run it again after a doodle changes; it rewrites App/Resources/Assets.xcassets/GrabIcons.
+#   grab-icon-<key>      a template icon he chose for the list (0.108): every drawing of
+#                        Core/Sources/PackingLibrary/TemplateIconCatalog.swift, as on a template's cover
+# Run it again after a doodle or a template icon changes; it rewrites App/Resources/Assets.xcassets/GrabIcons.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 WORK=$(mktemp -d)
@@ -23,7 +25,21 @@ trap 'rm -rf "$WORK"' EXIT
   awk '/^struct GrabDoodle: View \{/{on=1} on{print} on&&/^\}/{exit}' App/Sources/Screens/GrabScreen.swift; } > "$WORK/GrabDoodle.swift"
 grep -q 'static func path' "$WORK/GrabDoodle.swift" || { echo "GrabDoodle not found in GrabScreen.swift" >&2; exit 1; }
 
-swiftc -parse-as-library -O -o "$WORK/draw" App/Sources/SVGPath.swift "$WORK/GrabDoodle.swift" tools/grab-icons/main.swift
+# The template icons (0.108): each `i("<key>", "<label>", .<group>, "<path>")` line of the catalog,
+# as (key, path) — and GrabDoodle's way to them, which in the app reads the catalog itself.
+{ echo 'enum TemplatePaths {'
+  echo '    static let all: [(key: String, path: String)] = ['
+  sed -nE 's/^ *i\("([^"]+)", "[^"]*", \.[a-z]+, "([^"]+)"\),?.*$/        ("\1", "\2"),/p' Core/Sources/PackingLibrary/TemplateIconCatalog.swift
+  echo '    ]'
+  echo '}'
+  echo 'extension GrabDoodle {'
+  echo '    static func templatePath(_ icon: String) -> String? {'
+  echo '        icon.hasPrefix("icon:") ? TemplatePaths.all.first { "icon:" + $0.key == icon }?.path : nil'
+  echo '    }'
+  echo '}'; } > "$WORK/TemplatePaths.swift"
+[ "$(grep -c '^        ("' "$WORK/TemplatePaths.swift")" -ge 100 ] || { echo "the template icons were not found in TemplateIconCatalog.swift" >&2; exit 1; }
+
+swiftc -parse-as-library -O -o "$WORK/draw" App/Sources/SVGPath.swift "$WORK/GrabDoodle.swift" "$WORK/TemplatePaths.swift" tools/grab-icons/main.swift
 OUT=App/Resources/Assets.xcassets/GrabIcons
 rm -rf "$OUT"
 "$WORK/draw" "$OUT"

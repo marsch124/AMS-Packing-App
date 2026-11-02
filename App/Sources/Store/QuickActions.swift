@@ -85,13 +85,16 @@ enum GrabQuickActions {
                                   icon: UIApplicationShortcutIcon(type: .add), userInfo: nil)
     }
 
-    /// The drawing an entry wears — the one on the list's tile (`GrabDoodle`): its doodle,
-    /// or, for a list of his own with no doodle, its initial. An initial the app has no
+    /// The drawing an entry wears — the one on the list's tile (`GrabDoodle`): the template icon
+    /// he chose for it (0.108), its doodle, or, for a list of his own with no doodle, its initial. An initial the app has no
     /// drawing for, the Home tab's suitcase. Asset catalog, template images: drawn by
     /// `tools/grab-icons.sh` from the very same path data.
     static func iconName(_ list: GrabDefinition) -> String {
         let name: String
-        if list.icon.isEmpty, let first = list.label.first {
+        if let chosen = Library.grabTemplateIcon(list.icon) {
+            // A template icon he chose for the list (0.108): its drawing, as on the tile.
+            name = "grab-icon-\(chosen.key)"
+        } else if list.icon.isEmpty, let first = list.label.first {
             let initial = String(first).uppercased()
             let scalars = initial.unicodeScalars
             name = scalars.count == 1 ? "grab-initial-\(String(scalars.first!.value, radix: 16, uppercase: true))" : "grab-list"

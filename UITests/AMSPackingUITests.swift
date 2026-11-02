@@ -7235,6 +7235,27 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertEqual(isSwitchOn(app, id), on, "\(id) did not switch")
     }
 
+    /// A switch tapped ONCE — the switch, not its words — for a switch whose row moves away as it
+    /// flips (Your grab lists' "On Home", 0.108): `setSwitch` would try again on the row that took
+    /// its place.
+    private func flip(_ app: XCUIApplication, _ id: String) {
+        let e = switchNamed(app, id)
+        XCTAssertTrue(e.exists, "no \(id) switch")
+        nudgeIntoView(app, e)
+        _ = waitUntil(timeout: 3) { e.exists && self.settled(e) }
+        #if os(macOS)
+        e.tap()
+        #else
+        e.coordinate(withNormalizedOffset: CGVector(dx: 0.75, dy: 0.5)).tap()
+        #endif
+    }
+
+    /// Everything a control says — its words and its value, whichever the platform puts where.
+    private func said(_ e: XCUIElement) -> String {
+        guard e.exists else { return "" }
+        return [e.label, e.value as? String ?? ""].filter { !$0.isEmpty }.joined(separator: " | ")
+    }
+
     /// Today + `n` days, at midnight here.
     private func dayFromToday(_ n: Int) -> Date {
         let cal = Calendar.current
@@ -10439,8 +10460,8 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(made).contains("Home is full") }, "it does not say why it waits: '\(words(made))'")
         shot(app, "grablists-made")
 
-        // Putting it on Home asks which of the eight steps back.
-        tap(app, id: "grablists-on-0")
+        // Putting it on Home asks which of the eight steps back (its "On Home" switch since 0.108).
+        flip(app, "grablists-waiting-switch-0")
         XCTAssertTrue(appears(app, "swap-detail", timeout: 5), "it did not ask what steps back")
         let steppingBack = words(app.buttons["swap-0"])
         tap(app, id: "swap-0")
@@ -10551,7 +10572,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "grablists-detail", timeout: 5))
         let homeHeading = app.staticTexts["grablists-home-heading"], waiting = app.staticTexts["grablists-waiting-heading"]
         XCTAssertTrue(waitUntil { self.words(homeHeading).contains("6 of 8") })
-        tap(app, id: "grablists-off-0")
+        flip(app, "grablists-home-switch-0")                     // "On Home" switched off (0.108; "Off Home" until then)
         XCTAssertTrue(waitUntil(timeout: 10) { self.words(homeHeading).contains("5 of 8") },
                       "the list came straight back onto Home: '\(words(homeHeading))'")
         XCTAssertTrue(waitUntil { self.words(waiting).contains("1") }, "it is not waiting: '\(words(waiting))'")
@@ -10576,7 +10597,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(disappears(app, "grab-detail", timeout: 5))
         XCTAssertTrue(waitUntil { self.words(homeHeading).contains("5 of 8") }, "opening it put it on Home: '\(words(homeHeading))'")
         // …until he puts it back: there is room, so it goes straight on, at the end.
-        tap(app, id: "grablists-on-0")
+        flip(app, "grablists-waiting-switch-0")
         XCTAssertTrue(waitUntil(timeout: 10) { self.words(homeHeading).contains("6 of 8") },
                       "it could not be put back: '\(words(homeHeading))'")
         XCTAssertNil(find(app, "swap-detail"), "it asked what steps back while Home had room")
@@ -10722,7 +10743,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "grablists-detail", timeout: 5))
         let homeHeading = app.staticTexts["grablists-home-heading"]
         for left in stride(from: 5, through: 0, by: -1) {
-            tap(app, id: "grablists-off-0")
+            flip(app, "grablists-home-switch-0")
             XCTAssertTrue(waitUntil(timeout: 10) { self.words(homeHeading).contains("\(left) of 8") }, "'\(words(homeHeading))'")
         }
         tap(app, id: "grablists-done")
@@ -10732,6 +10753,113 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "home-no-grab-lists")
         tap(app, id: "home-grab-none")
         XCTAssertTrue(appears(app, "grablists-detail", timeout: 5), "the line does not lead to Grab Lists")
+    }
+
+    /// 0.108 — his question (2 Nov 2026): "Regarding grab lists: how do I change icons?" Edit has
+    /// Icon first: the picker a template's page has (the drawings, the search); a tap chooses and
+    /// closes, Save keeps it, Cancel throws it away. Swim keeps its own doodle until then, and "Its
+    /// drawing" brings it back.
+    func testAGrabListTakesAnIconFromTheTemplateIcons() {
+        // Day and night (the Mac's night: `TEST_RUNNER_NIGHT=1`; the iPhone's: the simulator in dark mode).
+        let night = ProcessInfo.processInfo.environment["NIGHT"] == "1" ? ["-AppleInterfaceStyle", "Dark"] : []
+        let app = launch("-uiTesting", night)
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        tap(app, id: "grab-0")                                       // Swim
+        XCTAssertTrue(appears(app, "grab-detail", timeout: 10))
+        tap(app, id: "grab-edit")
+        let icon = app.buttons["grab-icon"]
+        XCTAssertTrue(icon.waitForExistence(timeout: 5), "Edit has no Icon")
+        XCTAssertTrue(said(icon).contains("Its own drawing"), "'\(said(icon))'")
+        tap(app, id: "grab-icon")
+        XCTAssertTrue(appears(app, "grabicon-picker", timeout: 5), "Icon did not open the icons")
+        XCTAssertTrue(isOn(app.buttons["icon-doodle"]), "Swim's own drawing is not the one in force")
+        shot(app, "home108-grabicon-picker-all")
+        let field = app.textFields["iconsearch"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "the picker has no icon search")
+        type("kayak", into: field)
+        XCTAssertTrue(app.buttons["icon-kayak"].waitForExistence(timeout: 5), "the search did not find the Kayak")
+        shot(app, "home108-grabicon-picker")
+        tap(app, id: "icon-kayak")
+        XCTAssertTrue(disappears(app, "grabicon-picker", timeout: 5), "a chosen icon did not close the picker")
+        XCTAssertTrue(waitUntil { self.said(icon).contains("Paddling") }, "Icon does not say Paddling (the kayak): '\(said(icon))'")
+        shot(app, "home108-grabicon-edit")
+        tap(app, id: "grab-edit")                                    // Save
+        XCTAssertTrue(waitUntil { !app.buttons["grab-icon"].exists }, "Save did not close the edit")
+        shot(app, "home108-grabicon-saved")
+        // On Home too: the tile wears it (`grab-0`, Swim, still first).
+        tap(app, id: "grab-done")
+        XCTAssertTrue(disappears(app, "grab-detail", timeout: 5))
+        shot(app, "home108-grabicon-home")
+        tap(app, id: "grab-0")
+        XCTAssertTrue(appears(app, "grab-detail", timeout: 10))
+
+        // Cancel throws a new choice away.
+        tap(app, id: "grab-edit")
+        XCTAssertTrue(waitUntil { self.said(app.buttons["grab-icon"]).contains("Paddling") }, "the kayak was not saved")
+        tap(app, id: "grab-icon")
+        XCTAssertTrue(appears(app, "grabicon-picker", timeout: 5))
+        XCTAssertTrue(isOn(app.buttons["icon-kayak"]), "the Kayak is not the one in force")
+        type("tent", into: app.textFields["iconsearch"])
+        tap(app, id: "icon-tent")
+        XCTAssertTrue(disappears(app, "grabicon-picker", timeout: 5))
+        XCTAssertTrue(waitUntil { self.said(app.buttons["grab-icon"]).contains("Camping") }, "the tent was not chosen")
+        tap(app, id: "grab-cancel")
+        XCTAssertTrue(waitUntil { !app.buttons["grab-icon"].exists }, "Cancel did not close the edit")
+        tap(app, id: "grab-edit")
+        XCTAssertTrue(waitUntil { self.said(app.buttons["grab-icon"]).contains("Paddling") },
+                      "Cancel kept the tent: '\(said(app.buttons["grab-icon"]))'")
+        // Its own drawing again.
+        tap(app, id: "grab-icon")
+        XCTAssertTrue(appears(app, "grabicon-picker", timeout: 5))
+        tap(app, id: "icon-doodle")
+        XCTAssertTrue(disappears(app, "grabicon-picker", timeout: 5))
+        XCTAssertTrue(waitUntil { self.said(app.buttons["grab-icon"]).contains("Its own drawing") })
+        tap(app, id: "grab-edit")                                    // Save
+        tap(app, id: "grab-done")
+        XCTAssertTrue(disappears(app, "grab-detail", timeout: 5))
+    }
+
+    /// 0.108 — his words on a screenshot of Your grab lists (2 Nov 2026): "Reduce padding" and
+    /// "change the Off Home to something that the user understands". Each row is one compact line
+    /// (the drawing, the name, how many things), at most a switch's height and a hair (54 points
+    /// until 0.108), 4 apart; "Off Home" is an Apple switch, "On Home" — on for a list on Home, off
+    /// for one waiting — and VoiceOver says "Show Swim on Home".
+    func testYourGrabListsRowsAreCompactWithAnOnHomeSwitch() {
+        // Day and night (the Mac's night: `TEST_RUNNER_NIGHT=1`; the iPhone's: the simulator in dark mode).
+        let night = ProcessInfo.processInfo.environment["NIGHT"] == "1" ? ["-AppleInterfaceStyle", "Dark"] : []
+        let app = launch("-uiTesting", night)
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        tap(app, id: "grab-lists")
+        XCTAssertTrue(appears(app, "grablists-detail", timeout: 5))
+        let homeHeading = app.staticTexts["grablists-home-heading"], waiting = app.staticTexts["grablists-waiting-heading"]
+        XCTAssertTrue(waitUntil { self.words(homeHeading).contains("6 of 8") })
+        let first = switchNamed(app, "grablists-home-switch-0")
+        XCTAssertTrue(first.exists, "a list on Home has no On Home switch")
+        XCTAssertTrue(isSwitchOn(app, "grablists-home-switch-0"), "a list on Home with its switch off")
+        XCTAssertTrue(first.label.contains("Show Swim on Home"), "VoiceOver says '\(first.label)'")
+        XCTAssertFalse(app.buttons["grablists-off-0"].exists, "Off Home is still there")
+        let row0 = find(app, "grablists-home-0"), row1 = find(app, "grablists-home-1")
+        XCTAssertNotNil(row0)
+        XCTAssertNotNil(row1)
+        let height = row0?.frame.height ?? 0, gap = (row1?.frame.minY ?? 0) - (row0?.frame.maxY ?? 0)
+        print("GRABLISTS-ROW height=\(height) gap=\(gap)")
+        #if os(macOS)
+        XCTAssertLessThanOrEqual(height, 32, "a row is \(height) pt tall")
+        #else
+        XCTAssertLessThanOrEqual(height, 42, "a row is \(height) pt tall (54 until 0.108)")
+        #endif
+        XCTAssertLessThanOrEqual(gap, 6, "the rows stand \(gap) pt apart")
+        shot(app, "home108-grablists-compact")
+
+        flip(app, "grablists-home-switch-0")
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(homeHeading).contains("5 of 8") }, "switched off, still on Home: '\(words(homeHeading))'")
+        XCTAssertTrue(waitUntil { self.words(waiting).contains("1") }, "it is not waiting: '\(words(waiting))'")
+        let back = switchNamed(app, "grablists-waiting-switch-0")
+        XCTAssertTrue(back.exists, "a waiting list has no On Home switch")
+        XCTAssertFalse(isSwitchOn(app, "grablists-waiting-switch-0"), "a waiting list with its switch on")
+        shot(app, "home108-grablists-waiting")
+        flip(app, "grablists-waiting-switch-0")
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(homeHeading).contains("6 of 8") }, "switched on, still waiting: '\(words(homeHeading))'")
     }
 
     /// A to-do found by Search opens the To do tab, whichever tab Search was opened
@@ -14661,6 +14789,103 @@ final class AMSPackingUITests: XCTestCase {
         print("HOME-TOP band=\(band) under=\(under) gap=\(gap)")
         XCTAssertLessThan(gap, 80, "the grab lists start \(gap) pt under the top of Home")
         #endif
+    }
+
+    /// 0.108 — his words (2 Nov 2026, on a trip): "I am currently on a trip, but I can't see it on the
+    /// home page." He saw the picture and said "excellent". Under way (the sample's trip began
+    /// yesterday and ends in three days): "On your trip" is FIRST on Home, above Grab and go — the
+    /// trip, today's weather at its place (23°), "Day 2 of 5 · home on <day>"; To do today with its
+    /// count, Where is my…?, Pack to go home "Opens …". No countdown. Where is my…? opens Search; the
+    /// card opens the trip at On site.
+    func testOnYourTripIsFirstOnHomeWhileHeIsAway() {
+        // Day and night (the Mac's night: `TEST_RUNNER_NIGHT=1`; the iPhone's: the simulator in dark mode).
+        let night = ProcessInfo.processInfo.environment["NIGHT"] == "1" ? ["-AppleInterfaceStyle", "Dark"] : []
+        let app = launch("-uiTestingOnTrip", ["away"] + night)
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        let band = app.buttons["home-ontrip-open"]
+        XCTAssertTrue(band.waitForExistence(timeout: 10), "Home shows nothing of the trip he is on")
+        XCTAssertTrue(said(band).contains("On your trip"), "'\(said(band))'")
+        XCTAssertTrue(said(band).contains("Weekend in the hills"), "'\(said(band))'")
+        XCTAssertTrue(said(band).contains("Day 2 of 5"), "the day of the trip: '\(said(band))'")
+        XCTAssertTrue(said(band).contains("home on"), "when he goes home: '\(said(band))'")
+        XCTAssertTrue(said(band).contains("23\u{00B0}") && said(band).contains("Seaside"), "today's weather there: '\(said(band))'")
+        let todo = app.buttons["home-ontrip-todo"]
+        XCTAssertTrue(todo.waitForExistence(timeout: 5), "no To do today")
+        XCTAssertTrue(said(todo).contains("Book the taxi") && said(todo).contains("1"), "'\(said(todo))'")
+        XCTAssertTrue(app.buttons["home-ontrip-where"].exists, "no Where is my…?")
+        let home = app.buttons["home-ontrip-packhome"]
+        XCTAssertTrue(home.exists, "no Pack to go home")
+        XCTAssertTrue(said(home).contains("Opens"), "Pack to go home before its day: '\(said(home))'")
+        XCTAssertFalse(app.buttons["home-countdown"].exists, "the countdown shows beside the trip card")
+        XCTAssertFalse(app.buttons["home-ontrip-gohome"].exists, "the way home's button while under way")
+        // First on Home, as drawn: above Grab and go.
+        let heading = app.staticTexts["home-grab-heading"]
+        XCTAssertTrue(heading.exists)
+        XCTAssertLessThan(band.frame.minY, heading.frame.minY, "the trip card is not above Grab and go")
+        shot(app, "home108-ontrip-away")
+
+        tap(app, id: "home-ontrip-where")
+        XCTAssertTrue(appears(app, "search-detail", timeout: 10), "Where is my…? did not open Search")
+        tap(app, id: "search-done")
+        XCTAssertTrue(disappears(app, "search-detail", timeout: 5))
+
+        tap(app, id: "home-ontrip-open")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 10), "the card did not open the trip")
+        XCTAssertTrue(appears(app, "onsite-screen", timeout: 10), "the trip did not open at On site")
+        shot(app, "home108-ontrip-onsite")
+    }
+
+    /// 0.108 — the last day (the sample's trip ends tomorrow, "I leave at" 10:00 for home): GOING HOME
+    /// TOMORROW, "Day 6 of 7 · you leave at 10:00"; Pack to go home "4 of 6 still to pack" with its
+    /// count; Charge tonight naming the Headlamp; and a green Pack to go home button that opens it.
+    func testOnTheLastDayHomeLeadsToPackToGoHome() {
+        // Day and night (the Mac's night: `TEST_RUNNER_NIGHT=1`; the iPhone's: the simulator in dark mode).
+        let night = ProcessInfo.processInfo.environment["NIGHT"] == "1" ? ["-AppleInterfaceStyle", "Dark"] : []
+        let app = launch("-uiTestingOnTrip", ["lastday"] + night)
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        let band = app.buttons["home-ontrip-open"]
+        XCTAssertTrue(band.waitForExistence(timeout: 10), "Home shows nothing of the trip he is on")
+        XCTAssertTrue(said(band).contains("Going home tomorrow"), "'\(said(band))'")
+        XCTAssertTrue(said(band).contains("Day 6 of 7"), "'\(said(band))'")
+        XCTAssertTrue(said(band).contains("you leave at 10:00"), "the time he leaves for home: '\(said(band))'")
+        let pack = app.buttons["home-ontrip-packhome"]
+        XCTAssertTrue(pack.waitForExistence(timeout: 5))
+        XCTAssertTrue(said(pack).contains("4 of 6 still to pack"), "'\(said(pack))'")
+        let charge = app.buttons["home-ontrip-charge"]
+        XCTAssertTrue(charge.exists, "no Charge tonight while the Headlamp is not charged")
+        XCTAssertTrue(said(charge).contains("Headlamp"), "'\(said(charge))'")
+        XCTAssertFalse(app.buttons["home-ontrip-where"].exists, "the way home leads with packing, not Where is my…?")
+        XCTAssertTrue(app.buttons["home-ontrip-gohome"].exists, "no Pack to go home button")
+        shot(app, "home108-ontrip-lastday")
+
+        tap(app, id: "home-ontrip-gohome")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 10), "the button did not open the trip")
+        XCTAssertTrue(appears(app, "wayhome-screen", timeout: 15), "the button did not open Pack to go home")
+        shot(app, "home108-ontrip-wayhome")
+    }
+
+    /// 0.108 — back home and not reviewed (the sample's trip ended yesterday): a violet WELCOME HOME,
+    /// "6 days · 6 things went along", Review the trip and a Review button that opens its review; the
+    /// next trip (Autumn swim, 24 days ahead) is still counted down, under the card.
+    func testBackHomeTheCardLeadsToTheReview() {
+        // Day and night (the Mac's night: `TEST_RUNNER_NIGHT=1`; the iPhone's: the simulator in dark mode).
+        let night = ProcessInfo.processInfo.environment["NIGHT"] == "1" ? ["-AppleInterfaceStyle", "Dark"] : []
+        let app = launch("-uiTestingOnTrip", ["home"] + night)
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        let band = app.buttons["home-ontrip-open"]
+        XCTAssertTrue(band.waitForExistence(timeout: 10), "Home shows nothing of the trip just over")
+        XCTAssertTrue(said(band).contains("Welcome home"), "'\(said(band))'")
+        XCTAssertTrue(said(band).contains("6 days") && said(band).contains("6 things went along"), "'\(said(band))'")
+        XCTAssertTrue(app.buttons["home-ontrip-review"].exists, "no Review the trip")
+        XCTAssertFalse(app.buttons["home-ontrip-packhome"].exists, "Pack to go home once he is home")
+        let countdown = app.buttons["home-countdown"]
+        XCTAssertTrue(countdown.waitForExistence(timeout: 5), "the next trip is no longer counted down")
+        XCTAssertGreaterThan(countdown.frame.minY, band.frame.minY, "the countdown is not under the card")
+        shot(app, "home108-ontrip-backhome")
+
+        tap(app, id: "home-ontrip-review-go")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 10), "Review did not open the trip")
+        XCTAssertTrue(appears(app, "review-detail", timeout: 10), "Review did not open the trip's review")
     }
 
     /// His note on 0.63, "The share button is not aligned with the icon": a template's

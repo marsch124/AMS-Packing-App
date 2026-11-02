@@ -40,7 +40,8 @@ final class LibraryModel: ObservableObject {
     @Published var tripFocus: TripFocus?
     /// `review`: a tapped "Welcome home — review …" (0.77, spec 07 part 16) — the trip opens
     /// on its review. `charge`: a tapped "Charge tonight" (0.87) — the trip opens at its To charge.
-    struct TripFocus: Equatable { let tripId: String; let home: Bool; var review = false; var charge = false }
+    /// `onSite`: Home's "On your trip" card tapped (0.108) — the trip opens at its On site step.
+    struct TripFocus: Equatable { let tripId: String; let home: Bool; var review = false; var charge = false; var onSite = false }
     /// A grab list asked to open from a Shortcut (the Action button). Home opens it.
     @Published var grabToOpen: String?
     /// The Action button's "Choose a grab list": Home shows the menu of grab lists.
@@ -546,6 +547,9 @@ extension LibraryModel {
     ///                           trip moved (0.69): "soon" = it starts in 2 days (being
     ///                           packed); "home" = it began 3 days ago, ends today, all
     ///                           ticked; anything else = a month ahead, as the sample
+    ///  -uiTestingOnTrip <when> → memory, the sample with its trip on Home's "On your trip" card
+    ///                           (0.108): "away" under way, "lastday" going home tomorrow, "home"
+    ///                           back home and not reviewed (`SampleLibrary.onTrip`)
     ///  -uiTestingSoon         → memory, the sample with its trip 10 days ahead, inside the
     ///                           forecast's reach (the weather card, 0.75)
     ///  -uiTestingNotes        → memory, the sample + notes to search (0.69)
@@ -771,6 +775,10 @@ extension LibraryModel {
         if let n = args.firstIndex(of: "-uiTestingPlaces") {
             let when = n + 1 < args.count ? args[n + 1] : ""
             return LibraryModel(store: MemoryStore(SampleLibrary.places(when).records()), usesICloud: false, sky: sky)
+        }
+        if let n = args.firstIndex(of: "-uiTestingOnTrip") {
+            let when = n + 1 < args.count ? args[n + 1] : ""
+            return LibraryModel(store: MemoryStore(SampleLibrary.onTrip(when).records()), usesICloud: false, sky: sky)
         }
         if args.contains("-uiTestingSoon") {
             return LibraryModel(store: MemoryStore(SampleLibrary.soon().records()), usesICloud: false, sky: sky)

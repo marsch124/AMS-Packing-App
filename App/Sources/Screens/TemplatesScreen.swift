@@ -328,12 +328,6 @@ struct IconPickerScreen: View {
     let templateId: String
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
-    private let columns = 5
-    /// What is typed in the icon search (0.91, his words, 19 Oct 2026: "Also add the possibility
-    /// to search for icons, and also add alternative names so that the search is easier to
-    /// perform."). Found by the label and by hidden other words (`TemplateIconCatalog.keywords`).
-    @State private var query = ""
-    @FocusState private var finding: Bool
 
     var body: some View {
         let list = model.library.resolvedTemplate(id: templateId) ?? newList()
@@ -364,49 +358,19 @@ struct IconPickerScreen: View {
                         dismiss()
                     }
                     SectionTitle(title: "Icon", id: "template-icon-title")
-                    searchField
-                    // Suggested and Letter are not drawn icons: they step aside while a search is on.
-                    if !searching {
+                    // The search and the drawings (0.91), shared with a grab list's Icon (0.108).
+                    IconChoices(isOn: { chosen != nil && now == $0.key }, tint: tint, ink: ink,
+                                pick: { pick($0) }, close: { dismiss() }) {
+                        // Suggested and Letter are not drawn icons: they step aside while a search is on.
                         HStack(spacing: 10) {
-                            choice(title: "Suggested", on: chosen == nil, id: "icon-suggested", tint: tint, ink: ink) {
+                            IconChoiceTile(title: "Suggested", on: chosen == nil, id: "icon-suggested", tint: tint, ink: ink) {
                                 if let s = Library.suggestedIcon(for: list), let icon = TemplateIcons.icon(s) {
                                     IconMark(path: icon.path, size: 30)
                                 } else { Text(Library.coverLetter(list)).font(.system(.title3, weight: .bold)) }
                             } pick: { pick(nil) }
-                            choice(title: "Letter", on: chosen == Library.letterIcon, id: "icon-letter", tint: tint, ink: ink) {
+                            IconChoiceTile(title: "Letter", on: chosen == Library.letterIcon, id: "icon-letter", tint: tint, ink: ink) {
                                 Text(Library.coverLetter(list)).font(.system(.title3, weight: .bold))
                             } pick: { pick(Library.letterIcon) }
-                        }
-                    }
-                    let groups = TemplateIcons.grouped(matching: query)
-                    // A search that finds nothing says so, quietly, where the icons were.
-                    if groups.isEmpty {
-                        Text("No icon is called that.")
-                            .font(.system(.callout)).foregroundStyle(Theme.muted)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .padding(.top, 8)
-                            .accessibilityIdentifier("iconsearch-none")
-                    }
-                    // One heading per group (0.74: 90 icons are too many for one block); under a
-                    // search only the icons it finds, each under its own heading (0.91).
-                    ForEach(groups, id: \.group) { section in
-                        SectionTitle(title: section.group.title, id: "icon-group-\(section.group.rawValue)")
-                        // Plain rows, not a lazy grid (the Mac builds only what is on screen).
-                        let rows = stride(from: 0, to: section.icons.count, by: columns).map {
-                            Array(section.icons[$0..<min($0 + columns, section.icons.count)])
-                        }
-                        ForEach(rows.indices, id: \.self) { r in
-                            HStack(spacing: 10) {
-                                ForEach(rows[r]) { icon in
-                                    choice(title: icon.label, on: chosen != nil && now == icon.key, id: "icon-\(icon.key)", tint: tint, ink: ink) {
-                                        IconMark(path: icon.path, size: 30)
-                                    } pick: { pick(icon.key) }
-                                }
-                                // A short last row keeps the tiles the width of the others.
-                                ForEach(0..<(columns - rows[r].count), id: \.self) { _ in
-                                    Color.clear.frame(maxWidth: .infinity, minHeight: 74)
-                                }
-                            }
                         }
                     }
                 }
@@ -419,6 +383,72 @@ struct IconPickerScreen: View {
         #if os(macOS)
         .frame(minWidth: 520, minHeight: 620)
         #endif
+    }
+
+    private func pick(_ key: String?) {
+        model.change { _ = $0.setTemplateIcon(id: templateId, key: key) }
+        dismiss()
+    }
+}
+
+/// The drawn icons under their headings, with the search above them (0.91) — a template's Icon,
+/// and since 0.108 a grab list's (his question, 2 Nov 2026: "Regarding grab lists: how do I change
+/// icons?"). The 132 drawings (`TemplateIcons`) in rows of five under their headings (Travel,
+/// Outdoors, Sport, Beach and summer, City, food and fun, Everyday); `isOn` rings the one in force.
+/// `extra` — the choices that are not drawings (a template's Suggested and Letter, a grab list's
+/// own doodle or Letter) — stands first and steps aside while a search is on. A tap on a drawing
+/// is `pick(<its key>)`.
+struct IconChoices<Extra: View>: View {
+    let isOn: (TemplateIcon) -> Bool
+    let tint: Color
+    let ink: Color
+    let pick: (String) -> Void
+    /// Escape in an empty search on the Mac: the picker closes, as Cancel does.
+    let close: () -> Void
+    @ViewBuilder let extra: () -> Extra
+    private let columns = 5
+    /// What is typed in the icon search (0.91, his words, 19 Oct 2026: "Also add the possibility
+    /// to search for icons, and also add alternative names so that the search is easier to
+    /// perform."). Found by the label and by hidden other words (`TemplateIconCatalog.keywords`).
+    @State private var query = ""
+    @FocusState private var finding: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            searchField
+            if !searching { extra() }
+            let groups = TemplateIcons.grouped(matching: query)
+            // A search that finds nothing says so, quietly, where the icons were.
+            if groups.isEmpty {
+                Text("No icon is called that.")
+                    .font(.system(.callout)).foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 8)
+                    .accessibilityIdentifier("iconsearch-none")
+            }
+            // One heading per group (0.74: 90 icons are too many for one block); under a
+            // search only the icons it finds, each under its own heading (0.91).
+            ForEach(groups, id: \.group) { section in
+                SectionTitle(title: section.group.title, id: "icon-group-\(section.group.rawValue)")
+                // Plain rows, not a lazy grid (the Mac builds only what is on screen).
+                let rows = stride(from: 0, to: section.icons.count, by: columns).map {
+                    Array(section.icons[$0..<min($0 + columns, section.icons.count)])
+                }
+                ForEach(rows.indices, id: \.self) { r in
+                    HStack(spacing: 10) {
+                        ForEach(rows[r]) { icon in
+                            IconChoiceTile(title: icon.label, on: isOn(icon), id: "icon-\(icon.key)", tint: tint, ink: ink) {
+                                IconMark(path: icon.path, size: 30)
+                            } pick: { pick(icon.key) }
+                        }
+                        // A short last row keeps the tiles the width of the others.
+                        ForEach(0..<(columns - rows[r].count), id: \.self) { _ in
+                            Color.clear.frame(maxWidth: .infinity, minHeight: 74)
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /// Words typed — spaces alone are no search.
@@ -439,7 +469,7 @@ struct IconPickerScreen: View {
             .submitLabel(.search)
             #endif
             #if os(macOS)
-            .onExitCommand { if query.isEmpty { dismiss() } else { query = "" } }
+            .onExitCommand { if query.isEmpty { close() } else { query = "" } }
             #endif
             .clearButton($query, id: "iconsearch")
             .padding(.horizontal, 12).frame(minHeight: Metrics.compact)
@@ -453,9 +483,20 @@ struct IconPickerScreen: View {
             }
             #endif
     }
+}
 
-    private func choice<Mark: View>(title: String, on: Bool, id: String, tint: Color, ink: Color,
-                                    @ViewBuilder mark: () -> Mark, pick: @escaping () -> Void) -> some View {
+/// One choice in an icon picker: its mark over its word, ringed and filled in the tint when it is
+/// the one in force (`.isSelected`). A tap chooses.
+struct IconChoiceTile<Mark: View>: View {
+    let title: String
+    let on: Bool
+    let id: String
+    let tint: Color
+    let ink: Color
+    @ViewBuilder let mark: () -> Mark
+    let pick: () -> Void
+
+    var body: some View {
         Button(action: pick) {
             VStack(spacing: 6) {
                 mark().foregroundStyle(on ? ink : Theme.ink).frame(height: 32)
@@ -471,11 +512,6 @@ struct IconPickerScreen: View {
         .buttonStyle(.plain).focusEffectDisabled()
         .accessibilityIdentifier(id)
         .accessibilityAddTraits(on ? .isSelected : [])
-    }
-
-    private func pick(_ key: String?) {
-        model.change { _ = $0.setTemplateIcon(id: templateId, key: key) }
-        dismiss()
     }
 }
 

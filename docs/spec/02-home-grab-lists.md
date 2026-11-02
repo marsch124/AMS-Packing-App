@@ -312,6 +312,12 @@ would like the "Grab and Go" heading to be inside this frame." · "I would also 
 within the "Name your trip" frame." · "I would also like the "This device" area to move up directly under the trip
 list." · "Could you also please broaden the two pills "Full trip" and "Quick" so that they are in line with the name
 field above." (The fourth is the Create new trip file's, spec 03.)
+0. **On your trip** (0.108, section 11a) — only while a trip is under way, going home, or back home and not
+   reviewed (`library.onTripCard(today: Today.local, time: Today.time)`): FIRST on Home, `Metrics.screenTop` under
+   the top of the page, above Grab and go — as in the picture he called "excellent" (2 Nov 2026, "1 · Under way — on
+   Home, first"). Grab and go's frame then starts 10 pt under it (its own `screenTop` is dropped). Home is drawn
+   again each minute (a 60-s timer, `minute`) and whenever the app comes back to the front (`scenePhase`), so the
+   card turns with the clock.
 1. **Grab and go, one frame** (`homeCard(id: "home-grab-frame")` — the SAME card as Create new trip's: padding 14,
    corner radius 14, `Theme.card` fill, a 1-pt `Theme.line` border, full width; an accessibility container named
    `home-grab-frame` whose lines keep their own ids), `Metrics.screenTop` (4 pt) under the top of the page (as
@@ -492,6 +498,7 @@ round caps and joins.
 | `swim-sun` | the swimmer + sun at (12, 12), scale 1.2 |
 | `bike-sun` | the bike + sun at (11.5, 11.5), scale 1.2 |
 | `run-sun` | the runner with only the two lower speed lines + sun at (11, 12), scale 1.15 |
+| `icon:<key>` (0.108) | the **template icon** of that key (`Library.grabTemplateIcon`, `TemplateIconCatalog`): its 24-point drawing scaled to 88 % of the box and centred, one round stroke 1.9 × the scale (about the doodles' weight) — `GrabDoodle.templatePath`, kept outside the struct so `tools/grab-icons.sh` can give it the drawings itself |
 | `""` with a non-empty `initial` | the **first character of the label, upper-cased**, at half the size, heavy, in the tone colour |
 | **any other key**, or `""` with no initial | the runner (the `default` case). Since 0.62 a received list cannot bring an unknown key (`importGrab` keeps only `GRAB_ICONS`, section 10); only a factory row written by the web app could |
 
@@ -508,7 +515,8 @@ is on screen."
 - UI `testMoreGrabListsThanHomeHolds`: `grab-4` exists; `grab-3` is on the same row as `grab-0` (mid-Y
   within 4 pt); `grab-4` is below `grab-0`.
 - UI `testATemplateAndAGrabListAreSharedAndOpenedAgain`: an imported list appears as `grab-6`.
-- UI `testAGrabListTakenOffHomeStaysOff`: after Off Home, `grab-5` no longer exists and the first tile's
+- UI `testAGrabListTakenOffHomeStaysOff`: after On Home is switched off (`grablists-home-switch-0`, a tap on the
+  switch itself — `flip`, once: the row moves away as it flips), `grab-5` no longer exists and the first tile's
   words are on no tile; put back, the list is `grab-5` (the last place).
 - UI `testHisOwnGrabListIsDeletedAfterAsking`: after the delete, `grab-6` no longer exists.
 - UI `testHisOwnGrabListIsFilledAndStaysFilled`, `testTicksOnHisOwnGrabListSurviveClosingIt`: a list made
@@ -1565,6 +1573,51 @@ row's description).
 
 ---
 
+### 7b. A grab list's Icon (0.108)
+
+**Purpose and origin.** His question, 2 Nov 2026: **"Regarding grab lists: how do I change icons?"** He could not:
+only the original Swim, Bike and Run wore drawings of their own (`GrabDoodle`), and a list he made wore its first
+letter. Now Edit has **Icon**, with the picker a template's page has.
+
+**What is on screen.**
+- In Edit, the **first row** (`iconRow`, `grab-icon`; label "Icon", value what it is): the list's icon as the edit
+  has it (28 pt, in the list's tone), "Icon" (Body semibold) over what it is (Footnote `muted`: the drawing's name —
+  "Paddling" for the kayak —, "Its own drawing", or "Its first letter"; `GrabIconPicker.words`), then "Change" in the tone and a drawn
+  chevron; `Metrics.row` tall, `card` fill, radius 10, 6 under it. While editing the header's drawing is the edit's
+  icon too.
+- A tap opens **the picker** (`GrabIconPicker`, `grabicon-picker`; Mac at least 520 × 620): the list's drawing (36)
+  and title (Title 3 bold) and **Cancel** (`grabicon-cancel`, outlined `muted`, Escape) at the top; then "Icon"
+  (`grabicon-title`) and the template picker's own body (`IconChoices`, shared with a template's Icon since 0.108):
+  the search (`iconsearch`, its ✕ `iconsearch-clear`, ⌘F on the Mac, Escape empties it and then closes; "No icon is
+  called that." `iconsearch-none`), the first choice, then the 132 drawings under their headings in rows of five
+  (`icon-<key>`, `icon-group-<group>`), the one in force ringed and filled in the list's tone (`.isSelected`; words
+  and mark white, dark on the yellow). The first choice (half the row, stepping aside under a search):
+  **"Its drawing"** (`icon-doodle`) for one of the original six — its own doodle — or **"Letter"** (`icon-letter`) for
+  one of his own.
+- A tap chooses and closes. The choice is the edit's: **Save** keeps it with the rest of the edit (one change;
+  `setGrabListIcon` only when it differs), **Cancel** throws it away, and a swipe down with only the icon changed asks
+  first (`asksBeforeDiscarding` counts it).
+
+**Data.** The list's own `icon` — no new field, nothing new for iCloud: `"icon:<key>"` for a template icon
+(`GRAB_TEMPLATE_ICON_PREFIX`; the template icons have their own "swim", "bike" and "run", which must not read as the
+doodles), a doodle key, or `""`. `Library.setGrabListIcon(id:icon:)` (`PackingLibrary/GrabIcon.swift`): refused for
+an icon the app cannot draw (`isGrabIcon`) or no such list; his own list's entry in `meta["grabOwnLists"]`; an
+original list's `grab` row — made now with the list's things if it was never changed, keeping its things, name and
+colour, in the Home-row order — storing `""` for its own doodle (so an untouched list given its own doodle writes
+nothing). The web app reading that row falls back to its own drawing for a name it does not know. Drawn wherever the
+list shows (`GrabDoodle`): Home's tiles, Your grab lists, the list's page, the swap sheet, the Action button's menu,
+and under the app icon (`grab-icon-<key>`, section 13b). A shared list brings its template icon (section 10).
+
+**Tests.** Model `GrabIconTests` (5): the stored form ("icon:swim" is the template's swimmer, "swim" the doodle;
+what `isGrabIcon` takes); his own list taking an icon and going back to its initial, refused for "icon:nope" or no
+list; an original list keeping its doodle (no row written for its own doodle), one row in Home order with its things,
+`""` stored for its doodle; an edited original keeping its things, name and colour, and a later edit keeping the icon;
+a shared list bringing "icon:plane" and losing "icon:nope". UI `testAGrabListTakesAnIconFromTheTemplateIcons` (Swim:
+Edit → Icon says "Its own drawing", the picker with `icon-doodle` in force, "kayak" found and chosen, Save; Edit again
+says Paddling and the kayak is in force; the tent (Camping) chosen then Cancel keeps the kayak; Its drawing brings the
+doodle back) — red on 0.107
+("Edit has no Icon"), green on 0.108.
+
 ## 8. Grab Lists (`GrabCollectionScreen`) and "Which one steps back?" (`SwapScreen`)
 
 **Purpose and origin.**
@@ -1595,31 +1648,39 @@ row's description).
    - **The "made" line** (`grablists-made`), 15 pt semibold **`ink`** (said plainly, not as a problem;
      until 0.61 it was the red `grablists-problem`), wrapping over as many lines as it needs, when set
      (only after Make, see Behaviour).
-   - **"On Home · <n> of 8"** (`grablists-home-heading`, 15 pt heavy `muted`); n can be anything from 0 to
-     8.
+   - **"On Home · <n> of 8"** (`grablists-home-heading`, 15 pt heavy `muted`, 2 pt under it); n can be anything
+     from 0 to 8.
+   - **The rows (0.108)** — his words on a screenshot of this page (2 Nov 2026): "Reduce padding" and "change the Off
+     Home to something that the user understands". Each row is ONE compact line, as a trip's lines and Your choices:
+     at least `Metrics.tap` tall (36 iPhone / 26 Mac — Apple's switch and a hair; 54 and two lines until 0.108),
+     2 pt above and below, 10 pt at the sides, `card` fill, radius 10, hairline stroke; the rows stand
+     `GrabCollectionScreen.gap` = **4 pt** apart (8 until 0.108).
    - One row per list on Home (container `grablists-home-<n>`):
      - with two or more, a **grip ≡** first (0.72, both devices; `grablists-grip-<n>`, "Move <label>", `ReorderGrip`):
-       hold and drag, each place passed (a row and its 8-pt gap) one step of Home's order, at once;
-     - drawing 30 pt;
-     - label (17 pt semibold, one line; the label, not the title, so the two "Swim" lists read alike);
-     - "<k> thing" or "<k> things" (13 pt medium `muted`);
+       hold and drag, each place passed (a row and its 4-pt gap) one step of Home's order, at once;
+     - on ONE line (`face`): drawing **24 pt** (30 until 0.108), the label (17 pt semibold, one line; the label, not
+       the title, so the two "Swim" lists read alike), then "<k> thing" or "<k> things" (13 pt `muted`);
      - **up chevron** (`grablists-up-<n>`, label "Move <label> earlier"), disabled on the first row;
      - **down chevron** (`grablists-down-<n>`, label "Move <label> later"), disabled on the last row;
-       the chevrons are `muted` when enabled and `line` when disabled, in a 34 × 36 hit area — both the Mac's only
-       since 0.72;
-     - **"Off Home"** (`grablists-off-<n>`, label "Take <label> off Home; it waits with everything on
-       it"): an outlined pill, 13 pt heavy `muted` on `bg`, 28 tall.
-     - The row is minimum 54 tall, `card` fill, radius 12, hairline stroke.
-   - **"Waiting · <n>"** (`grablists-waiting-heading`), 15 pt heavy `muted`, 14 pt above.
+       the chevrons are drawn 14 pt (20 until 0.108), `muted` when enabled and `line` when disabled, in a
+       24 × `Metrics.tap` hit area (34 × 36 until 0.108) — both the Mac's only since 0.72;
+     - **"On Home" and its switch** (0.108; `onHomeSwitch`): the words "On Home" (Footnote semibold `muted`, hidden
+       from VoiceOver) and an Apple switch (`Toggle(.switch)`, its label hidden on screen, small on the Mac, Trips
+       green when on), **on** (`grablists-home-switch-<n>`; VoiceOver "Show <label> on Home"). Switched off, the
+       list goes to wait (`takeOff`). Until 0.108 this was the outlined pill **"Off Home"** (`grablists-off-<n>`) —
+       a word that said what a press would DO, which he did not read as a state.
+   - **"Waiting · <n>"** (`grablists-waiting-heading`), 15 pt heavy `muted`, 14 pt above, 2 pt under.
    - If none are waiting (15 pt medium `muted`), worded by whether Home has room: fewer than 8 on Home →
      "Nothing waiting. A new list goes straight onto Home."; 8 on Home → "Nothing waiting. A new list waits
      here while Home is full."
-   - One row per waiting list, same size and look as a Home row, holding **two buttons** (0.62):
+   - One row per waiting list, same size and look as a Home row, holding **a button and a switch** (0.62; the
+     switch since 0.108):
      - the drawing, the label and "<k> thing(s)" (`grablists-waiting-<n>`, accessibility label
        "<label>, <k> things. Open it" — always "things", even for 1): **opens the list** to tick, fill or
        delete it, and it stays waiting;
-     - a filled Home-blue pill reading **"On Home"** (`grablists-on-<n>`, label "Put <label> on Home";
-       13 pt heavy white, 28 tall): puts it on Home.
+     - **"On Home" and its switch, off** (`grablists-waiting-switch-<n>`, VoiceOver "Show <label> on Home"):
+       switched on, it puts the list on Home (`bringOn`; with Home full the swap sheet asks first, and Cancel there
+       leaves the switch off). Until 0.108 a filled Home-blue pill reading "On Home" (`grablists-on-<n>`).
      (Until 0.62 the whole row was the "On Home" button, and a waiting list could not be opened here.)
    - Both row kinds say "1 thing" / "<k> things" on screen (singular for one).
    - Footer: "A list that steps back off Home keeps everything on it — nothing here throws a list away."
@@ -1641,7 +1702,8 @@ row's description).
   4. clears the field;
   5. sets the made line by where the list actually went (it asks `homeGrabLists()` after the change):
      - on Home: **"<name> is on Home now. Open it there and press Edit to put things on it."**
-     - waiting: **"<name> waits below, as Home is full. Tap it to put things on it, or press On Home."**
+     - waiting: **"<name> waits below, as Home is full. Tap it to put things on it, or press On Home."** (the
+       words stayed in 0.108; "press On Home" now means its switch)
      (`<name>` is the trimmed name typed.)
 - **The new list's place:** it is new (in neither `grabHome` nor `grabOff`), so it lands on Home in the
   first free place if there is one — a place freed by Off Home or by a delete included. Otherwise it waits.
@@ -1654,7 +1716,7 @@ row's description).
      arrangement is stored, and a list that was waiting only because Home was full now counts as sent to
      wait: it is no longer pulled in when a place frees;
   4. clears the made line.
-- **Off Home** (`takeOff`):
+- **On Home switched off** (`takeOff`; the "Off Home" pill until 0.108):
   1. saves the displayed Home ids without this one with `setHomeGrabLists`, so the list goes into
      `grabOff`;
   2. clears the made line.
@@ -1665,7 +1727,7 @@ row's description).
   the swap sheet (`SwapScreen`'s `picked`); an empty or refused Make and Cancel on the swap sheet leave it
   as it was.
 - **Tap a waiting list** (0.62): its screen opens (section 6) over Grab Lists; nothing moves.
-- **"On Home" on a waiting list** (`bringOn`):
+- **"On Home" switched on, on a waiting list** (`bringOn`; a pill until 0.108):
   - with fewer than 8 on Home (since 0.61 the normal case after Off Home or a delete): it is added at the
     **end** of Home with `setHomeGrabLists` (so it leaves `grabOff`), no question asked, and the made line
     is cleared;
@@ -1696,17 +1758,25 @@ row's description).
   - Make "Padel" → "7 of 8", Make "Golf" → "8 of 8"; after each, `grablists-made` contains "is on Home";
   - Make "Kayak" → the waiting heading contains "1", Home stays "8 of 8", and `grablists-made` contains
     "Home is full";
-  - tapping `grablists-on-0` opens `swap-detail`; `swap-0` closes it, and `grablists-made` is gone (0.62);
+  - flipping `grablists-waiting-switch-0` on (`grablists-on-0` until 0.108) opens `swap-detail`; `swap-0` closes
+    it, and `grablists-made` is gone (0.62);
   - Home is still 8 of 8; the list that stepped back is `grablists-waiting-0` and does not say
     "0 things";
   - the list now waiting carries the first four characters of `swap-0`'s words (it is the one he picked);
   - after Done, a Home tile says "Kayak".
-- UI `testAGrabListTakenOffHomeStaysOff`: "6 of 8"; `grablists-off-0` → "5 of 8" and Waiting contains "1";
+- UI `testAGrabListTakenOffHomeStaysOff`: "6 of 8"; `grablists-home-switch-0` switched off (`grablists-off-0` until
+  0.108) → "5 of 8" and Waiting contains "1";
   after Done, Home has no `grab-5` and the list's tile is gone; Grab Lists opened again still says "5 of 8";
   tapping `grablists-waiting-0` opens `grab-detail` and, after its Done, Home is still "5 of 8" (0.62);
-  `grablists-on-0` → "6 of 8" with **no** `swap-detail`; after Done the list is `grab-5`.
+  `grablists-waiting-switch-0` switched on (`grablists-on-0` until 0.108) → "6 of 8" with **no** `swap-detail`; after
+  Done the list is `grab-5`.
 - UI `testAnEmptyGrabListSaysHowToFillIt`: Make "swim" → `grablists-new-needs`, still "6 of 8".
-- UI `testHomeWithEveryGrabListOffSaysWhereTheyAre`: `grablists-off-0` six times → "0 of 8".
+- UI `testHomeWithEveryGrabListOffSaysWhereTheyAre`: `grablists-home-switch-0` switched off six times → "0 of 8".
+- UI `testYourGrabListsRowsAreCompactWithAnOnHomeSwitch` (0.108): the first row's switch exists, is on, and says "Show
+  Swim on Home"; no `grablists-off-0`; a row is at most 42 pt tall on the iPhone (32 on the Mac; 54 until 0.108) and
+  the rows at most 6 apart; switched off → "5 of 8", Waiting "1", the waiting row's switch off; switched on → "6 of 8".
+  Red on 0.107 ("a list on Home has no On Home switch"), green on 0.108. The switches are flipped by a tap on the
+  switch itself, once (`flip`): the row moves away as it flips, and `setSwitch`'s retry would flip the next one.
 - UI `testHisOwnGrabListIsDeletedAfterAsking` (section 7): after the delete Grab Lists says "6 of 8" and
   Waiting "0".
 - UI `testEveryAddButtonIsReadyAndSaysWhatIsMissing`: an empty Make shows `grablists-new-needs`.
@@ -1827,8 +1897,9 @@ web app for anyone, and in this app under Settings → Open a shared link.
 - **"Add it to your grab lists"** (`shared-add`, Trips-green fill, 48 tall) runs `importGrab`, which is
   `addGrabList`:
   - label = the shared name, or "Shared" when empty;
-  - icon = the shared icon when this app draws it (`GRAB_ICONS`: the six doodle keys), else `""`, so the
-    tile wears the list's initial (0.62; an unknown key used to show as the **runner**);
+  - icon = the shared icon when this app draws it (`Library.isGrabIcon`: the six doodle keys of `GRAB_ICONS`, and
+    since 0.108 a template icon it has, `icon:<key>`), else `""`, so the tile wears the list's initial (0.62; an
+    unknown key used to show as the **runner**);
   - tone = the shared tone when it is one of `GRAB_TONES` (blue, yellow, green, red, purple, teal), else
     "blue" (0.62; an unknown tone used to show as slate `#64748b`);
   - items as decoded — read as lines (0.85), so the sender's headings are headings here too.
@@ -1956,6 +2027,104 @@ summer); the web app's countdown lags exactly that way. The app always passes `T
   `reviewedAt` gives no next trip and no reminders.
 
 ---
+
+## 11a. On your trip (`OnTripCard`, 0.108)
+
+**Purpose and origin.** His words, 2 Nov 2026, on a trip: **"I am currently on a trip, but I can't see it on the home
+page."** Home counted down only a trip still to leave (`nextTrip`: "A trip under way is no countdown"), so while he
+was away Home said nothing of the trip. He was shown a picture of three phones — under way, the last day, back home —
+and said **"excellent"**; the card is built as drawn. ONE card, first on Home (section 3, item 0), that changes with
+the moment; `nextTrip` is unchanged for the trips ahead.
+
+**Which trip and which moment** (`Library.onTripCard(today:time:)`, `PackingLibrary/OnTripHome.swift`; `today` =
+`Today.local`, `time` = `Today.time`):
+- Only trips not reviewed (`isReviewed`: status "done" or a review time) with a YYYY-MM-DD start date. The last day
+  is the end date, else the start (`Library.lastDay`, a day trip).
+- **Under way / going home** — the trip has set off (`hasSetOff`: its first day from the time he leaves, `leaveAt`,
+  that minute included; a later day; no time = the whole first day) and its last day has not passed. Of several,
+  the one that set off last (the latest start). **Going home** from the day before the last day through the last
+  day; **under way** before that. (So a day trip and a two-day trip are going home from their first day.)
+- Else **back home** — the last day has passed, by at most `BACK_HOME_DAYS` = **14** days (on the 14th day after,
+  still), and the trip has lines (an empty trip has nothing to review). Of several, the one back most recently. After
+  two weeks unreviewed Home lets it go: a trip from a month ago is no "Welcome home".
+- Away beats back home. On the first day before the time he leaves there is no card: the countdown says Today.
+
+**What is on screen.** A `card`-filled block, radius 14, a 1.5-pt stroke in its colour at 40 %, clipped; an
+accessibility container `home-ontrip` whose value is the moment (`underWay`, `goingHome`, `backHome`).
+- **The band** — a plain button (`home-ontrip-open`; label "<title>: <trip name>", value the day line and, when
+  there is one, "<sky>, <23°> in <place>"; hint "Opens the trip at On site" / "Opens its review"), white words on a
+  gradient: the trip's green, a shade deeper at the top so small white words read (#24834f → #2f9e63, 4.9 : 1 at
+  the top), or (back home) the review's violet (#6548c0 → #7c5cd6). 16 pt at the sides, 12 above and below:
+  - the title in capitals, Caption semibold, tracking 0.8, 92 %: **ON YOUR TRIP**, **GOING HOME TOMORROW** /
+    **GOING HOME TODAY**, **WELCOME HOME** (`OnTripCard.title`);
+  - the trip's name, Title 3 bold, up to two lines;
+  - at the right, **today's weather** when the trip holds a forecast with today in it (`TodaysWeather`: the
+    forecast's icon key, its label, today's highest rounded): the drawn mark (`WeatherMark`, 22 pt, 2 stroke) and
+    "23°" (Title 2 bold), the place under it (Footnote semibold) — his own word for the place, else the forecast's
+    before its comma ("Testville, SE" → "Testville"). No forecast for today, nothing (Home never looks one up). Not
+    back home;
+  - (not back home) **a segment a day**: one 5-pt capsule per day, 4 apart, the days up to today white, the rest at
+    35 % — for a trip of more than `DAY_SEGMENTS_MOST` = 21 days one bar filled to day ÷ days;
+  - the **day line** (Footnote semibold): under way "Day 3 of 7 · home on Sunday" (the last day as `onDay`: the
+    weekday within six days, else "on 12 Nov"); going home "Day 6 of 7 · you leave at 10:00" — the trip's "I leave
+    at" for home (`leaveHomeAt`), "you left at 10:00" from that minute on the last day (`hasLeft`), just "Day 6 of 7"
+    with no time; back home "7 days · 64 things went along" ("1 day", "1 thing went along"; "7 days" alone when
+    nothing was ticked). Things that went = lines ticked on the way out, not set aside, not reminders.
+- **The rows** under the band (12 at the sides; each a plain button: a 30-pt soft tile at 14 % of its colour with
+  the drawn mark at 18 pt in that colour made readable (`readableHex`, day and night), the title Body semibold
+  `ink`, a line under it Subheadline `muted` up to two lines, then a count in a pill (Subheadline bold, the colour
+  made readable on 16 % of it) or a drawn chevron (16 pt, `faint`); 8 above and below; 1-pt `line` dividers inset
+  42; label = the title, value = the line and the count):
+  - **Under way:**
+    - **To do today** (`home-ontrip-todo`, orange, a drawn tick) — only when something is due: the trip's
+      reminders whose step has come and not ticked (`dueReminders`, To dos written on the trip included), then his
+      things' own (`dueThingReminders`), joined by " · ", the count in the pill. Opens the trip;
+    - **Where is my…?** (`home-ontrip-where`, Home blue, Search's magnifier), "Which bag and pocket a thing is in":
+      opens Search, which on a trip under way answers where a thing is first (0.69, `WhereCard`);
+    - **Pack to go home** (`home-ontrip-packhome`, green, the Home tab's suitcase), "Opens on Friday" — the day
+      before the last (`packHomeOpens`, "Opens tomorrow" the day before that). Opens Pack to go home all the same
+      (the trip's focus `home`: On site, then Pack to go home on what is not packed yet, with Show all).
+  - **Going home:**
+    - **Pack to go home**, "18 of 64 still to pack" (`homeProgress`), the count of what is left in the pill; "All 64
+      packed" (no pill), "Nothing to bring home yet" when nothing went;
+    - **Charge tonight** (`home-ontrip-charge`, orange, the battery of To charge) — only while the trip's To charge
+      card (`chargeCard`, today) has something not charged: its names (`chargeTonightNames`, four then "and 2
+      more"), the count in the pill. Opens the trip at its To charge (focus `charge`);
+    - then **Pack to go home** (`home-ontrip-gohome`): full width, `Metrics.row` tall, radius 12, filled green, white
+      words — never grey (his rule) — 8 above, 12 under.
+  - **Back home:** **Review the trip** (`home-ontrip-review`, violet, the Review step's own mark — a magnifier over a
+    list), "What you used, and what stayed in the bag", then a full-width violet **Review** (`home-ontrip-review-go`).
+    Both, and the band, open the trip and its review (focus `review`).
+- The band (under way and going home) opens the trip **at its On site step** (`TripFocus.onSite`, 0.108: the trip
+  opens, then after 0.7 s its On site page, every line kept).
+
+**The countdown beside it.** Under way and going home the card stands in the countdown's stead: no `home-countdown`
+(on the first day, after he has left, `nextTrip` still names the trip on the card). Back home, the next trip is
+counted down in its usual place under Grab and go — never the trip on the card itself.
+
+**Data.** Reads the trips, their lines and extra keys (`packedHome`, `usedUp`, `boughtThere`, `charged`, `leaveAt`,
+`leaveHomeAt`), the forecast held on the trip, the phase timeline. Writes nothing; no new key.
+
+**iPhone vs Mac.** The same card; Metrics differ as everywhere.
+
+**Tests.**
+- Model `OnTripHomeTests` (13): the moment by the dates (none before the start, under way to the day before the last
+  day, going home that day and the last, back home from the day after for 14 days, then none);
+  the first day waiting for the time he leaves (07:59 none and the countdown says Today, 08:00 under way); a
+  reviewed (`reviewedAt` or "done") or undated trip never, an empty trip not back home; a day trip and a two-day
+  trip going home at once; of two trips the one set off last, away beating back home; the words under way ("Day 3
+  of 7 · home on Saturday", "Opens on Friday" / "Opens tomorrow", the segments, a 30-day trip's "home on 30 Nov" and
+  no segments); To do today; going home's counts ("n of n still to pack", "All n packed", "Nothing to bring home
+  yet") and Charge tonight; the leave time ("you leave at 10:00", 09:59, "you left at 10:00" from 10:00 on the last
+  day, the way out's time not said); back home's line; today's weather (icon, label, rounded high, the place);
+  `weekdayName` and `onDay`; every forecast icon key having a drawing with only the app's path commands.
+- UI (launch `-uiTestingOnTrip away|lastday|home`, `SampleLibrary.onTrip`):
+  `testOnYourTripIsFirstOnHomeWhileHeIsAway` (the band's words, 23° at Seaside, To do today with Book the taxi and 1,
+  Where is my…?, "Opens", no countdown, the card above Grab and go; Where is my…? opens Search; the band opens the
+  trip and On site), `testOnTheLastDayHomeLeadsToPackToGoHome` ("Going home tomorrow", "Day 6 of 7", "you leave at
+  10:00", "4 of 6 still to pack", Charge tonight naming the Headlamp, no Where is my…?; the button opens Pack to go
+  home), `testBackHomeTheCardLeadsToTheReview` ("Welcome home", "6 days", "6 things went along", the countdown under
+  the card; Review opens the review). Red on 0.107 ("Home shows nothing of the trip he is on"), green on 0.108.
 
 ## 12. "This Device": the count tiles on Home
 
@@ -2186,13 +2355,15 @@ Remove App:
   (`GrabOpenings.title`, the same rule as Shortcuts' `GrabListEntity`); no subtitle; kind
   `com.schabbauer.AMSPacking.grab.<list id>` (the Home Screen gives it as the entry's accessibility identifier);
   `userInfo["id"]` = the list id. Its picture is the one on the list's tile, as a **template image** that iOS tints
-  (black by day, white by night): the doodle (`grab-swim`, `grab-bike`, `grab-run`, `grab-swim-sun`,
+  (black by day, white by night): a template icon he chose for it (0.108, `grab-icon-<key>`, one per template
+  icon — 132), the doodle (`grab-swim`, `grab-bike`, `grab-run`, `grab-swim-sun`,
   `grab-bike-sun`, `grab-run-sun`) — a name the app has no drawing for wears the runner, as `GrabDoodle` does; for
   a list of his own with no doodle, its **initial** (`grab-initial-<hex of the capital>`: A–Z, Å Ä Ö Ü, 0–9, in
   the system font's heaviest weight); any other initial, or a picture missing from the catalog, the Home tab's
   suitcase (`grab-list`). No SF Symbol, no emoji. The pictures are in `Assets.xcassets/GrabIcons` (folder without
-  a namespace), 35 × 35-point vector PDFs drawn by `tools/grab-icons.sh` from GrabDoodle's own path data
-  (spec 06 §30).
+  a namespace), 35 × 35-point vector PDFs drawn by `tools/grab-icons.sh` from GrabDoodle's own path data and
+  (0.108) the template icons' own (`TemplateIconCatalog.swift`, read line by line; 1.9 stroke on the 24 grid, as on a
+  template's cover) — 179 pictures (spec 06 §30).
 - **When they are put right** (`GrabQuickActions.refresh`): about 2 s after every settled change of the library
   (section 1: a list added, renamed, removed, its picture changed, moved on or off Home — here or on the other
   device), when a list is opened, and when the app goes to the background. An unchanged set (ids, titles,
@@ -2477,7 +2648,9 @@ nothing on GitHub's slower runner, and would have on the phone too.
   `screen-<section>`; `screen-title`; `app-version`; `library-problem`.
 - First run: `first-run-wait`, `first-run-import`, `first-run-problem`.
 - Home: `home-grab-frame` (0.91), `home-grab-heading`, `grab-lists`, `search-open`, `grab-<0…7>`, `home-grab-none`
-  (0.62), `home-countdown`, `home-device` (0.92, the This Device block), `device-heading`, `count-trips`, `count-things`,
+  (0.62), `home-countdown`, `home-ontrip` (0.108, the card; its value the moment), `home-ontrip-open` (the band),
+  `home-ontrip-todo`, `home-ontrip-where`, `home-ontrip-packhome`, `home-ontrip-charge`, `home-ontrip-gohome`,
+  `home-ontrip-review`, `home-ontrip-review-go`, `home-device` (0.92, the This Device block), `device-heading`, `count-trips`, `count-things`,
   `count-templates`, `count-<…>-tile` (0.92, each tile), `home-sync-light` (0.92, the dot), `home-create-card` (0.91),
   `home-create-heading`, `trip-kind-track` (0.91).
 - The sync dot's bubble (0.92): `home-sync-popover`, `home-sync-line`, `home-sync-details`. Sync details (0.92):
@@ -2492,14 +2665,19 @@ nothing on GitHub's slower runner, and would have on the phone too.
   - editing: `grab-rename-<n>`, `grab-heading-above-<n>` (0.85, the entry in a thing's context menu),
     `grab-heading-<n>` (0.85, a heading's field), `grab-grip-<n>` (0.72), `grab-up-<n>`,
     `grab-down-<n>` (Mac), `grab-sometimes-<n>`, `grab-remove-<n>`, `grab-add-name`, `grab-add`, `grab-add-needs`,
-    `grab-add-heading-name`, `grab-add-heading`, `grab-add-heading-needs` (0.85), `grab-save-needs` (0.62);
+    `grab-add-heading-name`, `grab-add-heading`, `grab-add-heading-needs` (0.85), `grab-save-needs` (0.62),
+    `grab-cancel` (0.92), `grab-icon` (0.108, Icon, the editor's first row);
+  - its Icon picker (0.108): `grabicon-picker`, `grabicon-cancel`, `grabicon-title`, `iconsearch`,
+    `iconsearch-clear`, `iconsearch-none`, `icon-doodle` (an original list's own drawing) or `icon-letter` (his own
+    list's initial), `icon-<key>` (each template icon), `icon-group-<group>`;
   - deleting one of his own (0.61): `grab-delete`, `grab-delete-question`, `grab-delete-no`,
     `grab-delete-yes`.
 - Grab Lists: `grablists-detail`, `grablists-done`, `grablists-made` (replaced `grablists-problem` in
   0.61), `grablists-home-heading`,
-  `grablists-home-<n>`, `grablists-grip-<n>` (0.72), `grablists-up-<n>`, `grablists-down-<n>` (Mac), `grablists-off-<n>`,
-  `grablists-waiting-heading`, `grablists-waiting-<n>` (opens the list since 0.62), `grablists-on-<n>`
-  (0.62, puts it on Home), `grablists-new-name`, `grablists-new`,
+  `grablists-home-<n>`, `grablists-grip-<n>` (0.72), `grablists-up-<n>`, `grablists-down-<n>` (Mac),
+  `grablists-home-switch-<n>` (0.108, On Home, on; `grablists-off-<n>` until then),
+  `grablists-waiting-heading`, `grablists-waiting-<n>` (opens the list since 0.62), `grablists-waiting-switch-<n>`
+  (0.108, On Home, off; `grablists-on-<n>` from 0.62), `grablists-new-name`, `grablists-new`,
   `grablists-new-needs`.
 - Swap: `swap-detail`, `swap-cancel`, `swap-<n>`.
 - Menu: `grab-menu`, `grab-menu-close`, `grab-menu-<n>`.

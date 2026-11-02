@@ -3,7 +3,8 @@ import PackingCore
 import PackingLibrary
 
 /// Grab Lists (Home's door of that name): the eight on Home, in his order, and the
-/// rest waiting here with everything they hold. Nothing here deletes a list by making
+/// rest waiting here with everything they hold. Each row's "On Home" switch (0.108) puts a list on
+/// Home or lets it wait. Nothing here deletes a list by making
 /// room — a list that steps back off Home keeps its things and waits.
 struct GrabCollectionScreen: View {
     @EnvironmentObject var model: LibraryModel
@@ -41,7 +42,7 @@ struct GrabCollectionScreen: View {
             .padding(16)
 
             KeyboardAwayScroll {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: GrabCollectionScreen.gap) {
                     if !made.isEmpty {
                         Text(made).font(.system(.subheadline, weight: .semibold))
                             .foregroundStyle(Theme.ink)
@@ -51,6 +52,7 @@ struct GrabCollectionScreen: View {
 
                     Text("On Home · \(home.count) of \(GRAB_HOME_SLOTS)")
                         .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
+                        .padding(.bottom, 2)
                         .accessibilityIdentifier("grablists-home-heading")
                     ForEach(Array(home.enumerated()), id: \.element.id) { n, list in
                         row(list, n: n, onHome: true, count: home.count)
@@ -58,7 +60,7 @@ struct GrabCollectionScreen: View {
 
                     Text("Waiting · \(waiting.count)")
                         .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
-                        .padding(.top, 14)
+                        .padding(.top, 14).padding(.bottom, 2)
                         .accessibilityIdentifier("grablists-waiting-heading")
                     if waiting.isEmpty {
                         // Where a new list goes depends on whether Home has room.
@@ -110,6 +112,14 @@ struct GrabCollectionScreen: View {
         #endif
     }
 
+    // The rows (0.108) — his words on a screenshot of this page, 2 Nov 2026: "Reduce padding" and
+    // "change the Off Home to something that the user understands". A compact line each, as a
+    // trip's lines and Your choices are: the drawing, the name and how many things on ONE line, as
+    // tall as Apple's switch and a hair (`Metrics.tap`; 54 points and two lines until 0.108); the
+    // rows 4 apart (8). "Off Home" and "On Home" — a word on a button that said what it would DO —
+    // became one Apple switch, "On Home": on, the list is on Home; off, it waits here. VoiceOver
+    // says "Show Swim on Home".
+
     @ViewBuilder
     private func row(_ list: GrabDefinition, n: Int, onHome: Bool, count: Int) -> some View {
         if onHome {
@@ -118,76 +128,94 @@ struct GrabCollectionScreen: View {
             // A waiting list opens on a tap, like a tile on Home — to tick it, fill it
             // or delete it without first sending another list off Home (5 Oct 2026:
             // the whole row was the On Home button, and only the Action button's menu
-            // or a Shortcut could open a waiting list). On Home is its own button.
+            // or a Shortcut could open a waiting list). On Home is its own switch.
             HStack(spacing: 8) {
                 Button { window = .open(list.id) } label: {
-                    HStack(spacing: 10) {
-                        GrabDoodle(icon: list.icon, size: 30, initial: list.label).foregroundStyle(GrabTone.color(list.tone))
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(list.label).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
-                            Text("\(list.items.count) thing\(list.items.count == 1 ? "" : "s")")
-                                .font(.system(.footnote)).foregroundStyle(Theme.muted)
-                        }
+                    HStack(spacing: 8) {
+                        face(list)
                         Spacer(minLength: 8)
                     }
-                    .frame(minHeight: 54)
+                    .frame(minHeight: Metrics.tap)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain).focusEffectDisabled()
                 .accessibilityIdentifier("grablists-waiting-\(n)")
                 .accessibilityLabel("\(list.label), \(list.items.count) things. Open it")
-                Button { bringOn(list.id) } label: { pill("On Home", filled: true) }
-                    .buttonStyle(.plain).focusEffectDisabled()
-                    .accessibilityIdentifier("grablists-on-\(n)")
-                    .accessibilityLabel("Put \(list.label) on Home")
+                onHomeSwitch(list, on: false, id: "grablists-waiting-switch-\(n)")
             }
-            .padding(.horizontal, 12).frame(minHeight: 54)
-            .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
+            .padding(.horizontal, 10).padding(.vertical, 2)
+            .frame(minHeight: Metrics.tap)
+            .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
         }
     }
 
     @ViewBuilder
     private func homeRow(_ list: GrabDefinition, n: Int, count: Int) -> some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             // The grip (0.72, his "drag and drop on the phone as well"): hold and drag; each
             // place passed is one step of Home's order, made at once as the Mac's ▲ ▼ are.
             if count > 1 {
                 ReorderGrip(id: "grablists-grip-\(n)", label: "Move \(list.label)", key: list.id,
-                            step: (heights[list.id] ?? 54) + 8, drag: $carried,      // a row and the gap under it
+                            step: (heights[list.id] ?? Metrics.tap) + GrabCollectionScreen.gap, drag: $carried,   // a row and the gap under it
                             canMove: { by in canStep(list.id, by) }, move: { by in move(list.id, by: by) })
-                    .padding(.leading, -8)
+                    .padding(.leading, -6)
             }
-            GrabDoodle(icon: list.icon, size: 30, initial: list.label).foregroundStyle(GrabTone.color(list.tone))
-            VStack(alignment: .leading, spacing: 1) {
-                Text(list.label).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
-                Text("\(list.items.count) thing\(list.items.count == 1 ? "" : "s")")
-                    .font(.system(.footnote)).foregroundStyle(Theme.muted)
-            }
+            face(list)
             Spacer(minLength: 8)
-            Group {
-              // ▲ ▼ on the Mac only (0.72): the iPhone drags the grip.
-              if ReorderArrows.shown {
+            // ▲ ▼ on the Mac only (0.72): the iPhone drags the grip. Smaller since 0.108.
+            if ReorderArrows.shown {
                 Button { move(list.id, by: -1) } label: { chevron("M6 14l6-6 6 6", on: n > 0) }
                     .buttonStyle(.plain).focusEffectDisabled().disabled(n == 0)
                     .accessibilityIdentifier("grablists-up-\(n)").accessibilityLabel("Move \(list.label) earlier")
                 Button { move(list.id, by: 1) } label: { chevron("M6 10l6 6 6-6", on: n < count - 1) }
                     .buttonStyle(.plain).focusEffectDisabled().disabled(n >= count - 1)
                     .accessibilityIdentifier("grablists-down-\(n)").accessibilityLabel("Move \(list.label) later")
-              }
-                Button { takeOff(list.id) } label: { pill("Off Home", filled: false) }
-                    .buttonStyle(.plain).focusEffectDisabled()
-                    .accessibilityIdentifier("grablists-off-\(n)")
-                    .accessibilityLabel("Take \(list.label) off Home; it waits with everything on it")
             }
+            onHomeSwitch(list, on: true, id: "grablists-home-switch-\(n)")
         }
-        .padding(.horizontal, 12).frame(minHeight: 54)
-        .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
+        .padding(.horizontal, 10).padding(.vertical, 2)
+        .frame(minHeight: Metrics.tap)
+        .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("grablists-home-\(n)")
         .reorderStep(list.id, into: $heights)
         .reorderLift(carried, key: list.id, tint: AppSection.home.color)
+    }
+
+    /// From one row to the next (8 until 0.108).
+    static let gap: CGFloat = 4
+
+    /// A list's drawing, its name and how many things — on one line.
+    private func face(_ list: GrabDefinition) -> some View {
+        HStack(spacing: 8) {
+            GrabDoodle(icon: list.icon, size: 24, initial: list.label).foregroundStyle(GrabTone.color(list.tone))
+            Text(list.label).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
+            Text("\(list.items.count) thing\(list.items.count == 1 ? "" : "s")")
+                .font(.system(.footnote)).foregroundStyle(Theme.muted).lineLimit(1)
+        }
+    }
+
+    /// "On Home" and its switch: on = the list is on Home; off = it waits here with everything on
+    /// it. On with Home full asks which one steps back (`bringOn`).
+    private func onHomeSwitch(_ list: GrabDefinition, on: Bool, id: String) -> some View {
+        HStack(spacing: 6) {
+            Text("On Home").font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
+                .lineLimit(1).fixedSize()
+                .accessibilityHidden(true)
+            Toggle("Show \(list.label) on Home", isOn: Binding(get: { on }, set: { want in
+                if want { bringOn(list.id) } else { takeOff(list.id) }
+            }))
+            .labelsHidden()
+            .toggleStyle(.switch)
+            #if os(macOS)
+            .controlSize(.small)
+            #endif
+            // Green when on, like every switch he knows (the reminders' switch, 0.70).
+            .tint(AppSection.events.color)
+            .accessibilityIdentifier(id)
+        }
     }
 
     private func canStep(_ id: String, _ by: Int) -> Bool {
@@ -196,20 +224,12 @@ struct GrabCollectionScreen: View {
         return ids.indices.contains(n + by)
     }
 
-    private func pill(_ words: String, filled: Bool) -> some View {
-        Text(words).font(.system(.footnote, weight: .semibold))
-            .foregroundStyle(filled ? .white : Theme.muted)
-            .padding(.horizontal, 10).frame(minHeight: 28)
-            .background(Capsule().fill(filled ? AppSection.home.color : Theme.bg))
-            .overlay(Capsule().stroke(Theme.line, lineWidth: filled ? 0 : 1))
-            .contentShape(Capsule())
-    }
-
     private func chevron(_ path: String, on: Bool) -> some View {
         SVGPath.path(path).stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
-            .frame(width: 20, height: 20)
+            .frame(width: 24, height: 24).scaleEffect(14.0 / 24)
+            .frame(width: 14, height: 14)
             .foregroundStyle(on ? Theme.muted : Theme.line)
-            .frame(width: 34, height: 36).contentShape(Rectangle())
+            .frame(width: 24, height: Metrics.tap).contentShape(Rectangle())
     }
 
     private func add() {

@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		06244CC7FE9451C6DA719388 /* BagPhoto.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDBA6EAA187C6199B9CB6E07 /* BagPhoto.swift */; };
 		06CC2A1B9CF836CDC54430F1 /* GrabCollectionScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = F82D64736DCAA09F967D279E /* GrabCollectionScreen.swift */; };
+		09699A8C1693EDB3DF8E3B65 /* OnTripCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02F7BB784EDAC5A44B54172A /* OnTripCard.swift */; };
 		09A4001328DA54940464A34D /* ThingsTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B24F2617CC7D137784F66F2 /* ThingsTable.swift */; };
 		09F3E0420C97A7ACAD957284 /* ReviewScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84D38B8F1FFBA5FF61854300 /* ReviewScreen.swift */; };
 		0A6B0C9DBEE6264A11D02837 /* ListsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 258F81799F958E5C5EF112C5 /* ListsScreen.swift */; };
@@ -73,6 +74,7 @@
 		A01FA7467EDE858441462FED /* DoorChecks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39A697D32B44D323BED24711 /* DoorChecks.swift */; };
 		A209E8431750B053EF5BF0C0 /* TableColumns.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5844FD1A40A106FF0878B093 /* TableColumns.swift */; };
 		A2EF7B9D15A856E17FB773D8 /* TemplateIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE240BD38035471259419B81 /* TemplateIcons.swift */; };
+		A89146F8E0653B517FB816BD /* GrabIconPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B70F43A589C0DACCC0AE171C /* GrabIconPicker.swift */; };
 		A91364AA45735D8C67B4059B /* SmallDelete.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C33289BF160D459176D7669 /* SmallDelete.swift */; };
 		A95973A9F2025DB491456F72 /* Laundry.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4B594AF144EDDECFF9CF7B3 /* Laundry.swift */; };
 		A990ED272C2ED09E248E10CA /* TemplatesScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC47170406600EB5ADFCE37 /* TemplatesScreen.swift */; };
@@ -140,6 +142,7 @@
 		0096D418FB0463E578A19AD2 /* AreasScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AreasScreen.swift; sourceTree = "<group>"; };
 		01F66AF282FB2C3C22DC9F76 /* PickThings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickThings.swift; sourceTree = "<group>"; };
 		029AD64D1791D9D681EA7DDF /* ShopReminders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShopReminders.swift; sourceTree = "<group>"; };
+		02F7BB784EDAC5A44B54172A /* OnTripCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnTripCard.swift; sourceTree = "<group>"; };
 		08FEE110A8EA9F08E8D2E90A /* ThingRemember.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThingRemember.swift; sourceTree = "<group>"; };
 		09CEA44FC29BD0EB0658E8C9 /* Forecast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Forecast.swift; sourceTree = "<group>"; };
 		0AC47170406600EB5ADFCE37 /* TemplatesScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplatesScreen.swift; sourceTree = "<group>"; };
@@ -225,6 +228,7 @@
 		AC9F694B5D78B16B402CD363 /* TripChecks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripChecks.swift; sourceTree = "<group>"; };
 		ADDEE3B99A60D7E8557BAA11 /* PackingStations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PackingStations.swift; sourceTree = "<group>"; };
 		AF39781FD9E90DDA3B6B2E30 /* SVGPath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SVGPath.swift; sourceTree = "<group>"; };
+		B70F43A589C0DACCC0AE171C /* GrabIconPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrabIconPicker.swift; sourceTree = "<group>"; };
 		B81D1DC40B7BE148110F1C91 /* BagDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BagDetail.swift; sourceTree = "<group>"; };
 		BA49BA1121FBB7576FC62E32 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		BA8E667C951BD91655405B94 /* Countdown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Countdown.swift; sourceTree = "<group>"; };
@@ -418,6 +422,7 @@
 				D92F0E3A8310A4DC718C68EB /* FirstRunView.swift */,
 				A3080E21A5A50FB111FBCE7E /* FlightsAndStay.swift */,
 				F82D64736DCAA09F967D279E /* GrabCollectionScreen.swift */,
+				B70F43A589C0DACCC0AE171C /* GrabIconPicker.swift */,
 				CA098293FBB7AB47DA81148E /* GrabMenu.swift */,
 				1E01A9E0DEC947610C0F642D /* GrabScreen.swift */,
 				8DCA03D292255B391659C37C /* Headings.swift */,
@@ -432,6 +437,7 @@
 				2C5987DFEB47FC294A078D4D /* NewList.swift */,
 				263958326455E83D01F2A70A /* OnlySomeTrips.swift */,
 				44D18DE1235701F7E07558F6 /* OnSiteScreen.swift */,
+				02F7BB784EDAC5A44B54172A /* OnTripCard.swift */,
 				90C73A28812C7D0D542A832F /* PackingDay.swift */,
 				ADDEE3B99A60D7E8557BAA11 /* PackingStations.swift */,
 				01F66AF282FB2C3C22DC9F76 /* PickThings.swift */,
@@ -615,6 +621,7 @@
 				2F08456F712C8BEB09FE08B2 /* FlightsAndStay.swift in Sources */,
 				622AD0B67DC095DE2E934855 /* Forecast.swift in Sources */,
 				06CC2A1B9CF836CDC54430F1 /* GrabCollectionScreen.swift in Sources */,
+				A89146F8E0653B517FB816BD /* GrabIconPicker.swift in Sources */,
 				5BB780225F4AD5294A389DF4 /* GrabMenu.swift in Sources */,
 				23460B987C576F673AE6DA2A /* GrabScreen.swift in Sources */,
 				39B87583182066477449515D /* GuideScreen.swift in Sources */,
@@ -633,6 +640,7 @@
 				CB68D90AEA6B080067EE8BCB /* NewList.swift in Sources */,
 				BB0C23866929DEBDF46E6D5C /* ObjCExceptions.m in Sources */,
 				E942A15DD0530D3181AEBD4C /* OnSiteScreen.swift in Sources */,
+				09699A8C1693EDB3DF8E3B65 /* OnTripCard.swift in Sources */,
 				2DB98040F30155CDE2E5F575 /* OnlySomeTrips.swift in Sources */,
 				B133762EEFC21767CCE779B5 /* PackingDay.swift in Sources */,
 				F860D075335671D64671560F /* PackingStations.swift in Sources */,
