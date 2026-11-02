@@ -181,9 +181,13 @@ struct TripScreen: View {
         let tint = AppSection.events.color
         return Button { foldAll(headings, folded: !all) } label: {
             HStack(spacing: 5) {
+                // On the 24-point grid, then scaled (0.108, his words of 2 Nov 2026: "looks terrible. The arrows
+                // are not centered" — framed straight at 18, the 24-unit drawing hung off its middle).
                 SVGPath.path(all ? "M7 9l5-5 5 5 M7 15l5 5 5-5" : "M7 4l5 5 5-5 M7 20l5-5 5 5")
-                    .stroke(style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-                    .frame(width: 18, height: 18)
+                    .stroke(style: StrokeStyle(lineWidth: 2.6, lineCap: .round, lineJoin: .round))
+                    .onGrid(18)
+                    .accessibilityElement()
+                    .accessibilityIdentifier("trip-fold-all-glyph")
                 #if os(macOS)
                 Text(all ? "Unfold all" : "Fold all").font(.system(.subheadline, weight: .semibold)).lineLimit(1)
                 #endif

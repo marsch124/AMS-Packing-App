@@ -6969,6 +6969,30 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertEqual(words(progress), "1/7", "going by itself, Undo changed the ticks")
     }
 
+    /// Fold all's arrows sit in the middle of their pill (0.108, his words of 2 Nov 2026: "The Fold All and
+    /// Unfold All pill looks terrible. The arrows are not centered."), folded and open.
+    func testFoldAllsArrowsAreCentredInTheirPill() {
+        let app = launch()
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let pill = app.buttons["trip-fold-all"]
+        XCTAssertTrue(pill.waitForExistence(timeout: 5), "no Fold all")
+        for round in 0..<2 {
+            let glyph = app.descendants(matching: .any)["trip-fold-all-glyph"]
+            XCTAssertTrue(glyph.waitForExistence(timeout: 5), "Fold all's arrows are not found")
+            let g = glyph.frame, p = pill.frame
+            XCTAssertLessThanOrEqual(abs(g.midY - p.midY), 1, "round \(round): the arrows sit \(g.midY - p.midY) pt off the pill's middle")
+            XCTAssertTrue(p.contains(g), "round \(round): the arrows stick out of the pill: \(g) in \(p)")
+            #if os(iOS)
+            XCTAssertLessThanOrEqual(abs(g.midX - p.midX), 1, "round \(round): the arrows sit \(g.midX - p.midX) pt off-centre across")
+            #endif
+            shot(app, "fold-all-\(round)")
+            tap(app, id: "trip-fold-all")
+            _ = waitUntil(timeout: 2) { pill.isSelected == (round == 0) }
+        }
+    }
+
     /// Once he has set off, no weather card on the trip (0.108, his words of 2 Nov 2026, on site: four rain
     /// things to pack "is already too late, and it takes so much screen real estate. Please stop this.").
     /// The pockets sample's trip is under way.
