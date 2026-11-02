@@ -57,8 +57,20 @@ struct TripScreen: View {
     /// The line just ticked whose bag has pockets: its pockets show under it (0.69) —
     /// "<group>|<line id>", the copy tapped (0.74–0.105 a line could stand under two templates).
     @State private var pocketing: String?
-    /// Only the lines still unticked — a tapped door check opens the trip so (0.69).
-    @State private var onlyUnticked = false
+    /// Only the lines still to pack — unticked, not set aside — under the same headings: "Still to pack"
+    /// beside "Everything" under Group by (0.108, his ask of 2 Nov 2026: "a mode where I just see all the
+    /// items that are not packed, but of course, I need to be able to group them"). Kept per trip on this
+    /// device (the trip ids it is on for); a tapped door check turns it on (0.69).
+    @AppStorage(TripScreen.onlyLeftKey) private var onlyLeftRaw = ""
+    static let onlyLeftKey = "ams.trip.onlyLeft"
+    private var onlyUnticked: Bool {
+        get { onlyLeftRaw.split(separator: ",").contains { $0 == tripId } }
+        nonmutating set {
+            var ids = onlyLeftRaw.split(separator: ",").map(String.init).filter { $0 != tripId }
+            if newValue { ids.append(tripId) }
+            onlyLeftRaw = ids.joined(separator: ",")
+        }
+    }
     /// A tapped door check for the way home: On site opens, and in it Pack to go home.
     @State private var homeFromDoor = false
     /// The last press that ticked or unticked many lines — a heading's round tick, Clear every
@@ -169,9 +181,11 @@ struct TripScreen: View {
         let tint = AppSection.events.color
         return Button { foldAll(headings, folded: !all) } label: {
             HStack(spacing: 5) {
+                // On the 24-point grid, then scaled (0.108, his words of 2 Nov 2026: "looks terrible. The arrows
+                // are not centered" — framed straight at 18, the 24-unit drawing hung off its middle).
                 SVGPath.path(all ? "M7 9l5-5 5 5 M7 15l5 5 5-5" : "M7 4l5 5 5-5 M7 20l5-5 5 5")
-                    .stroke(style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-                    .frame(width: 18, height: 18)
+                    .stroke(style: StrokeStyle(lineWidth: 2.6, lineCap: .round, lineJoin: .round))
+                    .onGrid(18)
                 #if os(macOS)
                 Text(all ? "Unfold all" : "Fold all").font(.system(.subheadline, weight: .semibold)).lineLimit(1)
                 #endif
@@ -396,8 +410,13 @@ struct TripScreen: View {
                 // iPhone (0.104, his arrows: 14 and 10 until then).
                 BeforeYouGoCard(tripId: trip.id) { checking = CheckedThing(id: $0) }.environmentObject(model)
                     .padding(.top, Metrics.cardGap).padding(.horizontal, 16)
-                WeatherCard(tripId: trip.id).environmentObject(model)
-                    .padding(.top, Metrics.cardGap).padding(.horizontal, 16)
+                // The weather and the gear it calls for — only until he sets off (0.108, his words of 2 Nov
+                // 2026, on site in Torremolinos: four rain things to pack "is already too late, and it takes
+                // so much screen real estate. Please stop this.").
+                if !Library.hasSetOff(trip, today: Today.iso(clock), time: Today.time(of: clock)) {
+                    WeatherCard(tripId: trip.id).environmentObject(model)
+                        .padding(.top, Metrics.cardGap).padding(.horizontal, 16)
+                }
                 BagsCard(tripId: trip.id).environmentObject(model)
                     .padding(.top, Metrics.cardGap).padding(.horizontal, 16)
                 // On site (their field test, 3 Oct 2026; Pack to go home, his idea 13, is in
@@ -431,7 +450,14 @@ struct TripScreen: View {
                     TripMessageList(tripId: tripId).padding(.horizontal, 16).padding(.top, 4)
                 }
                 #endif
-                if onlyUnticked { untickedBar }
+                if p.total > 0 { showRow(left: p.total - p.done) }
+                if onlyUnticked && placeFilter == nil && shownLines.isEmpty {
+                    Text("Everything is packed. Everything shows the whole list.")
+                        .font(.system(.subheadline)).foregroundStyle(Theme.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.horizontal, 16).padding(.top, 10)
+                        .accessibilityIdentifier("trip-left-none")
+                }
                 if placeFilter != nil && shownLines.isEmpty {
                     Text("Nothing on this trip is kept here. Tap the place above to see every line.")
                         .font(.system(.subheadline)).foregroundStyle(Theme.muted)
@@ -1164,22 +1190,30 @@ struct TripScreen: View {
         }
     }
 
-    /// "Only what is still unticked", and Show all — while a door check's view is on.
-    private var untickedBar: some View {
-        HStack(spacing: 8) {
-            Text("Only what is still unticked")
-                .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.events.color)
-                .accessibilityIdentifier("trip-unticked-only")
-            Spacer(minLength: 8)
-            Button { onlyUnticked = false } label: {
-                Text("Show all").font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.events.color)
-                    .padding(.horizontal, 10).frame(minHeight: Metrics.chip)
-                    .overlay(Capsule().stroke(AppSection.events.color, lineWidth: 1.2))
+    /// Everything, or Still to pack (0.108): two halves of one capsule right under Group by, the chosen
+    /// one filled the trip's green. Still to pack says how many are left. Until 0.108 a door check's
+    /// view had a line of its own, "Only what is still unticked" with Show all.
+    private func showRow(left: Int) -> some View {
+        let tint = AppSection.events.color
+        func half(_ title: String, on: Bool, id: String, _ act: @escaping () -> Void) -> some View {
+            Button(action: act) {
+                Text(title).font(.system(.subheadline, weight: .semibold)).lineLimit(1)
+                    .foregroundStyle(on ? Color.white : tint)
+                    .frame(maxWidth: .infinity, minHeight: Metrics.chip)
+                    .background(Capsule().fill(on ? tint : Color.clear))
                     .contentShape(Capsule())
             }
             .buttonStyle(.plain).focusEffectDisabled()
-            .accessibilityIdentifier("trip-show-all")
+            .accessibilityIdentifier(id)
+            .accessibilityAddTraits(on ? .isSelected : [])
         }
+        return HStack(spacing: 2) {
+            half("Everything", on: !onlyUnticked, id: "trip-show-all") { onlyUnticked = false }
+            half(left > 0 ? "Still to pack \u{00B7} \(left)" : "Still to pack", on: onlyUnticked, id: "trip-show-left") { onlyUnticked = true }
+        }
+        .padding(2)
+        .overlay(Capsule().stroke(tint, lineWidth: 1.2))
+        .frame(maxWidth: 420)
         .padding(.horizontal, 16).padding(.top, 6)
     }
 

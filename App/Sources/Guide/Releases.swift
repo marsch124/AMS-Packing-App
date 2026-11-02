@@ -18,6 +18,13 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.108", date: "2 Nov 2026", title: "Your trip on Home, Still to pack, and grab list icons",
+                new: ["Home shows the trip you are on: the days, today\u{2019}s weather, To do, Where is my\u{2026}? and Pack to go home. The day before you leave it leads to Pack to go home; back home, to the review.",
+                      "On a trip, under Group by: Everything or Still to pack \u{2014} only what is not ticked or set aside yet, under the same headings, whichever grouping you chose. The trip keeps your choice.",
+                      "A grab list can have an icon: Edit, then Icon \u{2014} the same drawings and search as a template\u{2019}s."],
+                changed: ["Your grab lists: tighter rows, and an On Home switch instead of the \u{201C}Off Home\u{201D} button.",
+                          "Once you have set off, the trip no longer shows the weather card \u{2014} by then it is too late to pack for it."],
+                fixed: ["Fold all\u{2019}s arrows sit in the middle of their pill."]),
         Release(version: "0.107", date: "30 Oct 2026", title: "Your choices fold, and a kind can go",
                 new: ["Settings \u{2192} Your choices has a part for your kinds of thing.",
                       "A kind your things still have can be removed \u{2014} in Your choices or in a thing\u{2019}s Kind of thing list. The app asks where its things go (Other to begin with) and keeps it only with Done or Save. Reminders too: it does not come back."],

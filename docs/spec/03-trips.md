@@ -1200,7 +1200,11 @@ left, the choice beside it) are kept.
 - **Fold all / Unfold all** (0.101, his list of 26 Oct 2026: "the ability to toggle or collapse all items with one
   click, not only the individual 'From where', 'Into' etc areas"): 8 to the right of the field — on the iPhone
   between it and Pack by voice, on the Mac after the drop-down — id **`trip-fold-all`**. A capsule `Metrics.tap`
-  tall in the trip's green (1.4 pt ring): a drawn glyph of two chevrons, 18 pt, 2 pt round strokes — closing on
+  tall in the trip's green (1.4 pt ring): a drawn glyph of two chevrons, 18 pt (drawn on the 24-point grid and
+  scaled, `onGrid(18)`, so it sits in the pill's middle — 0.108, his words "The arrows are not centered": framed
+  straight at 18 until then, it hung off-centre; 2.6-pt strokes on the grid, about 2 pt shown; id
+  UI `testFoldAllsArrowsAreCentredInTheirPill` measures it in a picture of the pill: the drawn rows in a 6-pt band
+  down the arrows' middle sit as far from the top as from the bottom, within 1.5 pt), round strokes — closing on
   the middle (`M7 4l5 5 5-5 M7 20l5-5 5 5`, Fold all) while any heading of this sorting is open, opening from it
   (`M7 9l5-5 5 5 M7 15l5 5 5-5`, Unfold all) once all are folded; green on a 10 % green fill, and white on full
   green while all are folded. On the iPhone the glyph alone, at least `Metrics.tap` + 6 wide — with its words the
@@ -1226,7 +1230,8 @@ left, the choice beside it) are kept.
    padding `cardGap` (6 until 0.104).
 4. **On site door** (only once On site has begun) — see "On site". Top padding `cardGap` (6 until 0.104).
 4a. **The Group by row** (above; "Sorting" until 0.101), then — opened on a place — the place's chip, the debug door-check list (tests
-   only), and "Only what is still unticked" with Show all (a tapped door check). Until 0.74 all of these sat above
+   only), and **Everything / Still to pack** (0.108; "Only what is still unticked" with Show all, for a tapped door
+   check, until then). Until 0.74 all of these sat above
    the scroll area, under the loop strip.
 5. **The groups** (a lazy stack with **no spacing** — 4 until 0.67), one per non-empty group of
    `groupBy(view, trip.entries)`; `g` = the group's position in that list:
@@ -2431,6 +2436,12 @@ picture `trip-beforego-allset`) — spec 07 part 15, "Tests". To do: `testATrips
 
 ## The weather card (`WeatherCard.swift`, `Store/Forecast.swift`, `ForecastAsk.swift`, `TripWeather.swift`, `PackingCore/Weather.swift`)
 
+**Only until he sets off (0.108).** The trip shows the card only while `Library.hasSetOff(trip, today:, time:)` is
+false (its first day at the time he leaves, else from 00:00). His words, 2 Nov 2026, on site in Torremolinos, four
+rain things offered: "that is already too late, and it takes so much screen real estate. Please stop this." UI
+`testTheWeatherCardIsGoneOnceTheTripHasSetOff` (`-uiTestingPockets`, a trip under way: no `weather-place`,
+`weather-line`, `weather-addall` or `weather-again`).
+
 **Purpose and origin.** "The weather on a trip: one line of what it will be like, and under it the
 gear that weather calls for which is not on the trip yet — each with one press to take it along"
 (0.4). Add all (0.36). A place without a forecast still reaches the map (his G.6, 0.40). Open-Meteo,
@@ -3603,10 +3614,21 @@ same as Remind me to pack); "Add a time" asks for it on the iPhone. The words ar
 device or arrived by sync: a tick made on the Mac while the iPhone app stays asleep is not in it (open question).
 
 **Tapped** (`PackingReminders` delegate → `DoorChecks.open`): Home, `model.tripFocus` + `tripToOpen`; the trip
-opens and takes its focus (`TripScreen.takeFocus`): **out** → only the unticked lines (not ticked, not set
-aside), under **"Only what is still unticked"** (Subheadline semibold green, id `trip-unticked-only`) and **Show
-all** (green capsule outline, `Metrics.chip`, id `trip-show-all`) between Sorting and the cards; ticking a line
-takes it out of the view. **home** → On site, then Pack to go home on "Only what is not in a bag yet" (above).
+opens and takes its focus (`TripScreen.takeFocus`): **out** → Still to pack (below) turned on for that trip — only
+the unticked lines (not ticked, not set aside); ticking a line takes it out of the view. (Until 0.108: a line of its
+own, "Only what is still unticked", `trip-unticked-only`, with Show all.)
+
+**Everything / Still to pack** (0.108, his ask of 2 Nov 2026, packing: "a mode where I just see all the items that are
+not packed, but of course, I need to be able to group them"): right under the Group by row, one capsule (green 1.2-pt
+outline, max 420 wide, 16 in, 6 from the row) in two halves — **Everything** (`trip-show-all`) and **Still to pack ·
+N** (`trip-show-left`, N = lines not ticked and not set aside, the header's "left"; no number at 0) — the chosen half
+filled green with white Subheadline-semibold words, `.isSelected`. Still to pack shows only lines not ticked and not
+set aside, under the same headings of whatever Group by is chosen (the filter runs before the grouping, as the place
+filter does). Kept per trip on this device (`@AppStorage("ams.trip.onlyLeft")`, the trip ids it is on for; reset
+under the UI tests). With nothing left: "Everything is packed. Everything shows the whole list." (`trip-left-none`).
+Drawn only when the trip has a line. UI `testStillToPackShowsOnlyWhatIsLeftUnderAnyGrouping` (sample trip: 7 left;
+a tick → 6; one set aside; Still to pack hides both; grouped by Into still; closed and opened, still on; Everything
+brings them back). **home** → On site, then Pack to go home on "Only what is not in a bag yet" (above).
 
 **For the tests** (no test can see a notification): under the UI tests nothing reaches the system;
 `DoorChecks.planned` holds what WOULD be scheduled, and with `-showDoorChecks` (DEBUG builds only) the trip shows it

@@ -4752,12 +4752,49 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["door-check-none"].waitForExistence(timeout: 8), "a door check with everything ticked: '\(words(out))'")
     }
 
+    /// Still to pack (0.108, his ask of 2 Nov 2026, packing: "a mode where I just see all the items that are
+    /// not packed, but of course, I need to be able to group them"): under Group by, Everything or Still to
+    /// pack. On Still to pack a ticked line and a set-aside one go, the rest stay under the same headings
+    /// whatever the grouping; the trip keeps it when opened again; Everything brings all back.
+    func testStillToPackShowsOnlyWhatIsLeftUnderAnyGrouping() {
+        let app = launch()
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let left = app.buttons["trip-show-left"], all = app.buttons["trip-show-all"]
+        XCTAssertTrue(left.waitForExistence(timeout: 5), "no Still to pack under Group by")
+        XCTAssertTrue(isOn(all), "a trip does not open on Everything")
+        XCTAssertTrue(words(left).contains("7"), "Still to pack does not say how many: '\(words(left))'")
+        tap(app, id: "trip-line-0")
+        XCTAssertTrue(waitUntil { self.words(left).contains("6") }, "the count did not follow the tick: '\(words(left))'")
+        tap(app, id: "trip-line-1-aside")
+        tap(app, id: "trip-show-left")
+        XCTAssertTrue(waitUntil { self.isOn(left) && !app.buttons["trip-line-0"].exists }, "the ticked line is still shown")
+        XCTAssertFalse(app.buttons["trip-line-1"].exists, "the set-aside line is still shown")
+        XCTAssertTrue(app.buttons["trip-line-2"].exists, "a line still to pack went")
+        shot(app, "trip-still-to-pack")
+        // Grouped another way: still only what is left.
+        XCTAssertEqual(choose(app, "trip-view", 1), "Into")
+        XCTAssertTrue(waitUntil { app.buttons["trip-line-2"].exists && !app.buttons["trip-line-0"].exists },
+                      "grouped by Into, the ticked line came back")
+        // Kept for this trip: closed and opened again, still on Still to pack.
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertTrue(waitUntil { self.isOn(app.buttons["trip-show-left"]) && !app.buttons["trip-line-0"].exists },
+                      "the trip forgot Still to pack")
+        tap(app, id: "trip-show-all")
+        XCTAssertTrue(waitUntil { app.buttons["trip-line-0"].exists }, "Everything did not bring the ticked line back")
+    }
+
     /// A tapped door check opens the trip on just the unticked lines (Show all brings the
     /// rest back); the way home's opens Pack to go home on what is not in a bag yet.
     func testATappedDoorCheckOpensTheTripOnWhatIsLeft() {
         let app = launch("-uiTestingPockets", ["-tapDoorCheck", "out"])
         XCTAssertTrue(appears(app, "trip-detail", timeout: 10), "the tapped door check did not open its trip")
-        XCTAssertTrue(app.staticTexts["trip-unticked-only"].waitForExistence(timeout: 5), "the trip did not open on just what is left")
+        XCTAssertTrue(waitUntil { app.buttons["trip-show-left"].exists && self.isOn(app.buttons["trip-show-left"]) },
+                      "the trip did not open on Still to pack")
         XCTAssertTrue(app.buttons["trip-line-1"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.buttons["trip-line-0"].exists, "the ticked Passport is still shown")
         shot(app, "door-tapped-trip")
@@ -6930,6 +6967,88 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(undo.waitForExistence(timeout: 5), "no Undo after a heading's tick")
         XCTAssertTrue(waitUntil(timeout: 25) { !undo.exists }, "Undo did not go by itself")
         XCTAssertEqual(words(progress), "1/7", "going by itself, Undo changed the ticks")
+    }
+
+    /// Fold all's arrows sit in the middle of their pill (0.108, his words of 2 Nov 2026: "The Fold All and
+    /// Unfold All pill looks terrible. The arrows are not centered."), folded and open. Measured in a picture
+    /// of the pill: in a thin band down the arrows' middle (the pill's middle on the iPhone; on the Mac, where
+    /// its words follow, 19 pt in — 10 padding + half the 18-pt glyph), the rows that differ from the fill
+    /// must sit as far from the top as from the bottom.
+    func testFoldAllsArrowsAreCentredInTheirPill() {
+        let app = launch()
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        let pill = app.buttons["trip-fold-all"]
+        XCTAssertTrue(pill.waitForExistence(timeout: 5), "no Fold all")
+        for round in 0..<2 {
+            _ = waitUntil(timeout: 2) { self.settled(pill) }
+            #if os(iOS)
+            let mid = pill.frame.width / 2
+            #else
+            let mid: CGFloat = 19
+            #endif
+            guard let ink = inkRows(pill, midX: mid) else { XCTFail("round \(round): no arrows drawn in the pill"); return }
+            let above = ink.top, below = pill.frame.height - ink.bottom
+            XCTAssertLessThanOrEqual(abs(above - below), 1.5,
+                                     "round \(round): the arrows are \(above) pt from the top and \(below) pt from the bottom")
+            shot(app, "fold-all-\(round)")
+            tap(app, id: "trip-fold-all")
+            _ = waitUntil(timeout: 2) { pill.isSelected == (round == 0) }
+        }
+    }
+
+    /// In a picture of `e`, a 6-pt band around `midX`: the first and last rows (in points from its top) with a
+    /// pixel unlike the fill, the ring left out (3 pt at the top and bottom). nil when nothing is drawn there.
+    private func inkRows(_ e: XCUIElement, midX: CGFloat) -> (top: CGFloat, bottom: CGFloat)? {
+        let shot = e.screenshot().image
+        #if os(iOS)
+        guard let cg = shot.cgImage else { return nil }
+        #else
+        guard let cg = shot.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
+        #endif
+        let w = cg.width, h = cg.height
+        var px = [UInt8](repeating: 0, count: w * h * 4)
+        guard let ctx = CGContext(data: &px, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                                  space: CGColorSpaceCreateDeviceRGB(),
+                                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
+        ctx.draw(cg, in: CGRect(x: 0, y: 0, width: w, height: h))
+        let k = CGFloat(w) / max(e.frame.width, 1)
+        func at(_ x: Int, _ y: Int) -> (Int, Int, Int) {
+            let i = (y * w + x) * 4; return (Int(px[i]), Int(px[i + 1]), Int(px[i + 2]))
+        }
+        let x0 = max(0, Int((midX - 3) * k)), x1 = min(w - 1, Int((midX + 3) * k))
+        let y0 = Int(3 * k), y1 = h - 1 - Int(3 * k)
+        // The fill: the band's own colour at its top, just inside the ring.
+        let fill = at((x0 + x1) / 2, y0)
+        var top: Int?, bottom: Int?
+        for y in y0...y1 {
+            for x in x0...x1 {
+                let c = at(x, y)
+                if abs(c.0 - fill.0) + abs(c.1 - fill.1) + abs(c.2 - fill.2) > 90 {
+                    if top == nil { top = y }
+                    bottom = y
+                    break
+                }
+            }
+        }
+        guard let t = top, let b = bottom else { return nil }
+        return (CGFloat(t) / k, CGFloat(b + 1) / k)
+    }
+
+    /// Once he has set off, no weather card on the trip (0.108, his words of 2 Nov 2026, on site: four rain
+    /// things to pack "is already too late, and it takes so much screen real estate. Please stop this.").
+    /// The pockets sample's trip is under way.
+    func testTheWeatherCardIsGoneOnceTheTripHasSetOff() {
+        let app = launch("-uiTestingPockets")
+        openPocketsTrip(app)
+        XCTAssertTrue(app.buttons["trip-line-1"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["trip-onsite"].waitForExistence(timeout: 5) || app.descendants(matching: .any)["trip-onsite"].exists,
+                      "the sample's trip is not under way")
+        for id in ["weather-place", "weather-line", "weather-addall", "weather-again"] {
+            XCTAssertFalse(app.descendants(matching: .any)[id].exists, "an under-way trip still shows the weather card (\(id))")
+        }
+        shot(app, "trip-onsite-no-weather")
     }
 
     /// The weather card's "Add all" (the web app's): everything the forecast asks for
@@ -16634,7 +16753,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "trip-beforego-part-charge", timeout: 5), "the trip opened without its To charge")
         XCTAssertTrue(waitUntil { app.buttons["trip-charge-0"].exists && app.buttons["trip-charge-0"].isHittable },
                       "To charge is not in view")
-        XCTAssertFalse(app.staticTexts["trip-unticked-only"].waitForExistence(timeout: 2), "Charge tonight opened on just the unticked lines")
+        XCTAssertFalse(isOn(app.buttons["trip-show-left"]), "Charge tonight opened on Still to pack")
         XCTAssertFalse(appears(app, "review-detail", timeout: 1), "Charge tonight opened the review")
         shot(app, "charge-tonight-tapped")
     }

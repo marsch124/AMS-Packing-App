@@ -950,11 +950,12 @@ line border, container id `guide-release-<n>`, n = position, 0 = newest). Each c
   blue), **FIXED** (Care orange), **REMOVED** (muted). The part name is upper-cased, 15 heavy (12 until 0.62), letter-spaced 0.6,
   in its colour; each line is a 6-pt dot in that colour and the text (16 ink, wraps).
 
-**The version history** (110 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
+**The version history** (111 entries; N/C/F/R = number of New/Changed/Fixed/Removed lines — every count checked
 against `Releases.swift`):
 
 | Version | Date | Title | Lines | Gist |
 |---|---|---|---|---|
+| 0.108 | 2 Nov 2026 | Your trip on Home, Still to pack, and grab list icons | N3 C2 F1 | home108 (On your trip card first on Home: away / going home / welcome home, `onTripCard`, 14 days after the end at most; grab list icon from the template icons, stored as "icon:<key>" in the existing `icon`, `grab-icon-<key>` quick-action pictures; Your grab lists rows 37/31 pt with an On Home switch), left108 (Everything / Still to pack under Group by, kept per trip, `ams.trip.onlyLeft`; no weather card once `hasSetOff`; Fold all glyph `onGrid(18)`, measured in a picture of the pill) |
 | 0.107 | 30 Oct 2026 | Your choices fold, and a kind can go | N2 C2 | choices107 (Your choices: every part folds, chevron left, starts folded, `ChoicesFold` per device; a sixth part Kinds of thing; removing a kind in use asks "Move them to" — Other, else Comfort & misc — held until Done/Save, one ⌘Z step, in Your choices and in a thing's Kind of thing; `reminderKind()` so a removed Reminders never comes back), refine107 (`RefineDoor` only while `refineSuggestions()` is not empty or its page is open), suite107 (tests only: a Mac launch under `-uiTesting` opens its window — `openAWindowIfNoneCame`; kit and Take a break test fixes; the Templates-tab test 2× faster) |
 | 0.106 | 28 Oct 2026 | Not this time, and once under Template | C2 | his picks "1D 2B" while packing (28 Oct): `NotThisTimeMark` (a faint ⊘, `trip-line-<n>-notthistime`) instead of a set-aside line's empty ring; `linesByTemplate` puts a line on several templates under the first only, `alsoOnTemplates` → `TemplateMarks(also:)` "also" + icons; model tests TripByTemplateTests, UI tests testASetAsideLineIsNotPacked, testATripSortedByTemplateShowsAThingOnceAndSaysWhereElse, testATripsLineShowsTheTemplatesItComesFrom |
 | 0.105.2 | 28 Oct 2026 | One pocket, no question | C1 | his ask while packing (28 Oct): a lone "MaxPack" pill after each tick in his one-pocket carry-on; `Library.asksPocket` (≥ 2 pockets) gates `PocketPills` on the trip and on Pack to go home; model + UI test `testABagWithOnlyOnePocketNeverAsks` |
