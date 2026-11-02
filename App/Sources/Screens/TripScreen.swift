@@ -408,8 +408,13 @@ struct TripScreen: View {
                 // iPhone (0.104, his arrows: 14 and 10 until then).
                 BeforeYouGoCard(tripId: trip.id) { checking = CheckedThing(id: $0) }.environmentObject(model)
                     .padding(.top, Metrics.cardGap).padding(.horizontal, 16)
-                WeatherCard(tripId: trip.id).environmentObject(model)
-                    .padding(.top, Metrics.cardGap).padding(.horizontal, 16)
+                // The weather and the gear it calls for — only until he sets off (0.108, his words of 2 Nov
+                // 2026, on site in Torremolinos: four rain things to pack "is already too late, and it takes
+                // so much screen real estate. Please stop this.").
+                if !Library.hasSetOff(trip, today: Today.iso(clock), time: Today.time(of: clock)) {
+                    WeatherCard(tripId: trip.id).environmentObject(model)
+                        .padding(.top, Metrics.cardGap).padding(.horizontal, 16)
+                }
                 BagsCard(tripId: trip.id).environmentObject(model)
                     .padding(.top, Metrics.cardGap).padding(.horizontal, 16)
                 // On site (their field test, 3 Oct 2026; Pack to go home, his idea 13, is in

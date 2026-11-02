@@ -2432,6 +2432,12 @@ picture `trip-beforego-allset`) — spec 07 part 15, "Tests". To do: `testATrips
 
 ## The weather card (`WeatherCard.swift`, `Store/Forecast.swift`, `ForecastAsk.swift`, `TripWeather.swift`, `PackingCore/Weather.swift`)
 
+**Only until he sets off (0.108).** The trip shows the card only while `Library.hasSetOff(trip, today:, time:)` is
+false (its first day at the time he leaves, else from 00:00). His words, 2 Nov 2026, on site in Torremolinos, four
+rain things offered: "that is already too late, and it takes so much screen real estate. Please stop this." UI
+`testTheWeatherCardIsGoneOnceTheTripHasSetOff` (`-uiTestingPockets`, a trip under way: no `weather-place`,
+`weather-line`, `weather-addall` or `weather-again`).
+
 **Purpose and origin.** "The weather on a trip: one line of what it will be like, and under it the
 gear that weather calls for which is not on the trip yet — each with one press to take it along"
 (0.4). Add all (0.36). A place without a forecast still reaches the map (his G.6, 0.40). Open-Meteo,

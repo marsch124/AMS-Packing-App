@@ -6969,6 +6969,21 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertEqual(words(progress), "1/7", "going by itself, Undo changed the ticks")
     }
 
+    /// Once he has set off, no weather card on the trip (0.108, his words of 2 Nov 2026, on site: four rain
+    /// things to pack "is already too late, and it takes so much screen real estate. Please stop this.").
+    /// The pockets sample's trip is under way.
+    func testTheWeatherCardIsGoneOnceTheTripHasSetOff() {
+        let app = launch("-uiTestingPockets")
+        openPocketsTrip(app)
+        XCTAssertTrue(app.buttons["trip-line-1"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["trip-onsite"].waitForExistence(timeout: 5) || app.descendants(matching: .any)["trip-onsite"].exists,
+                      "the sample's trip is not under way")
+        for id in ["weather-place", "weather-line", "weather-addall", "weather-again"] {
+            XCTAssertFalse(app.descendants(matching: .any)[id].exists, "an under-way trip still shows the weather card (\(id))")
+        }
+        shot(app, "trip-onsite-no-weather")
+    }
+
     /// The weather card's "Add all" (the web app's): everything the forecast asks for
     /// reaches the trip in one press, and then it asks for nothing.
     func testWeatherAddAllTakesEverything() {
