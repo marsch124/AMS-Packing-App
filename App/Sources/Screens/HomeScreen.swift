@@ -76,6 +76,8 @@ struct HomeScreen: View {
     /// day, the time he leaves, the day after — so Home is drawn again each minute, and whenever
     /// the app comes back to the front.
     @State private var minute = Date()
+    /// "New trip" tapped while on a trip (0.109): the Create new trip form shows in full.
+    @State private var createOpen = false
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -158,6 +160,28 @@ struct HomeScreen: View {
                 // Home's last line, under Create new trip.
                 thisDevice
 
+                // While he is away or going home, Create new trip folds to ONE quiet line (0.109 —
+                // his words, 4 Nov 2026, on a trip: "the "Create new trip" should be … less
+                // prominent, because I am currently on a trip. Creating a new trip could be
+                // possible, but it is not highly sannolikt"). A tap opens the whole form, as before.
+                // Back home the form is open again, as it always was.
+                if onTrip != nil && onTrip?.moment != .backHome && !createOpen {
+                    Button { createOpen = true } label: {
+                        HStack(spacing: 6) {
+                            SVGPath.path("M12 5v14M5 12h14")
+                                .stroke(style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
+                                .onGrid(Metrics.glyph)
+                                .accessibilityHidden(true)
+                            Text("New trip").font(.system(.subheadline, weight: .semibold))
+                        }
+                        .foregroundStyle(Theme.muted)
+                        .frame(maxWidth: .infinity, minHeight: 28)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("home-create-folded")
+                    .padding(.top, 4)
+                } else {
                 VStack(alignment: .leading, spacing: 10) {
                     // The heading inside its card, above the name (0.91 — his words: "I would also
                     // like to have the text "Create New Trip" within the "Name your trip" frame.").
@@ -281,6 +305,7 @@ struct HomeScreen: View {
                 // day and at Clear dates — until he picks a season himself.
                 .onChange(of: hasDates) { _, _ in seasonFromDates() }
                 .onChange(of: start) { _, _ in seasonFromDates() }
+                }
 
             }
             .padding(.horizontal, 16).padding(.bottom, 24)

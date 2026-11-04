@@ -318,6 +318,14 @@ field above." (The fourth is the Create new trip file's, spec 03.)
    Home, first"). Grab and go's frame then starts 10 pt under it (its own `screenTop` is dropped). Home is drawn
    again each minute (a 60-s timer, `minute`) and whenever the app comes back to the front (`scenePhase`), so the
    card turns with the clock.
+   **0.109 — Create new trip folds while away** (his words, 4 Nov 2026, on a trip: "the "Create new trip" should be
+   … less prominent, because I am currently on a trip. Creating a new trip could be possible, but it is not highly
+   sannolikt"): while the card's moment is `underWay` or `goingHome` and "New trip" has not been tapped
+   (`@State createOpen`, false each time Home is made), the whole Create new trip card is replaced by ONE line under
+   This Device: a centred plain button, a drawn plus (`M12 5v14M5 12h14`, stroke 2.2, round, `Metrics.glyph`) and
+   "New trip", Subheadline semibold, both `Theme.muted`, at least 28 pt tall, 4 pt extra above; id
+   `home-create-folded`. A tap sets `createOpen` and the full card (below) shows. At `backHome`, or with no trip on
+   the card, the full card shows as before. Test: `testOnATripCreateNewTripFoldsToOneQuietLine`.
 1. **Grab and go, one frame** (`homeCard(id: "home-grab-frame")` — the SAME card as Create new trip's: padding 14,
    corner radius 14, `Theme.card` fill, a 1-pt `Theme.line` border, full width; an accessibility container named
    `home-grab-frame` whose lines keep their own ids), `Metrics.screenTop` (4 pt) under the top of the page (as

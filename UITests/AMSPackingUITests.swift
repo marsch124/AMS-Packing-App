@@ -14954,6 +14954,30 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "home108-ontrip-onsite")
     }
 
+    /// 0.109 — his words (4 Nov 2026, on a trip): "the "Create new trip" should be … less prominent,
+    /// because I am currently on a trip." Away: no form on Home, only a quiet "New trip" line; a tap
+    /// opens the whole form. Back home the form is there in full, as before.
+    func testOnATripCreateNewTripFoldsToOneQuietLine() {
+        let app = launch("-uiTestingOnTrip", ["away"])
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        XCTAssertTrue(app.buttons["home-ontrip-open"].waitForExistence(timeout: 10))
+        let folded = app.buttons["home-create-folded"]
+        XCTAssertTrue(folded.waitForExistence(timeout: 5), "no quiet New trip line while away")
+        XCTAssertFalse(app.textFields["trip-name"].exists, "the whole Create new trip form shows while away")
+        XCTAssertFalse(app.staticTexts["home-create-heading"].exists, "the Create new trip heading shows while away")
+        shot(app, "home109-create-folded")
+        tap(app, id: "home-create-folded")
+        XCTAssertTrue(app.textFields["trip-name"].waitForExistence(timeout: 5), "New trip did not open the form")
+        XCTAssertFalse(app.buttons["home-create-folded"].exists)
+        app.terminate()
+
+        let back = launch("-uiTestingOnTrip", ["home"])
+        XCTAssertTrue(appears(back, "screen-home", timeout: 20))
+        XCTAssertTrue(back.buttons["home-ontrip-open"].waitForExistence(timeout: 10))
+        XCTAssertFalse(back.buttons["home-create-folded"].exists, "folded once he is home")
+        XCTAssertTrue(back.staticTexts["home-create-heading"].exists, "no Create new trip once he is home")
+    }
+
     /// 0.108 — the last day (the sample's trip ends tomorrow, "I leave at" 10:00 for home): GOING HOME
     /// TOMORROW, "Day 6 of 7 · you leave at 10:00"; Pack to go home "4 of 6 still to pack" with its
     /// count; Charge tonight naming the Headlamp; and a green Pack to go home button that opens it.

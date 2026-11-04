@@ -18,6 +18,8 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.109", date: "4 Nov 2026", title: "New trip steps back while you travel",
+                changed: ["While you are away or going home, Create new trip on Home folds to one quiet line, \u{201C}+ New trip\u{201D}, at the bottom \u{2014} tap it and the whole form opens as before. Back home, Create new trip shows in full again."]),
         Release(version: "0.108", date: "2 Nov 2026", title: "Your trip on Home, Still to pack, and grab list icons",
                 new: ["Home shows the trip you are on: the days, today\u{2019}s weather, To do, Where is my\u{2026}? and Pack to go home. The day before you leave it leads to Pack to go home; back home, to the review.",
                       "On a trip, under Group by: Everything or Still to pack \u{2014} only what is not ticked or set aside yet, under the same headings, whichever grouping you chose. The trip keeps your choice.",
