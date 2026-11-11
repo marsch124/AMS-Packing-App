@@ -12,7 +12,7 @@ settings:
     DEVELOPMENT_TEAM: D24ENP83QQ
     CODE_SIGN_STYLE: Automatic
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "0.115"
+    MARKETING_VERSION: "0.116"
     CURRENT_PROJECT_VERSION: "2"
 packages:
   # The model — everything the app knows about packing, with no screen in it.
@@ -93,7 +93,7 @@ targets:
             CFBundleTypeRole: Viewer
             CFBundleURLSchemes: [amspacking]
         # A photo of a packed bag (0.52).
-        NSCameraUsageDescription: A photo of a packed bag, kept with the trip, to repack from on the way home.
+        NSCameraUsageDescription: Photos of a packed bag to repack from, and of your things on a room walk.
         # Apple Health fills in the trip review (0.70) — his words, chapter 07 part 7. Read
         # only; Apple wants the second text all the same once an app uses HealthKit.
         NSHealthShareUsageDescription: AMS Packing reads your workouts during a trip to suggest what you used. It never writes to Apple Health.

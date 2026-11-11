@@ -93,5 +93,5 @@ Empty lines are folded under "Add details" so a sparse thing stays short.
 | 16 | Page order | **Details card under the photos, folded when empty**; nothing you placed moves |
 | 17 | Anna | **Shared like today's things**; "Whose it is" tells who owns what |
 | 18 | Privacy | **No hiding** |
-| 19 | Building order | **0.115** Details + rooms + Stays at home + views + totals · **0.116** room walk · **0.117** Papers · **0.118** reminders + insurance PDF |
+| 19 | Building order | **0.115** Details + rooms + Stays at home + views + totals · **0.116** room walk (BUILT 11 Nov 2026) · **0.117** Papers · **0.118** reminders + insurance PDF |
 | 20 | Marking "Gone" | **Date + how** (Sold · Given away · Broken · Lost · Stolen), sold-for price if sold |

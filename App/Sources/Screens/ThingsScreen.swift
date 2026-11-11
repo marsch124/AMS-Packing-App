@@ -22,6 +22,8 @@ struct ThingsScreen: View {
     /// What New was missing, said under the field (never a grey button).
     @State private var newNeeds = ""
     @State private var editing: String?
+    /// The room walk is open (0.116).
+    @State private var walking = false
     /// What he added on this visit, newest first — their field test (3 Oct
     /// 2026): "When you add an item, it needs to be on top of the list. Now it is just
     /// hidden in the total list." They stay on top until the screen is left.
@@ -183,12 +185,17 @@ struct ThingsScreen: View {
         }
         .overlay(alignment: .bottomTrailing) {
             if !newOpen {
-                BFloatingButton(title: "New thing", tint: AppSection.care.color, id: "things-new-open") {
-                    newOpen = true
-                    DispatchQueue.main.async { newFocus = true }
+                HStack(spacing: 0) {
+                    // The room walk (0.116): beside ＋ New thing, nothing he placed moved.
+                    BFloatingButton(title: "Room walk", tint: AppSection.care.color, id: "things-walk-open") { walking = true }
+                    BFloatingButton(title: "New thing", tint: AppSection.care.color, id: "things-new-open") {
+                        newOpen = true
+                        DispatchQueue.main.async { newFocus = true }
+                    }
                 }
             }
         }
+        .sheet(isPresented: $walking) { RoomWalkScreen().environmentObject(model) }
         .background(Theme.bg.ignoresSafeArea())
         .sheet(item: Binding(get: { editing.map { Editing(id: $0) } }, set: { editing = $0?.id })) { e in
             // ⌘↓ ⌘↑ (Mac) go through the things as listed here; one made with ⌘N comes

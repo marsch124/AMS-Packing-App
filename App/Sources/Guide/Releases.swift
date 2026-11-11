@@ -18,6 +18,21 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.116", date: "11 Nov 2026", title: "Room walk \u{2014} photo and name, photo and name, room by room",
+                new: ["Care \u{25B8} Your things has a second floating button, \u{201C}Room walk\u{201D}, next to \u{201C}\u{FF0B} New thing\u{201D}. It opens a page for going through your home and adding what you own, one thing after another.",
+                      "First you pick a room: your own rooms come first, then the starter rooms you do not have yet. A starter room you pick joins your rooms.",
+                      "In the room, on the iPhone the camera opens straight away. Take a photo and the app suggests up to three names for what it sees \u{2014} tap one, or type your own. The suggestions are worked out on the phone itself, with Apple\u{2019}s own image recognition; nothing is sent anywhere.",
+                      "How many: a \u{2212} and a \u{FF0B}, starting at 1. A set of six glasses is one thing, six of them.",
+                      "Stays at home is a switch, off to begin with. On, the thing is never offered on trips, on templates or under \u{201C}\u{FF0B} Add\u{201D}.",
+                      "\u{201C}Save \u{00B7} next\u{201D} (full colour) keeps the thing in that room with its photo and opens the camera straight back for the next one. A running count at the top says how far you are, for example \u{201C}12 in Kitchen\u{201D}.",
+                      "A name you already have is refused, with a line saying so. A photo is optional: a name alone is fine.",
+                      "Done ends the room and takes you back to the room list, which shows what you added in each room during this walk. Done there closes the walk.",
+                      "On the Mac, which has no camera, the same walk works with \u{201C}Choose a photo\u{201D} or \u{201C}Choose a file\u{201D} instead.",
+                      "Things you add in the walk show in Your things, grouped under their room, each with its photo."],
+                changed: ["Your things: the floating \u{201C}\u{FF0B} New thing\u{201D} button is where it was; the new \u{201C}Room walk\u{201D} button stands beside it. Nothing you placed has moved.",
+                      "How it works and the written specification say all this. Nothing about your trips, templates, to-dos or grab lists changed."],
+                fixed: [],
+                removed: []),
         Release(version: "0.115", date: "11 Nov 2026", title: "Details for every thing \u{2014} what it cost, where it is, how long the warranty runs",
                 new: ["A thing\u{2019}s page has a new Details card right under Photos, in Care\u{2019}s orange. While a thing has no details it is folded to one \u{201C}Add details\u{201D} button; open, it holds Brand (moved here from lower down the page), Model, Serial number, Bought on, Bought at, Price, Value today, Warranty, How many you own and Stays at home.",
                       "Bought on is a date. Bought at is the shop: as you type, the shops you used before show as chips you can tap.",

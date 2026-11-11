@@ -14265,6 +14265,32 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "things-at-home")
     }
 
+    /// The room walk (0.116): a room, a photo, a guessed name, × 2, Save · next — counted in the room.
+    func testRoomWalk() {
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        tap(app, id: "things-walk-open")
+        tap(app, id: "walk-room-0")
+        XCTAssertTrue(app.staticTexts["walk-count"].waitForExistence(timeout: 5), "no running count")
+        let before = words(app.staticTexts["walk-count"])
+        tap(app, id: "walk-photo")
+        XCTAssertTrue(app.buttons["walk-guess-0"].waitForExistence(timeout: 5), "no name guessed from the photo")
+        tap(app, id: "walk-guess-0")
+        tap(app, id: "walk-qty-plus")
+        XCTAssertEqual(words(app.staticTexts["walk-qty"]), "2")
+        shot(app, "room-walk")
+        tap(app, id: "walk-save")
+        let after = app.staticTexts["walk-count"]
+        XCTAssertTrue(after.waitForExistence(timeout: 5))
+        XCTAssertNotEqual(words(after), before, "the count did not move")
+        tap(app, id: "walk-done")
+        XCTAssertTrue(app.staticTexts["walk-added-0"].waitForExistence(timeout: 5), "the room list does not say what was added")
+        tap(app, id: "walk-done")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+    }
+
     /// Open a thing's page from Your things, found by its name.
     private func openThing(_ app: XCUIApplication, _ name: String) {
         tab(app, "care")

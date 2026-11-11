@@ -3454,3 +3454,33 @@ before in that room show as chips `thing-spot-suggest-<n>`.
 
 Tests: one data test per rule (value estimate and floor, warranty end and months left, complaint right, shop/spot suggestions,
 totals, starter rooms) and one screen test finding the card by `thing-details`.
+
+## Inventory step 2 — the room walk (0.116, 11 Nov 2026)
+
+Plan: `docs/inventory/plan.md` (answer "Room walk", round-2 #5 camera straight back with a running count, #6 the app suggests the
+name on the device and he confirms, #7 sets = one thing x count). Core: `Core/Sources/PackingLibrary/RoomWalk.swift` with
+`Library.walkAdd(name:room:count:staysHome:)` and `Library.nameGuesses(_:have:)`. Nothing he placed moved.
+
+**Entry.** Care > Your things has a second floating button "Room walk" `things-walk-open`, beside "＋ New thing". It opens the walk page.
+
+**Pick a room.** The room list shows his own rooms first, then the starter rooms he does not have yet (Hall, Kitchen, Living room,
+Bedroom, Office, Bathroom, Laundry, Storage, Garage, Attic, Cellar, Car, At work). Each room is a chip `walk-room-<n>`. A starter room
+picked joins his rooms (places list). Under each room a line `walk-added-<n>` says what was added there during this walk; the
+line is absent for a room with nothing added. "Done" `walk-done` on the room list closes the walk.
+
+**In a room.**
+- iPhone: the camera opens straight away (photo-taker pills, id prefix `walk-photo`). Mac (no camera): Choose a photo / Choose a file, same flow.
+- Running count `walk-count`: "12 in Kitchen" (things in that room, shown at the top).
+- Name field `walk-name`. After a photo the app suggests up to 3 names, chips `walk-guess-<n>`, from `Library.nameGuesses(_:have:)`
+  (Apple's on-device image recognition, nothing sent anywhere; names he already has are left out of the suggestions). Tap one to fill the name, or type another.
+- How many: `walk-qty-minus`, `walk-qty-plus`, value `walk-qty` (starts at 1, never below 1). A set of 6 glasses = one thing x 6 (`qtyOwned`).
+- "Stays at home" switch `walk-stays-home` (off by default; on = `staysHome`: never offered on trips, templates or ＋ Add).
+- "Save · next" `walk-save` (full colour): `Library.walkAdd(name:room:count:staysHome:)` makes the thing with that room as its place,
+  the count, the switch and the photo, then clears the form and opens the camera again. A name he already has (compared without capitals or accents) is
+  refused; the line `walk-needs` says so and nothing is saved. A photo is optional; a name alone saves. An empty name is not saved.
+- "Done" `walk-done` ends the room and returns to the room list.
+
+**Afterwards.** Things added in the walk show in Your things grouped under their room (the All view, 0.115), each with its photo.
+
+Tests: data test `RoomWalkTests` (walkAdd stores room, count, staysHome; duplicate refused; nameGuesses drops names he has and caps at 3);
+UI test `testRoomWalk` (open the walk, pick a room, type a name, save, see the count and the room list line).
