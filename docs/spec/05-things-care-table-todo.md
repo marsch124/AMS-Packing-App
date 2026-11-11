@@ -3401,3 +3401,14 @@ Nothing stored changes.
   what they hold and do is unchanged.
 - **Care's Overdue and Due soon headings.** **Overdue** never folds, and was drawn as a disabled button, so it looked faded; it is now
   drawn in its **full red**. **Due soon** likewise in its **full orange**. The other sections fold as before.
+
+## To buy suggests (0.114, 11 Nov 2026) — Add something to buy
+
+Nothing stored changes. Same rule as ＋ Add on a trip (spec 03, 0.112) and "Or type a new thing" (spec 04, 0.113).
+- **Chips under "Add something to buy".** While the field holds text, up to **4** of his things show as chips in the To do red
+  (row `buy-add-suggestions`, chips `buy-add-suggest-<n>`). Match = the name contains what he typed, ignoring case and accents; names
+  that **start with** it first, then the rest A–Z. Nothing typed = none. Code: `Library.buyAddSuggestions(typed:limit:)`.
+- **Left out:** reminders, and anything already open on the To buy list (by thing or by name). **Bags and things "not in use" are
+  offered** — he may be replacing them.
+- **A tap puts a line on To buy linked to that thing**, so the thing's "Worth buying" offer stops showing (it is already open).
+  Typing a name and pressing Add makes a plain line, as before.

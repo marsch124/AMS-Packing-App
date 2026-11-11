@@ -18,6 +18,14 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.114", date: "11 Nov 2026", title: "To buy suggests your own things as you type",
+                new: ["Typing in \u{201C}Add something to buy\u{201D} on the To buy page now suggests your own things as you type: up to four, shown as red chips under the field. They are the things whose name contains what you typed, the names that start with it first, then the rest A\u{2013}Z; capitals and accents do not matter. It works as \u{201C}\u{FF0B} Add\u{201D} on a trip (0.112) and \u{201C}Or type a new thing\u{201D} on a template (0.113) do.",
+                      "One tap on a chip puts a line on To buy that is linked to that very thing \u{2014} so the thing\u{2019}s own \u{201C}Worth buying\u{201D} offer stops showing, because it is already on the list.",
+                      "Left out of the chips: reminders, and anything that is already open on your To buy list (the same thing, or a line with the same name). Bags and things marked \u{201C}not in use\u{201D} are offered, because you may be replacing them."],
+                changed: ["Typing a name and pressing Add on To buy works as before and makes a plain line. Nothing typed shows no chips.",
+                          "How it works and the written specification say all this. Nothing about your things, trips, templates, to-dos or grab lists changed."],
+                fixed: [],
+                removed: []),
         Release(version: "0.113", date: "11 Nov 2026", title: "Every edit page in the new look \u{2014} and Templates suggest your own things",
                 new: ["Typing in \u{201C}Or type a new thing\u{201D} on a template now suggests your own things as you type: up to four of your things whose name matches, the names that start with what you typed first, never one that is already on the template and never a bag. A tap puts that very thing on the template \u{2014} the same thing, not a new copy. It works as \u{201C}\u{FF0B} Add\u{201D} on a trip has since 0.112."],
                 changed: ["Every page and sheet where you change something has the new top bar (redesign B, last stage): Cancel is now plain words in the colour of its part, as in Apple\u{2019}s own apps \u{2014} until now it was a grey outlined button. Save (or Done) stays the full-colour button at the right. These are the pages: a thing, a template, a template\u{2019}s icon, a bag, a trip\u{2019}s settings, Create trip, a new grab list and its icon, a grab list being edited, Your choices, Activity areas, Pick things, Change several, Small core, the review, Restore, the date range, a lost bag, On site\u{2019}s note and the Packing Stations. The small Cancel beside a typed name (a station, a lost bag\u{2019}s tag) is in its part\u{2019}s colour too.",

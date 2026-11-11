@@ -58,6 +58,35 @@ extension Library {
         return Array((starts.sorted(by: byName) + rest.sorted(by: byName)).map(\.1).prefix(limit))
     }
 
+    /// His own things as he types into To buy's field (0.114, his ask of 11 Nov 2026): the same rule as
+    /// the trip's ＋ Add — names containing the words, those starting with them first, then A–Z — but
+    /// bags and things "not in use" ARE offered (he may be replacing them). Left out: reminders and
+    /// anything already open on To buy (by thing or by name). A tap = `addToBuyList(thing:)`.
+    public func buyAddSuggestions(typed: String, limit: Int = 4) -> [Item] {
+        let needle = fold(jsTrim(typed))
+        guard !needle.isEmpty, limit > 0 else { return [] }
+        let open = buyList().filter { !$0.done }
+        let openIds = Set(open.map(\.itemId).filter { !$0.isEmpty })
+        let openNames = Set(open.map { fold(jsTrim($0.text)) })
+        var starts: [(String, Item)] = [], rest: [(String, Item)] = []
+        var seen = Set<String>()
+        for it in ownThings() {
+            let name = fold(jsTrim(it.name))
+            guard !name.isEmpty, name.contains(needle), !Library.isReminder(it),
+                  !openIds.contains(it.id), !openNames.contains(name),
+                  seen.insert(name).inserted else { continue }
+            if name.hasPrefix(needle) { starts.append((name, it)) } else { rest.append((name, it)) }
+        }
+        let byName: ((String, Item), (String, Item)) -> Bool = { $0.0 < $1.0 }
+        return Array((starts.sorted(by: byName) + rest.sorted(by: byName)).map(\.1).prefix(limit))
+    }
+
+    /// One of his things onto To buy, linked to it — so its "Worth buying" offer stops.
+    @discardableResult
+    public mutating func addToBuyList(thing: Item) -> ActionItem? {
+        addAction(text: thing.name, kind: "shopping", itemId: thing.id, itemName: thing.name)
+    }
+
     /// Put that very thing on the trip as a line: its bag, its "when", its weight, and
     /// the thing it came from — and what goes with it comes too.
     @discardableResult

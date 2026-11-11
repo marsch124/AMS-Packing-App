@@ -93,6 +93,7 @@ struct BuyList: View {
                     if model.undoStep(step) { self.ticked = nil } else { tick(now) }
                 }
             }
+            suggestions
             HStack(spacing: 8) {
                 TextField("Add something to buy", text: $text)
                     .textFieldStyle(.plain)
@@ -108,6 +109,43 @@ struct BuyList: View {
             }
             .needsLine($needs, typed: text, id: "buy-add-needs")
             .padding(.horizontal, 16).padding(.vertical, 10)
+        }
+    }
+
+    /// His own things as he types (0.114, his ask of 11 Nov 2026 — as the trip's ＋ Add and a template's
+    /// field): up to four, none open on To buy yet. A tap puts a line on linked to that very thing.
+    @ViewBuilder private var suggestions: some View {
+        let found = model.library.buyAddSuggestions(typed: text)
+        if !found.isEmpty {
+            let tint = AppSection.actions.color
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(Array(found.enumerated()), id: \.element.id) { n, thing in
+                        Button {
+                            model.change { _ = $0.addToBuyList(thing: thing) }
+                            text = ""; needs = ""
+                        } label: {
+                            HStack(spacing: 4) {
+                                SVGPath.path("M12 5v14M5 12h14")
+                                    .stroke(style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                                    .onGrid(Metrics.glyph * 0.7)
+                                Text(thing.name).font(.system(.subheadline, weight: .semibold)).lineLimit(1)
+                            }
+                            .foregroundStyle(tint)
+                            .padding(.horizontal, 10).frame(minHeight: Metrics.chip)
+                            .background(Capsule().fill(tint.opacity(0.10)))
+                            .overlay(Capsule().stroke(tint, lineWidth: 1))
+                            .contentShape(Capsule())
+                        }
+                        .buttonStyle(.plain).focusEffectDisabled()
+                        .accessibilityIdentifier("buy-add-suggest-\(n)")
+                        .accessibilityLabel("Add \(thing.name)")
+                    }
+                }
+            }
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("buy-add-suggestions")
+            .padding(.horizontal, 16).padding(.top, 8)
         }
     }
 
