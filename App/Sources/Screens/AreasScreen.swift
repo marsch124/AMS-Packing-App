@@ -51,8 +51,8 @@ struct AreasScreen: View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
                 Button("Cancel") { dismiss() }
-                    .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
-                    .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.muted)
+                    .buttonStyle(BarCancelStyle(tint: tint)).focusEffectDisabled()
+                    .font(.system(.body, weight: .semibold))
                     .keyboardShortcut(.cancelAction)            // Escape = Cancel, never Save (Escape everywhere)
                     .accessibilityIdentifier("areas-cancel")
                 Spacer(minLength: 4)

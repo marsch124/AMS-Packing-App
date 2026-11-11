@@ -3849,3 +3849,15 @@ cannot be read is offered for removal at once" is gone: 0.60 keeps such a photo 
     on the iPhone simulator alone (Mac UI tests are not run on his Mac); the Mac archive proves the Mac app builds and
     carries its entitlements, but a break only the Mac's UI shows reaches TestFlight and turns GitHub's suite red
     after the fact (§27) — fixed by the next build, by his choice.
+
+## Redesign B, stage 4 (0.113, 11 Nov 2026) — every edit page
+
+Nothing stored changes: no new key, no change to a trip, a thing, a template, to sync or to a backup.
+- **The B top bar on every edit page and sheet.** Cancel / Close is `BarCancelStyle(tint:)` (Buttons.swift): plain Body words in the
+  part's colour, no outline, `Metrics.header` tall — it was `HeaderButtonStyle(tint: Theme.muted, filled: false)`, a grey outlined capsule.
+  Save / Done stays `HeaderButtonStyle(filled: true)`, the full-colour capsule. Pages: a thing, a template (+ its icon), a bag, Trip settings,
+  Create trip, New grab list (+ icon), a grab list in Edit, Your choices, Activity areas, Pick things, Change several, Small core, the review,
+  Restore, the date range, a lost bag, On site's note, a place on a trip. The small inline Cancel beside a typed name (Packing Stations,
+  a lost bag's tag) is in its part's colour instead of grey. Identifiers unchanged.
+- **Nothing moved**: the same order and the same fields as before. **Escape** is still Cancel on the Mac, **⌘S** still Save; the
+  rule "every page where he changes something has Cancel and Save (or Done)" holds as before.

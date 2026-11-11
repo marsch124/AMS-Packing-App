@@ -41,8 +41,8 @@ struct ReviewScreen: View {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 12) {
                     Button("Cancel") { dismiss() }
-                        .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
-                        .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.muted)
+                        .buttonStyle(BarCancelStyle(tint: AppSection.events.color)).focusEffectDisabled()
+                        .font(.system(.body, weight: .semibold))
                         .keyboardShortcut(.cancelAction)            // Escape = Cancel (the spec pass, 5 Oct 2026)
                         .accessibilityIdentifier("review-cancel")
                     Spacer()

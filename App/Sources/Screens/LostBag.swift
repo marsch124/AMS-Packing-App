@@ -228,7 +228,7 @@ struct LostBagScreen: View {
                 .accessibilityIdentifier("lost-trip-tag-save")
                 Button("Cancel") { tagOpen = false; typingTag = false }
                     .buttonStyle(.plain).focusEffectDisabled()
-                    .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
+                    .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.care.color)
                     .accessibilityIdentifier("lost-trip-tag-cancel")
             }
         }
@@ -509,7 +509,7 @@ struct DeskDetailsScreen: View {
             // title on its own line under them.
             HStack(spacing: 10) {
                 Button("Cancel") { dismiss() }
-                    .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
+                    .buttonStyle(BarCancelStyle(tint: tint)).focusEffectDisabled()
                     .keyboardShortcut(.cancelAction)
                     .accessibilityIdentifier("desk-cancel")
                 Spacer()

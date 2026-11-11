@@ -2628,3 +2628,12 @@ Nothing stored changes. Where section 1 describes the tab's cards and its New bu
 - **＋ New template** is a **full-colour floating button at the bottom right** (`templates-new`) instead of **+ New** at the top.
   It opens the same step as before: name it and choose the activity area (section 5).
 - **Refine** (the door) and **Activity areas** (the pill after the last area) stay where they are; the magnifier is unchanged.
+
+## Redesign B, stage 4 (0.113, 11 Nov 2026) — Or type a new thing suggests
+
+Nothing stored changes. A template's row and the template's page wear the B top bar of spec 06 (Redesign B, stage 4).
+- **Suggestions under "Or type a new thing".** While the field holds text, up to **4** of his things whose name matches show under it.
+  Match = the name contains what he typed, ignoring case and accents; names that **start with** it come first, then the rest, each in
+  the order of Your things. A thing already on this template is never offered, and a **bag** is never offered. Nothing typed = none.
+- **A tap on a suggestion puts that very thing on the template** — the same thing, no second copy with the same name; its How many
+  and Section stay "the same as the thing". Typing a new name and adding works as before. Same rule as ＋ Add on a trip (spec 03, 0.112).

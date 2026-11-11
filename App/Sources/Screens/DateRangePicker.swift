@@ -206,7 +206,7 @@ struct DateRangePicker: View {
                 if dated { clearButton }
                 Spacer()
                 Button("Cancel") { cancel() }
-                    .buttonStyle(HeaderButtonStyle(tint: tint, filled: false)).focusEffectDisabled()
+                    .buttonStyle(BarCancelStyle(tint: tint)).focusEffectDisabled()
                     .accessibilityIdentifier("\(grid)-cancel")
                 Button { ok() } label: { Text("OK").frame(minWidth: 44) }
                     .buttonStyle(HeaderButtonStyle(tint: tint, filled: true)).focusEffectDisabled()

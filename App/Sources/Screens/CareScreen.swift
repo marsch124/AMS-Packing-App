@@ -110,7 +110,9 @@ struct CareScreen: View {
                         .padding(.top, 14).contentShape(Rectangle())
                     }
                     .buttonStyle(.plain).focusEffectDisabled()
-                    .disabled(!section.fold)
+                    // Not `.disabled`: a switched-off button is drawn faded, and Overdue (which never folds)
+                    // looked grey-red (his note, 11 Nov 2026). It just takes no taps now — full colour (0.113).
+                    .allowsHitTesting(section.fold)
                     .accessibilityIdentifier("care-section-\(section.key)")
                     if shown {
                         // In one rounded card per part (B, 0.112), a hairline between the rows.

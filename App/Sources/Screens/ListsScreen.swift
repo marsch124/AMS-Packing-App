@@ -94,8 +94,8 @@ struct ListsPage: View {
             // Cancel throws away everything changed here since the page opened; Done keeps it (0.92).
             HStack(spacing: 12) {
                 Button("Cancel") { dismiss() }
-                    .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
-                    .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.muted)
+                    .buttonStyle(BarCancelStyle(tint: AppSection.settings.color)).focusEffectDisabled()
+                    .font(.system(.body, weight: .semibold))
                     // Escape = Cancel, never Done (0.92) — while the Remove card asks, Escape is the card's (0.107).
                     .keyboardShortcut(removing == nil ? .cancelAction : nil)
                     .accessibilityIdentifier("lists-cancel")

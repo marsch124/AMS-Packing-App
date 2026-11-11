@@ -362,7 +362,7 @@ struct IconPickerScreen: View {
                     .lineLimit(1).minimumScaleFactor(0.8)
                 Spacer(minLength: 4)
                 Button("Cancel") { dismiss() }
-                    .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
+                    .buttonStyle(BarCancelStyle(tint: AppSection.templates.color)).focusEffectDisabled()
                     .keyboardShortcut(.cancelAction)            // Escape = Cancel, never Save (Escape everywhere, 5 Oct 2026)
                     .accessibilityIdentifier("icon-cancel")
             }
@@ -739,8 +739,8 @@ struct TemplatePage: View {
             // away everything changed here since the page opened, Done keeps it.
             HStack(spacing: 12) {
                 Button("Cancel") { dismiss() }
-                    .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
-                    .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.muted)
+                    .buttonStyle(BarCancelStyle(tint: AppSection.templates.color)).focusEffectDisabled()
+                    .font(.system(.body, weight: .semibold))
                     // Escape = Cancel, never Done — except while arranging, when Escape ends
                     // Arrange instead (the Arrange pill); a second Escape is Cancel.
                     .keyboardShortcut(arranging ? nil : .cancelAction)
@@ -936,6 +936,7 @@ struct TemplatePage: View {
                 // box of the test); or a new one typed beside it.
                 PickThingsDoor(templateId: listId).environmentObject(model)
                     .padding(.horizontal, 16).padding(.top, 10)
+                templateSuggestions
                 HStack(spacing: 8) {
                     TextField("Or type a new thing", text: $newName)
                         .textFieldStyle(.plain)
@@ -1306,6 +1307,42 @@ struct TemplatePage: View {
         .transition(.opacity)
     }
 
+    /// His own things as he types (0.113, his ask of 11 Nov 2026 — as the trip's ＋ Add since 0.112): up to
+    /// four whose name matches, none on this template yet. A tap puts that very thing on — not a new copy.
+    @ViewBuilder private var templateSuggestions: some View {
+        let found = model.library.templateAddSuggestions(templateId: listId, typed: newName)
+        if !found.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(Array(found.enumerated()), id: \.element.id) { n, thing in
+                        Button {
+                            model.change { _ = $0.putOnTemplate(templateId: listId, itemIds: [thing.id]) }
+                            newName = ""; addNeeds = ""; finding = ""
+                        } label: {
+                            HStack(spacing: 4) {
+                                SVGPath.path("M12 5v14M5 12h14")
+                                    .stroke(style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                                    .onGrid(Metrics.glyph * 0.7)
+                                Text(thing.name).font(.system(.subheadline, weight: .semibold)).lineLimit(1)
+                            }
+                            .foregroundStyle(AppSection.templates.color)
+                            .padding(.horizontal, 10).frame(minHeight: Metrics.chip)
+                            .background(Capsule().fill(AppSection.templates.color.opacity(0.10)))
+                            .overlay(Capsule().stroke(AppSection.templates.color, lineWidth: 1))
+                            .contentShape(Capsule())
+                        }
+                        .buttonStyle(.plain).focusEffectDisabled()
+                        .accessibilityIdentifier("template-add-suggest-\(n)")
+                        .accessibilityLabel("Add \(thing.name)")
+                    }
+                }
+            }
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("template-add-suggestions")
+            .padding(.horizontal, 16).padding(.top, 8)
+        }
+    }
+
     private func add() {
         let name = newName
         guard !jsTrim(name).isEmpty else { addNeeds = "Type a thing first."; return }
@@ -1369,8 +1406,8 @@ struct RowEditor: View {
         VStack(spacing: 0) {
             HStack {
                 Button("Cancel") { dismiss() }
-                    .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
-                    .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.muted)
+                    .buttonStyle(BarCancelStyle(tint: AppSection.templates.color)).focusEffectDisabled()
+                    .font(.system(.body, weight: .semibold))
                     .keyboardShortcut(.cancelAction)            // Escape = Cancel, never Save (Escape everywhere, 5 Oct 2026)
                     .accessibilityIdentifier("row-cancel")
                 Spacer()

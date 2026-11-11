@@ -192,3 +192,21 @@ struct ClearMark: View {
         .accessibilityHidden(true)
     }
 }
+
+/// Cancel (or Close) on an edit page's top bar, redesign B stage 4 (0.113): Apple's way — plain words in the
+/// page's own colour, no outline; the page's Save or Done beside it stays the full-colour capsule. Until 0.113
+/// it was an outlined grey capsule. Same height as the capsule, so the bar keeps its line.
+struct BarCancelStyle: ButtonStyle {
+    var tint: Color
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(.body))
+            .foregroundStyle(tint)
+            .lineLimit(1)
+            .fixedSize()
+            .padding(.horizontal, 4)
+            .frame(minHeight: Metrics.header)
+            .contentShape(Rectangle())
+            .opacity(configuration.isPressed ? 0.5 : 1)
+    }
+}

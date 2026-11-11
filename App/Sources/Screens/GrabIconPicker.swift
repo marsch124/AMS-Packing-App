@@ -36,7 +36,7 @@ struct GrabIconPicker: View {
                     .lineLimit(1).minimumScaleFactor(0.8)
                 Spacer(minLength: 4)
                 Button("Cancel") { dismiss() }
-                    .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
+                    .buttonStyle(BarCancelStyle(tint: AppSection.home.color)).focusEffectDisabled()
                     .keyboardShortcut(.cancelAction)            // Escape = Cancel (Escape everywhere, 5 Oct 2026)
                     .accessibilityIdentifier("grabicon-cancel")
             }

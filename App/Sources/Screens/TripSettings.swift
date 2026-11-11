@@ -69,8 +69,8 @@ struct TripSettingsScreen: View {
         VStack(spacing: 0) {
             HStack {
                 Button("Cancel") { dismiss() }
-                    .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
-                    .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.muted)
+                    .buttonStyle(BarCancelStyle(tint: AppSection.events.color)).focusEffectDisabled()
+                    .font(.system(.body, weight: .semibold))
                     .keyboardShortcut(.cancelAction)            // Escape = Cancel (the spec pass, 5 Oct 2026)
                     .accessibilityIdentifier("tripset-cancel")
                 Spacer()

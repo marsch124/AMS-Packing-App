@@ -258,7 +258,7 @@ struct TripTodoComposer: View {
                     .accessibilityIdentifier("\(id)-add")
                 Button("Cancel") { typing = false; cancel() }
                     .buttonStyle(.plain).focusEffectDisabled()
-                    .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
+                    .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.events.color)
                     .frame(minHeight: Metrics.tap).contentShape(Rectangle())
                     .accessibilityIdentifier("\(id)-cancel")
             }
@@ -417,7 +417,7 @@ struct AddBagPanel: View {
                     .accessibilityIdentifier("\(prefix)-add")
                 Button("Cancel") { typing = false; close() }
                     .buttonStyle(.plain).focusEffectDisabled()
-                    .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
+                    .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.events.color)
                     .frame(minHeight: Metrics.tap).contentShape(Rectangle())
                     .accessibilityIdentifier("\(prefix)-cancel")
                 Spacer(minLength: 0)

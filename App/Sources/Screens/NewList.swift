@@ -41,8 +41,8 @@ struct NewList: View {
                     .accessibilityIdentifier("newlist-title")
                 Spacer()
                 Button("Cancel") { dismiss() }
-                    .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
-                    .font(.system(.callout, weight: .semibold)).foregroundStyle(Theme.muted)
+                    .buttonStyle(BarCancelStyle(tint: AppSection.home.color)).focusEffectDisabled()
+                    .font(.system(.callout, weight: .semibold))
                     .keyboardShortcut(.cancelAction)            // Escape = Cancel, never Save (Escape everywhere, 5 Oct 2026)
                     .accessibilityIdentifier("newlist-cancel")
             }

@@ -39,8 +39,7 @@ struct RestoreSheet: View {
                 Text("Restore from a file").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
                 Spacer()
                 Button("Cancel") { choice = false; dismiss() }
-                    .buttonStyle(HeaderButtonStyle(tint: AppSection.settings.color, filled: false)).focusEffectDisabled()
-                    .font(.system(.body, weight: .semibold)).foregroundStyle(AppSection.settings.color)
+                    .buttonStyle(BarCancelStyle(tint: AppSection.settings.color)).focusEffectDisabled()
                     .keyboardShortcut(.cancelAction)            // Escape = Cancel, never Save (Escape everywhere, 5 Oct 2026)
                     .accessibilityIdentifier("restore-cancel")
             }

@@ -18,6 +18,13 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.113", date: "11 Nov 2026", title: "Every edit page in the new look \u{2014} and Templates suggest your own things",
+                new: ["Typing in \u{201C}Or type a new thing\u{201D} on a template now suggests your own things as you type: up to four of your things whose name matches, the names that start with what you typed first, never one that is already on the template and never a bag. A tap puts that very thing on the template \u{2014} the same thing, not a new copy. It works as \u{201C}\u{FF0B} Add\u{201D} on a trip has since 0.112."],
+                changed: ["Every page and sheet where you change something has the new top bar (redesign B, last stage): Cancel is now plain words in the colour of its part, as in Apple\u{2019}s own apps \u{2014} until now it was a grey outlined button. Save (or Done) stays the full-colour button at the right. These are the pages: a thing, a template, a template\u{2019}s icon, a bag, a trip\u{2019}s settings, Create trip, a new grab list and its icon, a grab list being edited, Your choices, Activity areas, Pick things, Change several, Small core, the review, Restore, the date range, a lost bag, On site\u{2019}s note and the Packing Stations. The small Cancel beside a typed name (a station, a lost bag\u{2019}s tag) is in its part\u{2019}s colour too.",
+                          "Nothing moved: the same order, the same fields. Escape is still Cancel on the Mac and \u{2318}S still Save.",
+                          "Care: the \u{201C}Overdue\u{201D} heading looked faded. It was drawn as a switched-off button, because it never folds. It is now full red again, and \u{201C}Due soon\u{201D} shows in its full orange.",
+                          "How it works and the written specification say all this. Nothing about your things, trips, templates, to-dos or grab lists changed."],
+                removed: []),
         Release(version: "0.112", date: "11 Nov 2026", title: "The new look reaches Care, Your things, Templates and To do \u{2014} and a tap on a step opens that step",
                 new: ["A tap on a step of a trip \u{2014} Plan, Pack, On site, Review, Refine \u{2014} now opens that step. Plan opens the trip\u{2019}s settings (the pen page). Pack scrolls to the next thing to pack and lights it. On site opens the On site page. Review opens the trip review. Refine opens Refine.",
                       "The picture of the whole loop is now under a long press on the steps (right-click on the Mac): \u{201C}Show the whole loop\u{201D}. It is still in How it works too.",

@@ -55,8 +55,8 @@ struct CreateTripPage: View {
         VStack(spacing: 0) {
             HStack {
                 Button("Cancel") { dismiss() }
-                    .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
-                    .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.muted)
+                    .buttonStyle(BarCancelStyle(tint: AppSection.home.color)).focusEffectDisabled()
+                    .font(.system(.body, weight: .semibold))
                     .keyboardShortcut(.cancelAction)            // Escape = Cancel
                     .accessibilityIdentifier("trip-create-cancel")
                 Spacer()

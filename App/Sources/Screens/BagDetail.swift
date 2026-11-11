@@ -666,8 +666,8 @@ struct BagHeader: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Button("Cancel") { cancel() }
-                    .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
-                    .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.muted)
+                    .buttonStyle(BarCancelStyle(tint: AppSection.care.color)).focusEffectDisabled()
+                    .font(.system(.body, weight: .semibold))
                     .keyboardShortcut(.cancelAction)            // Escape = Cancel, as on a thing's page (0.92)
                     .accessibilityIdentifier("bag-cancel")
                 Spacer()

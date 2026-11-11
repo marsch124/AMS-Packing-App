@@ -458,8 +458,8 @@ struct ThingEditor: View {
         VStack(spacing: 0) {
             HStack {
                 Button("Cancel") { dismiss() }
-                    .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
-                    .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.muted)
+                    .buttonStyle(BarCancelStyle(tint: AppSection.care.color)).focusEffectDisabled()
+                    .font(.system(.body, weight: .semibold))
                     // Escape = Cancel, never Save (Escape everywhere, 5 Oct 2026) — while the Remove card asks, the card's (0.107).
                     .keyboardShortcut(kindAsk == nil ? .cancelAction : nil)
                     .accessibilityIdentifier("thing-cancel")

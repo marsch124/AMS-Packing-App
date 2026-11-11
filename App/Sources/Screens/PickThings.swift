@@ -50,7 +50,7 @@ struct PickThingsScreen: View {
         VStack(spacing: 0) {
             HStack(spacing: 10) {
                 Button("Cancel") { dismiss() }
-                    .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
+                    .buttonStyle(BarCancelStyle(tint: violet)).focusEffectDisabled()
                     .keyboardShortcut(.cancelAction)            // Escape = Cancel, never Save (Escape everywhere, 5 Oct 2026)
                     .accessibilityIdentifier("pick-cancel")
                 Spacer(minLength: 4)

@@ -379,7 +379,7 @@ private struct LinePicker: View {
                 Text(title).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
                 Spacer(minLength: 8)
                 Button("Close") { close() }
-                    .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
+                    .buttonStyle(BarCancelStyle(tint: AppSection.events.color)).focusEffectDisabled()
                     .accessibilityIdentifier("\(prefix)-close")
             }
             if !lines.isEmpty {

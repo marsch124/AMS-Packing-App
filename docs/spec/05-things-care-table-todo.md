@@ -3393,3 +3393,11 @@ Nothing stored changes. Where the text above describes the looks of these screen
   **search** field beside the title (the magnifier of the tab, same search). The to-dos stand in **grouped cards**: **Priority**,
   **Others** and **Done** stay as parts of their own, each a card with hairlines; Done stays folded until tapped, Undo under
   the list as before. The red badge on the tab is unchanged. The to-buy side keeps its lines and buttons (Send to Reminders etc.).
+
+## Redesign B, stage 4 (0.113, 11 Nov 2026) — edit pages, Care headings
+
+Nothing stored changes.
+- **Edit pages.** The page of a thing, of a bag and the other edit pages wear the B top bar and cards of spec 06 (Redesign B, stage 4);
+  what they hold and do is unchanged.
+- **Care's Overdue and Due soon headings.** **Overdue** never folds, and was drawn as a disabled button, so it looked faded; it is now
+  drawn in its **full red**. **Due soon** likewise in its **full orange**. The other sections fold as before.

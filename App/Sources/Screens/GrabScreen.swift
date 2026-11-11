@@ -255,8 +255,8 @@ struct GrabScreen: View {
                 // is as it was; Save keeps it. Escape = Cancel, ⌘S = Save.
                 if editing {
                     Button("Cancel") { cancelEdits() }
-                        .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
-                        .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.muted)
+                        .buttonStyle(BarCancelStyle(tint: tint)).focusEffectDisabled()
+                        .font(.system(.body, weight: .semibold))
                         .keyboardShortcut(.cancelAction)
                         .accessibilityIdentifier("grab-cancel")
                 }

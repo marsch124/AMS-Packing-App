@@ -1433,8 +1433,8 @@ struct TripScreen: View {
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 8)
                 Button("Close") { placing = nil; newPlace = ""; placeNeeds = "" }
-                    .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
-                    .font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
+                    .buttonStyle(BarCancelStyle(tint: AppSection.events.color)).focusEffectDisabled()
+                    .font(.system(.footnote, weight: .semibold))
                     .accessibilityIdentifier("trip-place-close")
             }
             FlowRow(spacing: 6) {

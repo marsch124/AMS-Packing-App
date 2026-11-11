@@ -76,7 +76,7 @@ struct SmallCoreSheet: View {
                     .accessibilityIdentifier("smallcore-title")
                 Spacer()
                 Button("Cancel") { dismiss() }
-                    .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
+                    .buttonStyle(BarCancelStyle(tint: AppSection.templates.color)).focusEffectDisabled()
                     .keyboardShortcut(.cancelAction)            // Escape = Cancel, never Make
                     .accessibilityIdentifier("smallcore-cancel")
             }

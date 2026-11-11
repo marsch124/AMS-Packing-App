@@ -8067,6 +8067,25 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(scrollUntil(app, "template-item-4", near: "template-item-3"), "the new thing is hidden by the search")
     }
 
+    /// Typing in a template's Add field offers his own things not yet on it; a tap puts that very thing on.
+    func testTemplateAddFieldSuggestsHisOwnThings() {
+        let app = launch()
+        tab(app, "templates")
+        XCTAssertTrue(appears(app, "screen-templates"))
+        tap(app, id: "template-row-1")                            // Hiking: 4 things, no Passport
+        XCTAssertTrue(appears(app, "template-detail", timeout: 5))
+        XCTAssertTrue(app.buttons["template-item-3"].waitForExistence(timeout: 5), "expected 4 things")
+        let field = app.textFields["template-add-name"]
+        type("Passp", into: field)
+        let suggest = app.buttons["template-add-suggest-0"]
+        XCTAssertTrue(suggest.waitForExistence(timeout: 5), "typing offered nothing from his own things")
+        tap(app, id: "template-add-suggest-0")
+        hideKeyboard(app)
+        XCTAssertTrue(scrollUntil(app, "template-item-4", near: "template-item-3"), "the suggested thing is not on the template")
+        XCTAssertTrue(waitUntil { self.words(app.buttons["template-item-4"]).contains("Passport") }, "the new row is '\(words(app.buttons["template-item-4"]))'")
+        XCTAssertTrue(waitUntil { ((field.value as? String) ?? "").isEmpty || (field.value as? String) == field.placeholderValue }, "the field kept its words")
+    }
+
     // MARK: - Templates: the spec pass (5 Oct 2026)
 
     /// Things chosen from his own land on the template in the order he ticked them
@@ -9398,6 +9417,16 @@ final class AMSPackingUITests: XCTestCase {
         tab(app, "care")
         XCTAssertTrue(waitUntil(timeout: 10) { self.words(app.staticTexts["care-summary"]) == "All up to date" },
                       "the service was lost on the way out and back: '\(words(app.staticTexts["care-summary"]))'")
+    }
+
+    /// Overdue never folds, yet it is drawn in full colour: it is enabled, only taking no taps (0.113).
+    func testCareOverdueHeadingIsNotGreyedOut() {
+        let app = launch()
+        tab(app, "care")
+        XCTAssertTrue(appears(app, "screen-care"))
+        let head = app.buttons["care-section-overdue"]
+        XCTAssertTrue(head.waitForExistence(timeout: 5), "no Overdue heading although the boots are overdue")
+        XCTAssertTrue(head.isEnabled, "the Overdue heading is switched off (drawn grey)")
     }
 
     /// The maintenance calendar: it opens on this month and flags what is overdue;
