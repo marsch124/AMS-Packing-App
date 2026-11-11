@@ -7,11 +7,13 @@ import PackingCore
 /// when a label is reworded.
 enum AppSection: String, CaseIterable, Identifiable {
     case home, events, templates, care, actions, settings
+    /// The Inventory tab (0.117, his pick of 11 Nov 2026) — last here so ⌘1–⌘6 stay as they were; ⌘7.
+    case inventory
     var id: String { rawValue }
 
     /// The tabs (0.110, the redesign "B"): five — Settings is the nut on Home, and on the Mac the
     /// sidebar's last row. `allCases` keeps Settings for the Go menu (⌘6) and the guide.
-    static let tabs: [AppSection] = [.home, .events, .templates, .care, .actions]
+    static let tabs: [AppSection] = [.home, .events, .templates, .care, .inventory, .actions]
 
     var label: String {
         switch self {
@@ -23,6 +25,7 @@ enum AppSection: String, CaseIterable, Identifiable {
         case .care: return "Care"
         case .actions: return "To do"            // his choice (test G.4, 2026-09-30); was "Actions"
         case .settings: return "Settings"
+        case .inventory: return "Inventory"
         }
     }
 
@@ -36,6 +39,7 @@ enum AppSection: String, CaseIterable, Identifiable {
         case .care: return Color(hex: 0xdd7324)
         case .actions: return Color(hex: 0xdc3d43)
         case .settings: return Color(hex: 0x64748b)
+        case .inventory: return Color(hex: 0x0f8b8d)
         }
     }
 
@@ -58,6 +62,8 @@ enum AppSection: String, CaseIterable, Identifiable {
             var p = Path(roundedRect: CGRect(x: 4, y: 4, width: 16, height: 16), cornerRadius: 2.5)
             p.addPath(SVGPath.path("M8.5 12.2l2.4 2.4 4.6-5"))
             return p
+        case .inventory:   // a house with a door (0.117)
+            return SVGPath.path("M3.5 11.5L12 4.5l8.5 7M6 10v9.5h12V10M10 19.5v-5h4v5")
         case .settings:    // a nut
             var p = SVGPath.path("M12 2.5L21.2 7.25L21.2 16.75L12 21.5L2.8 16.75L2.8 7.25Z")
             p.addEllipse(in: CGRect(x: 8, y: 8, width: 8, height: 8))

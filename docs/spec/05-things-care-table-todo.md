@@ -3484,3 +3484,33 @@ line is absent for a room with nothing added. "Done" `walk-done` on the room lis
 
 Tests: data test `RoomWalkTests` (walkAdd stores room, count, staysHome; duplicate refused; nameGuesses drops names he has and caps at 3);
 UI test `testRoomWalk` (open the walk, pick a room, type a name, save, see the count and the room list line).
+
+## Inventory tab (0.117, 11 Nov 2026)
+
+His words: "I cannot find an entry point for the new items perspective — the items not related to packing per se, more inventory
+related. Can we make an inventory page?" He picked: its own tab. This changes his 11 Nov interview answer "inside Care > Your
+things, no new tab" (plan: `docs/inventory/plan.md`). Care > Your things is unchanged, and the room walk (0.116) is still there too;
+nothing he placed moved. Build order moves: 0.117 Inventory tab, 0.118 Papers (was 0.117), 0.119 reminders + insurance PDF.
+
+**The tab.** A sixth tab "Inventory", colour teal #0f8b8d, a hand-drawn house mark (`SectionMark`), between Care and To do on the iPhone
+tab bar (`tab-inventory`) and in the Mac sidebar. The To do tab keeps its red badge. Mac: Go > Inventory, ⌘7 (⌘1–⌘6 unchanged;
+Settings stays ⌘6 / ⌘,). Tab order: Home, Trips, Templates, Care, Inventory, To do (Settings via the nut / last sidebar row).
+
+**The page** (`screen-inventory`), big teal title "Inventory" (`inventory-title`), scrolls under the floating tab bar.
+- **Totals card** `inventory-totals`: how many things (sum of `qtyOwned`), what they cost (price × how many, SEK only), worth today
+  (the 0.115 estimate: −15 % per year since the bought date, floor 10 % of the price; his own Value today wins). Things priced in
+  another currency are left out and the card says how many ("+ 2 in other currencies"), as in Your things (0.115).
+- **Rooms card**: one row per room, `inventory-room-<n>`, with how many things (sum of how many) in it. Things with no room come last as
+  "No room" (also a row). Source: `Library.inventoryRooms()` in `Core/Sources/PackingLibrary/InventoryPage.swift`. Tap a row: that room's
+  things — the same Your things list, filtered to the room, back button "‹ Inventory".
+- **"All things"** row `inventory-all`: opens the whole Your things list (the All view).
+- **Warranty ends soon card**: things whose warranty ends within 60 days from today, soonest first, each a row `inventory-warranty-<n>`
+  reading e.g. "12 days left"; tap opens the thing. Hidden when none. Source: `Library.warrantiesEndingSoon(today:days:)` (days = 60).
+- **Floating button** "＋ Room walk" `inventory-walk-open`, full colour (teal), bottom right: opens the 0.116 room walk page.
+  Care > Your things keeps its own `things-walk-open`.
+
+**Docs.** What's new 0.117 entry; How it works: Inventory topic (section `.inventory`) and the frame line now says six tabs and ⌘7;
+the keyboard line adds ⌘7 for Inventory.
+
+Tests: data test `InventoryPageTests` (inventoryRooms counts and puts "No room" last; warrantiesEndingSoon honours the 60 days and
+sorts soonest first); UI test `testInventoryTab` (open the tab, find title, totals, a room row and the walk button by identifier).

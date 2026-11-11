@@ -225,6 +225,7 @@ enum QuickCommands {
         case .care: return ["Things", "Bags"]
         case .actions: return ["To-dos", "Buy list", "Actions"]
         case .settings: return ["Preferences", "How it works"]
+        case .inventory: return ["Rooms", "Home things", "Warranty"]
         default: return []
         }
     }

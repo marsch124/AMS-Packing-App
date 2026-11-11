@@ -14291,6 +14291,21 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "things-detail", timeout: 5))
     }
 
+    /// The Inventory tab (0.117): totals, rooms, a room opens only its things.
+    func testInventoryTab() {
+        let app = launch()
+        tab(app, "inventory")
+        XCTAssertTrue(app.staticTexts["inventory-title"].waitForExistence(timeout: 5), "no Inventory page")
+        XCTAssertTrue(app.descendants(matching: .any)["inventory-totals"].waitForExistence(timeout: 5), "no totals")
+        XCTAssertTrue(app.buttons["inventory-walk-open"].exists, "no Room walk button")
+        shot(app, "inventory")
+        tap(app, id: "inventory-room-0")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        XCTAssertTrue(app.buttons["thing-row-0"].waitForExistence(timeout: 5), "the room shows no things")
+        tap(app, id: "things-done")
+        XCTAssertTrue(disappears(app, "things-detail", timeout: 5))
+    }
+
     /// Open a thing's page from Your things, found by its name.
     private func openThing(_ app: XCUIApplication, _ name: String) {
         tab(app, "care")

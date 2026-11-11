@@ -270,6 +270,7 @@ private struct SectionScreen: View {
             case (.ready, .events): EventsScreen(goToActions: { go(.actions) })
             case (.ready, .actions): ActionsScreen()
             case (.ready, .care): CareScreen()
+            case (.ready, .inventory): InventoryScreen()
             case (.ready, .settings), (.empty, .settings): SettingsScreen()
             default: placeholder
             }

@@ -91,6 +91,7 @@
 		B133762EEFC21767CCE779B5 /* PackingDay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90C73A28812C7D0D542A832F /* PackingDay.swift */; };
 		B7EFE44328F09E5EB47E6485 /* ScreenHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FAAC5753777A7E40ED20AA /* ScreenHeader.swift */; };
 		B91D523B507CE19FCAC1D86B /* CloudStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A841D9340C8D1312A6814431 /* CloudStore.swift */; };
+		B9AEE56CFD1235299E878C4B /* InventoryScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1290FD7137BAD0CA1720BE92 /* InventoryScreen.swift */; };
 		BA0412EFC474F7660997C615 /* TakeABreak.swift in Sources */ = {isa = PBXBuildFile; fileRef = 186841C4B47BDD39836B3D9D /* TakeABreak.swift */; };
 		BB0C23866929DEBDF46E6D5C /* ObjCExceptions.m in Sources */ = {isa = PBXBuildFile; fileRef = 50267DCB9436F2D12C79F8B1 /* ObjCExceptions.m */; };
 		BBF3A1F2A58A269D39B48BFD /* QuickActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61946E344209EE542B58B829 /* QuickActions.swift */; };
@@ -153,6 +154,7 @@
 		0B8389C70A03647A3E98F6DB /* ToCharge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToCharge.swift; sourceTree = "<group>"; };
 		112E88E5E56E46CAA3F002CE /* KitDashboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KitDashboard.swift; sourceTree = "<group>"; };
 		1184D7CD5CC4D6E0ED18EEFE /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		1290FD7137BAD0CA1720BE92 /* InventoryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InventoryScreen.swift; sourceTree = "<group>"; };
 		1750ABC86D97A97B07370949 /* DropDown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DropDown.swift; sourceTree = "<group>"; };
 		186841C4B47BDD39836B3D9D /* TakeABreak.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TakeABreak.swift; sourceTree = "<group>"; };
 		18C6CB980A090E605DD6CC2D /* VoiceWalker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceWalker.swift; sourceTree = "<group>"; };
@@ -437,6 +439,7 @@
 				1E01A9E0DEC947610C0F642D /* GrabScreen.swift */,
 				8DCA03D292255B391659C37C /* Headings.swift */,
 				403A4735005582B356D67F55 /* HomeScreen.swift */,
+				1290FD7137BAD0CA1720BE92 /* InventoryScreen.swift */,
 				6E6040E9224EB629B23E6372 /* Keys.swift */,
 				648AFDD703D25071725F2F8F /* KindRemoveCard.swift */,
 				112E88E5E56E46CAA3F002CE /* KitDashboard.swift */,
@@ -641,6 +644,7 @@
 				39B87583182066477449515D /* GuideScreen.swift in Sources */,
 				4F3FD7E1E457A44E56AB6E19 /* Headings.swift in Sources */,
 				6A2E2EBA4741768E52BD87B0 /* HomeScreen.swift in Sources */,
+				B9AEE56CFD1235299E878C4B /* InventoryScreen.swift in Sources */,
 				1F964649144F502707139E0C /* Keys.swift in Sources */,
 				5E3EE86BE15A9EC0181D6153 /* KeysGuide.swift in Sources */,
 				45AD045844971CD00DEEEE1E /* KindRemoveCard.swift in Sources */,
@@ -862,7 +866,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.116;
+				MARKETING_VERSION = 0.117;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -952,7 +956,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.116;
+				MARKETING_VERSION = 0.117;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

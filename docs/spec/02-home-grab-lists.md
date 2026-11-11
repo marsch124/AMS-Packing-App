@@ -54,6 +54,7 @@ this device's ticks and skips for one list (`GrabState`), never synced.
 hand-drawn marks, a colour per part, tight rows, full-colour main buttons). This replaces the six-button tab bar
 described below; where the text below says "six tabs", "the tab bar's sixth button" or "the version marker under the
 bar", read the following instead:
+- **(0.117: six tabs — Inventory, teal, joined between Care and To do; see spec 05 "Inventory tab". The five below are the 0.110 frame.)**
 - **Five tabs**, in this order: Home (blue), Trips (green), Templates (violet), Care (orange), To do (red). The
   `AppSection` order stays; `.settings` is no longer a tab. The To do tab keeps its red count badge (to-dos and
   to-buys still open, together; none, no badge).

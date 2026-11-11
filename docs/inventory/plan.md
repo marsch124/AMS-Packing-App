@@ -54,7 +54,7 @@ Empty lines are folded under "Add details" so a sparse thing stays short.
 | Question | Your pick |
 |---|---|
 | What goes in | **Everything you own** — whole home plus the travel things |
-| Where in the app | **Inside Care ▸ Your things** — no new tab; views All · Travel · At home |
+| Where in the app | **Inside Care ▸ Your things** — no new tab; views All · Travel · At home. *(Changed 11 Nov 2026, see below: its own Inventory tab.)* |
 | Things that never travel | **"Stays at home" mark** — never offered on trips, templates or ＋ Add |
 | Where kept | **Room ▸ spot** — your own list of rooms, optional spot in each |
 | Details on the page | **All four:** bought on + shop + price · warranty until · brand, model, serial · value today |
@@ -93,5 +93,15 @@ Empty lines are folded under "Add details" so a sparse thing stays short.
 | 16 | Page order | **Details card under the photos, folded when empty**; nothing you placed moves |
 | 17 | Anna | **Shared like today's things**; "Whose it is" tells who owns what |
 | 18 | Privacy | **No hiding** |
-| 19 | Building order | **0.115** Details + rooms + Stays at home + views + totals · **0.116** room walk (BUILT 11 Nov 2026) · **0.117** Papers · **0.118** reminders + insurance PDF |
+| 19 | Building order | **0.115** Details + rooms + Stays at home + views + totals · **0.116** room walk (BUILT 11 Nov 2026) · **0.117** Inventory tab (his new pick, below) · **0.118** Papers · **0.119** reminders + insurance PDF |
 | 20 | Marking "Gone" | **Date + how** (Sold · Given away · Broken · Lost · Stolen), sold-for price if sold |
+
+## New pick — its own Inventory tab (11 Nov 2026)
+
+His words: "I cannot find an entry point for the new items perspective — the items not related to packing per se, more inventory related. Can we make an inventory page?" He picked **its own tab**. This replaces his earlier answer "inside Care ▸ Your things, no new tab".
+
+- A 6th tab **Inventory** (teal #0f8b8d, hand-drawn house), between Care and To do; Mac Go ▸ Inventory ⌘7.
+- The page: totals card (how many · cost · worth today), **Rooms** card (each room with its count, "No room" last; tap a room → its things), **All things** row, **Warranty ends soon** card (within 60 days, hidden when none), floating **＋ Room walk**.
+- Care ▸ Your things stays as it is; the room walk stays there too.
+
+**Build order now:** **0.117** Inventory tab · **0.118** Papers (receipts and manuals, was 0.117) · **0.119** warranty/care reminders + insurance PDF (was 0.118). Step headings above ("Step 2 — Papers", "Step 3 — reminders") keep their content; read 0.116/0.117 there as 0.118/0.119.

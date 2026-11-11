@@ -7,6 +7,8 @@ import PackingLibrary
 struct ThingsScreen: View {
     /// Opened from a bar on the Care dashboard: start with this in the search.
     var searching: String = ""
+    /// Opened from a room on the Inventory tab (0.117): only that room's things ("" = no room), back to Inventory.
+    var room: String? = nil
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
     @State private var query = ""
@@ -33,7 +35,7 @@ struct ThingsScreen: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        let all = model.library.thingRows()
+        let all = model.library.thingRows().filter { room == nil || normName($0.item.storage) == normName(room ?? "") }
         let homeless = all.filter { $0.templates.isEmpty }.count
         let batteries = all.filter { Library.hasBattery($0.item) }.count
         let q = normName(query)
@@ -57,7 +59,7 @@ struct ThingsScreen: View {
             // B (0.112, stage 3 of the redesign he picked on 11 Nov 2026): "‹ Care" at the left, a full-colour
             // Done at the right, the name as a big orange title under them, the search across the page.
             HStack {
-                BackArrow(title: "Care", tint: AppSection.care.color, id: "things-back") { dismiss() }
+                BackArrow(title: room == nil ? "Care" : "Inventory", tint: AppSection.care.color, id: "things-back") { dismiss() }
                 Spacer()
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.care.color, filled: true)).focusEffectDisabled()
@@ -70,7 +72,7 @@ struct ThingsScreen: View {
             // ⌘N (0.105, Mac): a new thing's page here too — the menu's New Thing is off while a page is open; made, the
             // thing stands under Just added, as one added at the foot.
             .commandN { editing = ThingEditor.newThing }
-            Text("Your things").font(.system(.largeTitle, weight: .bold)).foregroundStyle(AppSection.care.color)
+            Text(room.map { $0.isEmpty ? "No room" : $0 } ?? "Your things").font(.system(.largeTitle, weight: .bold)).foregroundStyle(AppSection.care.color)
                 .lineLimit(1).minimumScaleFactor(0.8)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 16).padding(.bottom, 6)

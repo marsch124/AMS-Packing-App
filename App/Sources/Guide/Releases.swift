@@ -18,6 +18,20 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.117", date: "11 Nov 2026", title: "An Inventory tab \u{2014} everything you own, in one place",
+                new: ["A sixth tab, Inventory, in teal with a hand-drawn house, between Care and To do \u{2014} on the iPhone\u{2019}s tab bar and in the Mac\u{2019}s sidebar. On the Mac it is also in the Go menu as \u{2318}7; \u{2318}1 to \u{2318}6 are as they were.",
+                      "Its page opens with a big teal title, \u{201C}Inventory\u{201D}, and a totals card: how many things you own, what they cost (the price times how many, in Swedish kronor) and what they are worth today. Worth today is the app\u{2019}s estimate \u{2014} the price less 15 % for each year since you bought it, never below 10 % of the price \u{2014} and a figure you typed yourself wins. Things priced in another currency are left out of the sums, and the card says how many.",
+                      "A Rooms card lists each of your rooms with how many things are in it. Things with no room come last, as \u{201C}No room\u{201D}.",
+                      "Tap a room and you see that room\u{2019}s things: the same Your things list, only that room, with \u{201C}\u{2039} Inventory\u{201D} at the top left to come back.",
+                      "An \u{201C}All things\u{201D} row opens the whole Your things list.",
+                      "A Warranty ends soon card shows the things whose warranty ends within the next 60 days, each with how long is left, for example \u{201C}12 days left\u{201D}. Tap one to open it. When nothing is about to run out, the card is not shown at all.",
+                      "A floating \u{201C}\u{FF0B} Room walk\u{201D} button at the bottom right starts the room walk from 0.116 right from the Inventory."],
+                changed: ["You told me you could not find a way in to the things that are not about packing, the inventory side. In the 0.115 interview you chose to keep it inside Care \u{25B8} Your things with no new tab; you have now chosen its own tab, so the Inventory is that tab.",
+                      "Care \u{25B8} Your things is as it was, and the Room walk button is still there too. Nothing you placed has moved.",
+                      "The Papers plan from the 0.116 notice \u{2014} receipts and manuals on a thing \u{2014} moves from 0.117 to 0.118; reminders and the insurance list follow in 0.119.",
+                      "How it works (an Inventory topic, and the line about the tabs, which now count six) and the written specification say all this. Nothing about your trips, templates, to-dos or grab lists changed."],
+                fixed: [],
+                removed: []),
         Release(version: "0.116", date: "11 Nov 2026", title: "Room walk \u{2014} photo and name, photo and name, room by room",
                 new: ["Care \u{25B8} Your things has a second floating button, \u{201C}Room walk\u{201D}, next to \u{201C}\u{FF0B} New thing\u{201D}. It opens a page for going through your home and adding what you own, one thing after another.",
                       "First you pick a room: your own rooms come first, then the starter rooms you do not have yet. A starter room you pick joins your rooms.",
