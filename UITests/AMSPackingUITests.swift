@@ -14230,6 +14230,41 @@ final class AMSPackingUITests: XCTestCase {
 
     // MARK: - A thing's section on each template (0.64)
 
+    /// Inventory step 1 (0.115): Your things' All · Travel · At home; a thing's Details card under the photos,
+    /// folded while empty; a warranty length sets the bought date and says how long is left; Stays at home
+    /// moves it to At home.
+    func testDetailsCardAndAtHomeView() {
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        XCTAssertTrue(app.buttons["things-view-all"].waitForExistence(timeout: 5), "no All · Travel · At home")
+        tap(app, id: "things-view-home")
+        XCTAssertFalse(app.buttons["thing-row-0"].waitForExistence(timeout: 2), "a thing stands under At home before any is marked")
+        tap(app, id: "things-view-all")
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        if app.buttons["thing-details-open"].waitForExistence(timeout: 3) { tap(app, id: "thing-details-open") }
+        XCTAssertTrue(app.textFields["thing-model"].waitForExistence(timeout: 5), "no Model in Details")
+        type("XM5", into: app.textFields["thing-model"])
+        tap(app, id: "thing-warranty-2")
+        XCTAssertTrue(app.staticTexts["thing-warranty-says"].waitForExistence(timeout: 5), "the warranty does not say how long is left")
+        XCTAssertTrue(words(app.staticTexts["thing-warranty-says"]).contains("left"))
+        let home = app.switches["thing-stays-home"]
+        XCTAssertTrue(home.waitForExistence(timeout: 5), "no Stays at home switch")
+        #if os(macOS)
+        home.click()
+        #else
+        home.switches.firstMatch.exists ? home.switches.firstMatch.tap() : home.tap()
+        #endif
+        shot(app, "thing-details")
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "things-view-home")
+        XCTAssertTrue(app.buttons["thing-row-0"].waitForExistence(timeout: 5), "the thing marked Stays at home is not under At home")
+        shot(app, "things-at-home")
+    }
+
     /// Open a thing's page from Your things, found by its name.
     private func openThing(_ app: XCUIApplication, _ name: String) {
         tab(app, "care")

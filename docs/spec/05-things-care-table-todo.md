@@ -3412,3 +3412,45 @@ Nothing stored changes. Same rule as ＋ Add on a trip (spec 03, 0.112) and "Or 
   offered** — he may be replacing them.
 - **A tap puts a line on To buy linked to that thing**, so the thing's "Worth buying" offer stops showing (it is already open).
   Typing a name and pressing Add makes a plain line, as before.
+
+## Inventory step 1 (0.115, 11 Nov 2026)
+
+Plan: `docs/inventory/plan.md`. Core code: `Core/Sources/PackingLibrary/Inventory.swift`. Later: room walk (0.116), papers/receipts
+(0.117), warranty reminder + insurance PDF (0.118). Not in 0.115: serial scanning with the camera, "Gone" with a date.
+
+**Stored.** On the thing: `price` (per piece), `currency`, `acquired` (bought on), `serial`, `warranty` (the END date), `qtyOwned`,
+`model`, `manufacturer` (Brand), `storage` (the room). Extra keys: `staysHome`, `spot`, `shop`, `valueNow` (his own figure).
+Nothing he placed moves; Brand only moves from lower on the page into the Details card.
+
+**Details card** (`thing-details`). On a thing's page right under Photos, in Care's orange. While the thing has none of the lines
+filled, it is folded to one "Add details" button (`thing-details-open`); open, it shows the lines below.
+- Brand `thing-brand` (moved here), Model `thing-model`, Serial number `thing-serial`.
+- Bought on `thing-bought-on` (a date).
+- Bought at `thing-bought-at` (the shop). While typing, shops used before on other things show as chips `thing-shop-suggest-<n>`.
+- Price per piece `thing-price` + currency `thing-currency` (SEK by default; others chosen per thing).
+- Value today `thing-value`: the app's estimate shown greyed = price less 15 % a year since bought, never below 10 % of the price.
+  Typing his own figure overrides it (stored as `valueNow`); clearing it returns to the estimate.
+- Warranty: chips `thing-warranty-<0|1|2|3|5>` (None, 1, 2, 3, 5 years) counted from the bought date; stores the end date. The line
+  `thing-warranty-says` then reads "until 3 Mar 2027 · 1 year 4 months left" (past end: says it ended).
+- `thing-complaint`: a quiet line "Complaint right until …" (Swedish 3-year reklamationsrätt = bought date + 3 years) on a thing that
+  has a bought date and NO warranty. No reminder.
+- How many you own `thing-owned-count` (`qtyOwned`). A set is one thing x count; total = price x count.
+- "Stays at home" switch `thing-stays-home` (`staysHome`): never offered on trips, templates or ＋ Add suggestions; stays in Your
+  things. The switch is not shown when the page is a trip's, a template's or a ＋ Add suggestion's thing context.
+
+**Kept at home = Room ▸ spot.** The drop-down offers his places, then the starter rooms he does not have yet: Hall, Kitchen, Living
+room, Bedroom, Office, Bathroom, Laundry, Storage, Garage, Attic, Cellar, Car, At work. A starter room he picks joins his places list
+on Save (not before; Cancel adds nothing). Under it the field "Spot" `thing-spot` (Top shelf, Box 3) takes any words; spots used
+before in that room show as chips `thing-spot-suggest-<n>`.
+
+**Your things.**
+- Segmented `things-view` (`things-view-all`, `things-view-travel`, `things-view-home`): All · Travel · At home. All is the start and is
+  grouped by room (`things-room-<n>`, his places' order, then rooms only things name, "No room" last) once
+  there is more than one group. Travel = things not marked Stays at home; At home = things marked Stays at home. A row keeps its
+  A–Z number in its id (`thing-row-<n>`) whichever way the list is grouped. The totals line counts what the view shows.
+- Search also finds brand, model, serial, shop and spot (besides name, notes, etc.).
+- Totals line `things-total`: "214 things · 86 400 kr paid · 61 200 kr today" — paid = price x count, today = value today x count,
+  SEK things only; "+ 2 in other currencies" when some things are in another currency and left out.
+
+Tests: one data test per rule (value estimate and floor, warranty end and months left, complaint right, shop/spot suggestions,
+totals, starter rooms) and one screen test finding the card by `thing-details`.

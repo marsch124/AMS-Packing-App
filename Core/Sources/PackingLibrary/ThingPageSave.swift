@@ -23,5 +23,8 @@ extension Item {
         put(\.phase); put(\.ownedBy); put(\.condition); put(\.weight)
         put(\.manufacturer); put(\.color); put(\.note)
         put(\.liquid); put(\.restricted); putExtra(BATTERY_KEY); put(\.expiry)
+        // Details (0.115, inventory step 1).
+        put(\.model); put(\.serial); put(\.acquired); put(\.price); put(\.currency); put(\.warranty); put(\.qtyOwned)
+        putExtra(STAYS_HOME_KEY); putExtra(SPOT_KEY); putExtra(SHOP_KEY); putExtra(VALUE_NOW_KEY)
     }
 }

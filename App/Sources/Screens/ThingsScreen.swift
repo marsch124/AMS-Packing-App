@@ -13,6 +13,8 @@ struct ThingsScreen: View {
     @State private var noListOnly = false
     /// Only the things with a battery (0.75, spec 07 part 15): the things to charge, at a glance.
     @State private var batteryOnly = false
+    /// All · Travel · At home (0.115, inventory step 1).
+    @State private var shelf = "all"
     @State private var newName = ""
     /// ＋ New thing's field is open (B, 0.112).
     @State private var newOpen = false
@@ -36,7 +38,8 @@ struct ThingsScreen: View {
         // Its notes count too (0.69): its own Notes and the notes its templates keep for it.
         let hits = model.library.noteHits(query)
         let shown = all.filter { (!noListOnly || $0.templates.isEmpty) && (!batteryOnly || Library.hasBattery($0.item))
-            && (q.isEmpty || normName($0.item.name).contains(q) || hits[$0.item.id] != nil) }
+            && (shelf == "all" || (shelf == "home") == Library.staysHome($0.item))
+            && (q.isEmpty || normName($0.item.name).contains(q) || hits[$0.item.id] != nil || Library.detailsMatch($0.item, query)) }
         // The note line shows only under a thing found by its notes, not by its name.
         let note: ((item: Item, templates: [String])) -> NoteHit? = { row in
             normName(row.item.name).contains(q) ? nil : hits[row.item.id]
@@ -44,6 +47,10 @@ struct ThingsScreen: View {
         // The ones added on this visit first (newest on top), then the rest A–Z.
         let fresh = justAdded.compactMap { id in shown.first { $0.item.id == id } }
         let rest = fresh.isEmpty ? shown : shown.filter { !justAdded.contains($0.item.id) }
+        // A row keeps its A–Z number as its name whichever way the list is grouped (0.115).
+        let azIndex = Dictionary(uniqueKeysWithValues: rest.enumerated().map { ($0.element.item.id, fresh.count + $0.offset) })
+        let rooms = ThingsScreen.byRoom(rest, places: model.library.storagePlaces())
+        let totals = Library.totals(shown.map(\.item), today: Today.local)
         VStack(spacing: 0) {
             // B (0.112, stage 3 of the redesign he picked on 11 Nov 2026): "‹ Care" at the left, a full-colour
             // Done at the right, the name as a big orange title under them, the search across the page.
@@ -66,6 +73,12 @@ struct ThingsScreen: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 16).padding(.bottom, 6)
                 .accessibilityIdentifier("things-title")
+            BSegmented(options: [("all", "All", "things-view-all"), ("travel", "Travel", "things-view-travel"),
+                                 ("home", "At home", "things-view-home")],
+                       chosen: shelf, tint: AppSection.care.color) { shelf = $0 }
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("things-view")
+                .padding(.horizontal, 16).padding(.bottom, 8)
             HStack(spacing: 6) {
                 SVGPath.path("M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14ZM20 20l-4-4")
                     .stroke(style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
@@ -109,8 +122,24 @@ struct ThingsScreen: View {
                             }
                             if !rest.isEmpty { listHeading("A–Z", id: "things-rest") }
                         }
-                        ForEach(Array(rest.enumerated()), id: \.element.item.id) { n, row in
-                            thingRow(row, n: fresh.count + n, note: note(row), first: n == 0, last: n == rest.count - 1)
+                        thingsTotal(totals)
+                        // All, grouped by room (0.115 — his pick), things with no room last; one stable list of groups
+                        // (an if/else between a grouped and a flat list left an old copy of a row behind in the lazy stack).
+                        // ONE list of headings and rows, so a row keeps its place in the lazy stack whichever way it is grouped.
+                        let grouped = shelf == "all" && rooms.count > 1
+                        let groups = grouped ? rooms : [(room: "", rows: rest)]
+                        let entries: [(key: String, heading: String?, r: Int, row: (item: Item, templates: [String])?, first: Bool, last: Bool)] =
+                            groups.enumerated().flatMap { r, g in
+                                (grouped ? [(key: "room-heading:\(g.room)", heading: g.room.isEmpty ? "No room" : g.room, r: r, row: nil, first: false, last: false)] : [])
+                                + g.rows.enumerated().map { n, row in
+                                    (key: row.item.id, heading: nil, r: r, row: row, first: n == 0, last: n == g.rows.count - 1) }
+                            }
+                        ForEach(entries, id: \.key) { e in
+                            if let row = e.row {
+                                thingRow(row, n: azIndex[row.item.id] ?? 0, note: note(row), first: e.first, last: e.last)
+                            } else if let h = e.heading {
+                                listHeading(h, id: "things-room-\(e.r)")
+                            }
                         }
                     }
                     // Room under the last row for the floating ＋ New thing (B, 0.112).
@@ -278,6 +307,41 @@ struct ThingsScreen: View {
         // A row of one rounded card (B, 0.112), drawn per row so the list stays lazy; a ruled line until 0.111.
         .padding(.horizontal, 12)
         .background(LineCell(first: first, last: last, inset: 12))
+    }
+
+    /// "214 things · 86 400 kr paid · 61 200 kr today" (0.115) — only once something has a price.
+    @ViewBuilder private func thingsTotal(_ t: InventoryTotals) -> some View {
+        if t.paid > 0 || t.today > 0 || t.otherCurrency > 0 {
+            let kr: (Double) -> String = { v in
+                let f = NumberFormatter(); f.numberStyle = .decimal; f.groupingSeparator = "\u{00A0}"; f.maximumFractionDigits = 0
+                return (f.string(from: NSNumber(value: v)) ?? "\(Int(v))") + " kr"
+            }
+            let parts = ["\(t.things) \(t.things == 1 ? "thing" : "things")", "\(kr(t.paid)) paid", "\(kr(t.today)) today"]
+                + (t.otherCurrency > 0 ? ["+ \(t.otherCurrency) in other currencies"] : [])
+            Text(parts.joined(separator: " \u{00B7} "))
+                .font(.system(.subheadline, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
+                .padding(.top, 8)
+                .accessibilityIdentifier("things-total")
+        }
+    }
+
+    /// The rows by room, in his places' order, then rooms only things name (A–Z), "No room" last.
+    static func byRoom(_ rows: [(item: Item, templates: [String])], places: [String]) -> [(room: String, rows: [(item: Item, templates: [String])])] {
+        var groups: [String: [(item: Item, templates: [String])]] = [:]
+        var spelt: [String: String] = [:]
+        for r in rows {
+            let k = normName(r.item.storage)
+            groups[k, default: []].append(r)
+            if spelt[k] == nil { spelt[k] = jsTrim(r.item.storage) }
+        }
+        var order = places.map(normName).filter { groups[$0] != nil }
+        let extra = groups.keys.filter { !$0.isEmpty && !order.contains($0) }.sorted()
+        order += extra
+        if groups[""] != nil { order.append("") }
+        var seen = Set<String>()
+        return order.filter { seen.insert($0).inserted }.map { k in
+            (room: places.first { normName($0) == k } ?? spelt[k] ?? "", rows: groups[k] ?? [])
+        }
     }
 
     private func listHeading(_ title: String, id: String) -> some View {
@@ -505,6 +569,8 @@ struct ThingEditor: View {
                     if let id = shown {
                         labelled("Photos") { ThingPhotos(thingId: id).environmentObject(model).id(id) }
                     }
+                    // Details (0.115, inventory step 1 — his pick: under the photos, folded while empty).
+                    ThingDetailsCard(draft: $draft).environmentObject(model)
                     // The order is his (6 Oct 2026): what it is and whose, the templates it is on,
                     // where it lives and goes and when, the details, and last what a flight and a
                     // date ask of it.
@@ -556,6 +622,8 @@ struct ThingEditor: View {
                     // it this way, it's a possibility that the naming convention skews.")
                     keptAtHome
                         .keyed(.storage)
+                    // Room ▸ spot (0.115): where in the room, typed, with the room's spots as chips.
+                    if !jsTrim(draft.storage).isEmpty { ThingSpotField(draft: $draft).environmentObject(model).padding(.top, -6) }
                     DropDown(title: "Usually packed in", options: bag.options.map { ($0.id, $0.label) },
                              selected: bag.selected, id: "thing-bag", unknown: "Not said",
                              newEntry: bags.newEntry("A new bag", needs: "Type the bag's name first.") { draft.container = $0 },
@@ -607,8 +675,7 @@ struct ThingEditor: View {
                     #endif
                     // Brand, colour and notes — for bags above all (his bag page, 2026-09-26),
                     // and for any thing: the web app's editor has had them all along.
-                    labelled("Brand") { field($draft.manufacturer, "e.g. Patagonia", "thing-brand", .brand) }
-                        .keyed(.brand)
+                    // Brand moved into Details (0.115).
                     labelled("Colour") { field($draft.color, "e.g. Black", "thing-colour", .colour) }
                         .keyed(.colour)
                     // The condition's ID is what is stored; a thing still holding a label
@@ -1035,7 +1102,10 @@ struct ThingEditor: View {
         // A new place joins Your choices on Save (0.69 — it used to join at once, and stayed
         // after Cancel); one he already has is simply chosen, in his own spelling.
         let places = drop("places", chosen: draft.storage, words: "your places")
-        return DropDown(title: "Kept at home", options: places.options,
+        // His places, then the starter rooms he has not got yet (0.115) — one picked joins his list on Save.
+        let have = Set(places.options.map { normName($0.1) })
+        let starters = STARTER_ROOMS.filter { !have.contains(normName($0)) }.map { ($0, $0) }
+        return DropDown(title: "Kept at home", options: places.options + starters,
                  selected: draft.storage,
                  id: DropDownIds(field: "thing-storage", list: "thing-places", row: "thing-place", title: "thing-heading-kept"),
                  blank: "Not said", other: true, same: { normName($0) == normName($1) },
@@ -1483,6 +1553,7 @@ struct ThingEditor: View {
             }
             let page = asSaved(d)
             written = page
+            if STARTER_ROOMS.contains(where: { normName($0) == normName(page.storage) }) { lib.keepRoom(page.storage) }
             var saved = page
             saved.storage = jsTrim(page.storage)
             saved.weight = grams
@@ -1655,7 +1726,7 @@ extension ThingEditor {
                 if !kit.contents.isEmpty { out.append(.kitCheck) }
             }
         }
-        out += [.brand, .colour, .condition, .care, .careNotes]
+        out += [.colour, .condition, .care, .careNotes]   // Brand is in Details since 0.115
         return out
     }
 

@@ -22,7 +22,7 @@ extension Library {
         for it in ownThings() {
             let name = fold(jsTrim(it.name))
             guard !name.isEmpty, name.contains(needle),
-                  !Library.isReminder(it), !it.retired,
+                  !Library.isReminder(it), !it.retired, !Library.staysHome(it),
                   !bagIds.contains(it.id), !bagNames.contains(name),
                   !onTripIds.contains(it.id), !onTripNames.contains(name),
                   seen.insert(name).inserted else { continue }
@@ -48,7 +48,7 @@ extension Library {
         for it in ownThings() {
             let name = fold(jsTrim(it.name))
             guard !name.isEmpty, name.contains(needle),
-                  !Library.isReminder(it), !it.retired,
+                  !Library.isReminder(it), !it.retired, !Library.staysHome(it),
                   !bagIds.contains(it.id), !bagNames.contains(name),
                   !onIds.contains(it.id), !onNames.contains(name),
                   seen.insert(name).inserted else { continue }

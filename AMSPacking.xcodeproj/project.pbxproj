@@ -59,6 +59,7 @@
 		7473F45A89D87DFE74DA4DBD /* CrossedAsk.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9275ED8A5762A3BD07EABD8E /* CrossedAsk.swift */; };
 		7489E41014894218A0EC730E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1184D7CD5CC4D6E0ED18EEFE /* Assets.xcassets */; };
 		7648E9F0DD765234D9AE2C89 /* Reminders.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF15EE34C5EEF1623E0B8B2 /* Reminders.swift */; };
+		7D192FA4E3FA277A9375DB5F /* ThingDetails.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3FAC3ADC18A94E28364083E /* ThingDetails.swift */; };
 		7DF2057F25F465D208B3118F /* EditTiming.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5799D84209CA656EEE129EFC /* EditTiming.swift */; };
 		80E3669131BEA0D1C726A660 /* Releases.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F6B09947C62AF9C62758EFD /* Releases.swift */; };
 		811DE93961FA9F60010FF93D /* WeatherCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C47276F0BCDA224A5AD23B1 /* WeatherCard.swift */; };
@@ -220,6 +221,7 @@
 		9C42481A42DC3DDDDD9E3093 /* ActionsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionsScreen.swift; sourceTree = "<group>"; };
 		A1A727717D19724FB903E1AA /* ThingKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThingKeys.swift; sourceTree = "<group>"; };
 		A3080E21A5A50FB111FBCE7E /* FlightsAndStay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlightsAndStay.swift; sourceTree = "<group>"; };
+		A3FAC3ADC18A94E28364083E /* ThingDetails.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThingDetails.swift; sourceTree = "<group>"; };
 		A5A5727912E5FAA6B41C908C /* SyncHealer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncHealer.swift; sourceTree = "<group>"; };
 		A644B6F78A0C7B86EF26025E /* AMSPacking.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = AMSPacking.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A751E258BF8E1D5C8C0CF952 /* VoiceIO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceIO.swift; sourceTree = "<group>"; };
@@ -469,6 +471,7 @@
 				26111B23DAEE70145F81696C /* TemplateReminders.swift */,
 				0AC47170406600EB5ADFCE37 /* TemplatesScreen.swift */,
 				D9E2F7EBD889FD3F4345F9E8 /* ThingDetailLine.swift */,
+				A3FAC3ADC18A94E28364083E /* ThingDetails.swift */,
 				A1A727717D19724FB903E1AA /* ThingKeys.swift */,
 				A807991F4D3D37B8ECD7F29C /* ThingKitPart.swift */,
 				08FEE110A8EA9F08E8D2E90A /* ThingRemember.swift */,
@@ -690,6 +693,7 @@
 				A990ED272C2ED09E248E10CA /* TemplatesScreen.swift in Sources */,
 				E0C4AB7AAF3294C75C4B5204 /* Theme.swift in Sources */,
 				CB329E4EC8E63D1388187F82 /* ThingDetailLine.swift in Sources */,
+				7D192FA4E3FA277A9375DB5F /* ThingDetails.swift in Sources */,
 				993DD5931C9E6CDCDB4605AF /* ThingKeys.swift in Sources */,
 				192F5DC225468F6FC0E7E870 /* ThingKitPart.swift in Sources */,
 				1D1B84FF75B3FC8EC5DC52A0 /* ThingRemember.swift in Sources */,
@@ -854,7 +858,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.114;
+				MARKETING_VERSION = 0.115;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -944,7 +948,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.114;
+				MARKETING_VERSION = 0.115;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

@@ -18,6 +18,23 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.115", date: "11 Nov 2026", title: "Details for every thing \u{2014} what it cost, where it is, how long the warranty runs",
+                new: ["A thing\u{2019}s page has a new Details card right under Photos, in Care\u{2019}s orange. While a thing has no details it is folded to one \u{201C}Add details\u{201D} button; open, it holds Brand (moved here from lower down the page), Model, Serial number, Bought on, Bought at, Price, Value today, Warranty, How many you own and Stays at home.",
+                      "Bought on is a date. Bought at is the shop: as you type, the shops you used before show as chips you can tap.",
+                      "Price is per piece, with a currency — Swedish kronor unless you pick another. Value today shows the app\u{2019}s own estimate in grey: the price less 15 % for each year since you bought it, never below 10 % of the price. Type your own figure and yours wins.",
+                      "Warranty: tap None, 1, 2, 3 or 5 years, counted from the Bought on date. The page then says, for example, \u{201C}until 3 Mar 2027 \u{00B7} 1 year 4 months left\u{201D}.",
+                      "A thing with a bought date and no warranty shows one quiet line, \u{201C}Complaint right until …\u{201D} — your Swedish three years by law (reklamationsrätt). No reminder comes with it.",
+                      "How many you own is a count on the thing. A set of six glasses is one thing, six of them.",
+                      "Stays at home is a switch for things that never travel (the sofa, the drill, the TV). Such a thing is never offered on a trip, on a template or under \u{201C}\u{FF0B} Add\u{201D}, but it stays in Your things. The switch is not shown on trips, templates or \u{FF0B} Add suggestions.",
+                      "Kept at home is now Room \u{25B8} spot. The list offers your own places first, then the starter rooms you do not have yet: Hall, Kitchen, Living room, Bedroom, Office, Bathroom, Laundry, Storage, Garage, Attic, Cellar, Car and At work. A starter room you pick joins your places when you press Save. Under it a Spot field (Top shelf, Box 3) takes any words, and the spots you used before in that room show as chips.",
+                      "Your things has All \u{00B7} Travel \u{00B7} At home at the top. All is grouped by room; things with no room stand under \u{201C}No room\u{201D}.",
+                      "Search in Your things also finds brand, model, serial number, shop and spot.",
+                      "A totals line sits under the title, for example \u{201C}214 things \u{00B7} 86 400 kr paid \u{00B7} 61 200 kr today\u{201D}. Only things priced in kronor are counted; \u{201C}+ 2 in other currencies\u{201D} says when some are left out."],
+                changed: ["Brand moved from the lower part of a thing\u{2019}s page into the new Details card. Nothing else on the page moved, and nothing you placed has moved.",
+                      "Kept at home used to list only your places; it now also offers the starter rooms, and has a Spot under it.",
+                      "How it works and the written specification say all this. Nothing about your trips, templates, to-dos or grab lists changed."],
+                fixed: [],
+                removed: []),
         Release(version: "0.114", date: "11 Nov 2026", title: "To buy suggests your own things as you type",
                 new: ["Typing in \u{201C}Add something to buy\u{201D} on the To buy page now suggests your own things as you type: up to four, shown as red chips under the field. They are the things whose name contains what you typed, the names that start with it first, then the rest A\u{2013}Z; capitals and accents do not matter. It works as \u{201C}\u{FF0B} Add\u{201D} on a trip (0.112) and \u{201C}Or type a new thing\u{201D} on a template (0.113) do.",
                       "One tap on a chip puts a line on To buy that is linked to that very thing \u{2014} so the thing\u{2019}s own \u{201C}Worth buying\u{201D} offer stops showing, because it is already on the list.",
