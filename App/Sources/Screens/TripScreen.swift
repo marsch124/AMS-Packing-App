@@ -33,6 +33,9 @@ struct TripScreen: View {
     @State private var newName = ""
     /// What Add was missing, said under the field (never a grey button).
     @State private var addNeeds = ""
+    /// ＋ Add is open (0.111): its field stands right above the floating bar.
+    @State private var adding = false
+    @FocusState private var addFocus: Bool
     @State private var reviewing = false
     @State private var sweeping = false
     @State private var askingToDelete = false
@@ -236,7 +239,7 @@ struct TripScreen: View {
     }
 
     private var sorting: some View {
-        DropDown(title: "Group by", heading: .beside, options: TripScreen.views.map { ($0.id, $0.label) },
+        DropDown(title: "Group by", heading: .inline, options: TripScreen.views.map { ($0.id, $0.label) },
                  selected: TripScreen.views.contains { $0.id == view } ? view : "when",
                  id: DropDownIds(field: "trip-view", list: "trip-view-list", row: "trip-view", title: "trip-view-label"),
                  tint: AppSection.events.color) { view = $0 }
@@ -281,28 +284,14 @@ struct TripScreen: View {
         let chosen = picked.ordered(order).compactMap { id in index[id].map { trip.entries[$0] } }
         ScrollViewReader { proxy in
         VStack(spacing: 0) {
-            // ONE centre line (0.73, his ask of 12 Oct 2026): the name, its pen right
-            // beside it, and at the right the state and Done — "Reviewed" sat in grey
-            // words on the line's top, off Done's centre, and the bare pen on the count's
-            // line did not read as a button. A name on two lines keeps them all on its
-            // FIRST line (`firstLineCentre`), Done where the thumb expects it.
-            VStack(alignment: .leading, spacing: 2) {
+            // The top (B, 0.111 — stage 2 of the redesign he picked on 11 Nov 2026): "‹ Trips" at the left,
+            // and at the right the pen, Review when it is offered and a full-colour Done — all on one centre
+            // line, as since 0.73. Under it the name as a big green title, and one line of where it stands:
+            // "0 of 7 packed · 7 left · about 5 min · from 4 Dec". Until 0.110 the name was Title 3 on
+            // the buttons' line and the count "0/7" under it.
+            VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .center, spacing: 8) {
-                    Text(trip.name.isEmpty ? "Untitled event" : trip.name)
-                        .font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
-                        .lineLimit(2).minimumScaleFactor(0.85)          // the whole name, not "Weekend in the…"
-                        .alignmentGuide(VerticalAlignment.center, computeValue: TripScreen.firstLineCentre)
-                        .layoutPriority(1)
-                        .accessibilityIdentifier("trip-name")
-                    // Its settings, after it is made (the gap list's first High item): a pen
-                    // in a ring, beside the name it changes.
-                    TripSettingsDoor(tripId: tripId, rebuilt: { rebuiltNote = TripScreen.saying($0) },
-                                     startedAgain: { new in
-                        let from = trip.name
-                        startedId = new.id
-                        rebuiltNote = "New trip from \u{201C}\(from)\u{201D}: \(new.entries.count) things, nothing ticked. Its dates are under the pen."
-                    }, cleared: { change in undo = change.isEmpty ? nil : .cleared(change, step: model.lastStep) })
-                    .environmentObject(model)
+                    BackArrow(title: "Trips", tint: AppSection.events.color, id: "trip-back") { dismiss() }
                     Spacer(minLength: 8)
                     // After the trip: what did I use, what did I miss. Once, then it says so —
                     // by the one rule every screen uses (the spec pass, 5 Oct 2026: a trip with
@@ -324,6 +313,14 @@ struct TripScreen: View {
                             .font(.system(.body, weight: .semibold))
                             .accessibilityIdentifier("trip-review")
                     }
+                    // Its settings, after it is made (the gap list's first High item): the pen.
+                    TripSettingsDoor(tripId: tripId, rebuilt: { rebuiltNote = TripScreen.saying($0) },
+                                     startedAgain: { new in
+                        let from = trip.name
+                        startedId = new.id
+                        rebuiltNote = "New trip from \u{201C}\(from)\u{201D}: \(new.entries.count) things, nothing ticked. Its dates are under the pen."
+                    }, cleared: { change in undo = change.isEmpty ? nil : .cleared(change, step: model.lastStep) })
+                    .environmentObject(model)
                     Button("Done") {
                         #if os(macOS)
                         // Esc is the selection's while lines are selected (0.105) — and an Esc that comes a moment
@@ -341,19 +338,22 @@ struct TripScreen: View {
                         .commandS { dismiss() }                         // ⌘S = Done (0.103)
                         .accessibilityIdentifier("trip-done")
                 }
+                .frame(minHeight: Metrics.tap)
+                // The name: Large Title in the trip's green (B), the whole name — two lines before it shrinks.
+                Text(trip.name.isEmpty ? "Untitled event" : trip.name)
+                    .font(.system(.largeTitle, weight: .bold)).foregroundStyle(AppSection.events.color)
+                    .lineLimit(2).minimumScaleFactor(0.6)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("trip-name")
                 HStack(alignment: .center, spacing: 8) {
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(p.aside > 0 ? "\(p.done)/\(p.total) · \(p.aside) set aside" : "\(p.done)/\(p.total)")
-                            .font(.system(.callout, weight: .semibold).monospacedDigit())
-                            .foregroundStyle(p.total > 0 && p.done == p.total ? AppSection.events.color : Theme.muted)
-                            .accessibilityIdentifier("trip-progress")
-                            .accessibilityValue(allPacked ? "all packed" : "")
-                        // What's left (0.82, his yes of 14 Oct 2026; spec 07 part 20): "23 left · 2 to
-                        // charge · about 25 min" at his own pace — under the count, while the trip is at
-                        // Pack; Take a break stays at the right, centred on the two lines.
-                        if step == .pack, let left = model.library.whatsLeft(tripId: tripId, today: Today.iso(clock)) {
-                            WhatsLeftLine(left: left)
+                    // One line when it fits; else the count and what's left on the first, the day under it.
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: 0) { statusWords(trip, p: p, allPacked: allPacked, step: step, apart: true) }
+                        VStack(alignment: .leading, spacing: 1) {
+                            HStack(spacing: 0) { statusWords(trip, p: p, allPacked: allPacked, step: step, apart: true, part: .count) }
+                            HStack(spacing: 0) { statusWords(trip, p: p, allPacked: allPacked, step: step, apart: true, part: .day) }
                         }
+                        VStack(alignment: .leading, spacing: 1) { statusWords(trip, p: p, allPacked: allPacked, step: step, apart: false) }
                     }
                     Spacer(minLength: 8)
                     // Take a break (0.77, his yes of 13 Oct 2026; spec 07 part 16): at the calm
@@ -363,12 +363,13 @@ struct TripScreen: View {
                     }
                 }
             }
-            .padding(16)
+            .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 10)
             // Where this trip stands in the loop (his picture, 2026-09-27); a tap shows it whole.
             LoopDoor(here: step)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                // 6 under it (10 until 0.104, his arrows of 28 Oct 2026: a tad tighter).
-                .padding(.horizontal, 16).padding(.top, -6).padding(.bottom, 6)
+                // 6 under it (10 until 0.104, his arrows of 28 Oct 2026: a tad tighter). A segmented
+                // control since 0.111, right under the title's line.
+                .padding(.horizontal, 16).padding(.bottom, 6)
             // The Packing day (0.79, his yes of 13 Oct 2026; spec 07 part 17): the Pack step's stations,
             // right under the strip, while the trip is being packed — not on a place's view.
             if step == .pack, placeFilter == nil, let day = model.library.packingDay(tripId: tripId) {
@@ -397,27 +398,17 @@ struct TripScreen: View {
                 // has typed into it (found by the test, 2026-09-23).
                 VStack(alignment: .leading, spacing: 4) {
                 if placeFilter == nil {
-                // Before you start (his yes of 14 Oct 2026, spec 07 part 19): above everything, while the
-                // trip is at Plan or at Pack with nothing packed yet — one door to what to buy and get ready
-                // ahead. It goes with the first thing ticked, when Before you go takes over.
-                BeforeYouStartDoor(tripId: trip.id, today: Today.iso(clock), time: Today.time(of: clock))
-                    .environmentObject(model)
+                // Before you start, the weather and the bags (B, 0.111): rows of ONE grouped list, as in
+                // Apple's Settings — until 0.110 three cards. Before you start (his yes of 14 Oct 2026, spec 07
+                // part 19) above everything, while the trip is at Plan or at Pack with nothing packed yet; the
+                // weather only until he sets off (0.108, his words of 2 Nov 2026 in Torremolinos: "Please stop
+                // this."); the bags once something is in one.
+                topGroup(trip)
                     .padding(.horizontal, 16)
-                // Before you go (0.77, his yes of 13 Oct 2026): first, and only when something
-                // needs him — ONE card for what would stop him at the airport (his ideas 4 and 5),
-                // the reminders due and To charge (spec 07 part 15), which were two cards.
-                // The cards stand `Metrics.cardGap` apart over the stack's 4 — 8 on the Mac, 10 on the
-                // iPhone (0.104, his arrows: 14 and 10 until then).
+                // Before you go (0.77, his yes of 13 Oct 2026): only when something needs him — ONE card for
+                // what would stop him at the airport (his ideas 4 and 5), the reminders due and To charge (spec
+                // 07 part 15). Under Before you start, as since 0.83.
                 BeforeYouGoCard(tripId: trip.id) { checking = CheckedThing(id: $0) }.environmentObject(model)
-                    .padding(.top, Metrics.cardGap).padding(.horizontal, 16)
-                // The weather and the gear it calls for — only until he sets off (0.108, his words of 2 Nov
-                // 2026, on site in Torremolinos: four rain things to pack "is already too late, and it takes
-                // so much screen real estate. Please stop this.").
-                if !Library.hasSetOff(trip, today: Today.iso(clock), time: Today.time(of: clock)) {
-                    WeatherCard(tripId: trip.id).environmentObject(model)
-                        .padding(.top, Metrics.cardGap).padding(.horizontal, 16)
-                }
-                BagsCard(tripId: trip.id).environmentObject(model)
                     .padding(.top, Metrics.cardGap).padding(.horizontal, 16)
                 // On site (their field test, 3 Oct 2026; Pack to go home, his idea 13, is in
                 // it now): once the trip has begun, or something was bought on site.
@@ -426,21 +417,9 @@ struct TripScreen: View {
                         .padding(.top, Metrics.cardGap).padding(.horizontal, 16)
                 }
                 }
-                // The sorting, DIRECTLY above the list it sorts (0.74, his ask of 12 Oct 2026:
-                // under the loop strip it sat far above the lines, "disconnected from it").
-                // His marks (2026-09-25): "Sorting" (Group by since 0.101) on the left, the choice on the same line —
-                // and on the iPhone, Pack by voice at its end (0.71, a test: spec 07 part 10).
-                Group {
-                    #if os(iOS)
-                    // The panel gone, Weigh may open now if the walk packed the last thing (0.79).
-                    VoiceSortingRow(tripId: tripId) { sorting; foldAllButton(headings) } closed: { weighByItself() }
-                    #else
-                    HStack(spacing: 8) { sorting; foldAllButton(headings) }
-                    #endif
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16).padding(.top, 10)
-                .id(TripScreen.listTop)
+                // Group by and Pack by voice moved to the floating bar at the foot in 0.111 (B); this anchor
+                // stays where the list starts, for the Packing day's Pack and for a tapped "Charge tonight".
+                Color.clear.frame(height: 1).id(TripScreen.listTop)
                 if let place = placeFilter { placeChip(place) }
                 #if DEBUG
                 if AMSPackingApp.testing && ProcessInfo.processInfo.arguments.contains("-showDoorChecks") {
@@ -450,7 +429,7 @@ struct TripScreen: View {
                     TripMessageList(tripId: tripId).padding(.horizontal, 16).padding(.top, 4)
                 }
                 #endif
-                if p.total > 0 { showRow(left: p.total - p.done) }
+                if p.total > 0 { showRow(left: p.total - p.done, headings: headings) }
                 if onlyUnticked && placeFilter == nil && shownLines.isEmpty {
                     Text("Everything is packed. Everything shows the whole list.")
                         .font(.system(.subheadline)).foregroundStyle(Theme.muted)
@@ -548,8 +527,8 @@ struct TripScreen: View {
                             }
                             .animation(.easeInOut(duration: reduceMotion ? 0.2 : 0.3), value: sectionDone)
                             // A little air above a heading, none under it (12 points above,
-                            // and 36-point buttons, until 0.67).
-                            .padding(.top, 6)
+                            // and 36-point buttons, until 0.67) — 10 since 0.111, the lines in a card under it.
+                            .padding(.top, 10).padding(.bottom, 2)
                             if !folded {
                             ForEach(Array(group.entries.enumerated()), id: \.element.id) { place, line in
                                 let n = index[line.id] ?? 0
@@ -651,6 +630,8 @@ struct TripScreen: View {
                                     ThingRemindersUnder(tripId: tripId, rows: rows, n: n).environmentObject(model)
                                 }
                                 }
+                                // In its section's card (B, 0.111): 10 inside it at each side.
+                                .padding(.horizontal, 10)
                                 // Show note (0.104): over the list, pointing at this line — on the row itself, outside
                                 // the box whose key renews its face, so a tick arriving meanwhile leaves it up.
                                 .popover(isPresented: noteBinding("\(g)|\(line.id)"), arrowEdge: .bottom) {
@@ -710,6 +691,9 @@ struct TripScreen: View {
                                 // froze for good (GitHub's way-home tests since 0.88). A row that stays where
                                 // it is takes its changes in place, and the key above renews its face.
                                 // Spec 03, the trip's list.
+                                // Its cell of the section's card (B, 0.111): rounded at the section's top and foot,
+                                // a hairline over every line but the first. Behind the light and the selection.
+                                .background { LineCell(first: place == 0, last: place == group.entries.count - 1) }
                                 .id("\(line.id)|\(group.label)|\(place)")
                             }
                             }
@@ -724,14 +708,9 @@ struct TripScreen: View {
                 // The web app's Excel button (the trip as a spreadsheet) and its Share (a
                 // link, a QR code when it fits, or a file) — two real buttons side by side,
                 // his test D.22.
-                HStack(alignment: .top, spacing: 12) {
-                    TripExcelButton(tripId: tripId).environmentObject(model)
-                    ShareDoor(id: "trip-share", wide: true) {
-                        ShareOffer(title: "Share \u{201C}\(trip.name)\u{201D}", link: model.library.shareLink(tripId: tripId),
-                                   file: model.library.shareFile(tripId: tripId))
-                    }
-                }
-                .padding(.horizontal, 16).padding(.top, 12)
+                // Share went to the floating bar in 0.111 (B); Save as Excel stays here, alone.
+                TripExcelButton(tripId: tripId).environmentObject(model)
+                    .padding(.horizontal, 16).padding(.top, 12)
                 // After the review: the trip's page in his Obsidian vault (0.70, spec 07 part 8)
                 // — at the foot since 0.73, under Excel and Share and in their style (his ask,
                 // 12 Oct 2026; until then a card at the top). Only Delete comes after it.
@@ -745,7 +724,7 @@ struct TripScreen: View {
                     .padding(.horizontal, 16).padding(.top, 18)
                 }
                 }
-                .padding(.bottom, 24)
+                .padding(.bottom, 16)
             }
             .sheet(item: $checking) { c in ThingEditor(itemId: c.id).environmentObject(model) }
             // The Packing day's Pack (0.101, his ask of 26 Oct 2026 — a tap on Pack "only scrolls to the
@@ -764,64 +743,31 @@ struct TripScreen: View {
             .onChange(of: toCharge) { _, _ in
                 withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.35)) { proxy.scrollTo(TripScreen.chargeAnchor, anchor: .center) }
             }
-            // "Also the tripod" — a thing for THIS trip only, typed on the spot. Not while
-            // one place's lines are shown: a line typed here has no place, and would vanish.
-            // (Right above that bar: Undo, for 6 seconds after a heading's round tick or Clear every
-            // tick — 0.79. Between the list and the bar, over no line: the list is shorter meanwhile.
-            // Not for another trip: Start a new trip from this one changes the trip on this screen.)
-            if let u = undo, u.change.tripId == tripId, model.stillUndoable(u.step) {
-                TickUndoBar(undo: u, act: {
-                    // The press's step, through Edit ▸ Undo's history (0.105) — ⌘Z and this bar take back
-                    // the same step once. Not in the history (a restore forgot it): exactly those ticks, as before.
-                    if !model.undoStep(u.step) { model.change { _ = $0.undo(u.change) } }
-                    undo = nil
-                }, gone: { if undo?.id == u.id { undo = nil } })
-                .padding(.bottom, placeFilter == nil ? 0 : 10)
-            }
-            #if os(macOS)
-            // Several lines selected (0.105): what can be done to them all at once, right above "Add a thing".
-            if chosen.count > 1 {
-                selectionBar(chosen)
-                    .padding(.bottom, placeFilter == nil ? 0 : 10)
-            }
-            #endif
-            if placeFilter == nil {
-            HStack(spacing: 8) {
-                TextField("Add a thing to this trip", text: $newName)
-                    .textFieldStyle(.plain)
-                    .font(.system(.body)).foregroundStyle(Theme.ink)
-                    .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
-                    .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
-                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
-                    .onSubmit { add() }
-                    .accessibilityIdentifier("trip-add-name")
-                // Always in colour (his rule for a main button); pressed with nothing
-                // typed it says so under the field.
-                Button { if jsTrim(newName).isEmpty { addNeeds = "Type a thing first." } else { add() } } label: {
-                    FieldButtonLabel(title: "Add", tint: AppSection.events.color)
-                }
-                .buttonStyle(.plain).focusEffectDisabled()
-                .accessibilityIdentifier("trip-add")
-                // Bought on site (his idea 12): on the list in one go, in hand already.
-                // "On site", not "there" — their word from the field test (Oct 2026).
-                if !jsTrim(newName).isEmpty {
-                    Button { addBought() } label: {
-                        Text("Bought on site").font(.system(.callout, weight: .semibold))
-                            .lineLimit(1).fixedSize()
-                            .foregroundStyle(AppSection.events.color)
-                            .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
-                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(AppSection.events.color, lineWidth: 1.4))
-                            .contentShape(Rectangle())
+            // The foot (B, 0.111): over the list's end, a floating glass bar — Share, Pack by voice and Group by
+            // at the left, a full-colour "＋ Add" at the right. ＋ Add opens the field right above the bar
+            // (until 0.110 "Add a thing to this trip" stood across the foot always, Excel and Share beside
+            // each other under the list, Group by above it). Above them, as before: Undo for 6 seconds after a
+            // heading's round tick or Clear every tick (0.79), and on the Mac the bar of several lines selected.
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                VStack(spacing: 8) {
+                    if let u = undo, u.change.tripId == tripId, model.stillUndoable(u.step) {
+                        TickUndoBar(undo: u, act: {
+                            // The press's step, through Edit ▸ Undo's history (0.105) — ⌘Z and this bar take back
+                            // the same step once. Not in the history (a restore forgot it): exactly those ticks, as before.
+                            if !model.undoStep(u.step) { model.change { _ = $0.undo(u.change) } }
+                            undo = nil
+                        }, gone: { if undo?.id == u.id { undo = nil } })
                     }
-                    .buttonStyle(.plain).focusEffectDisabled()
-                    .accessibilityIdentifier("trip-add-bought")
+                    #if os(macOS)
+                    // Several lines selected (0.105): what can be done to them all at once, right above the bar.
+                    if chosen.count > 1 { selectionBar(chosen) }
+                    #endif
+                    // "Also the tripod" — a thing for THIS trip only, typed on the spot. Not while one place's
+                    // lines are shown: a line typed here has no place, and would vanish.
+                    if placeFilter == nil && adding { addPanel }
+                    footBar(trip)
                 }
-            }
-            .needsLine($addNeeds, typed: newName, id: "trip-add-needs")
-            .padding(.horizontal, 16).padding(.vertical, 10)
-            // The green is the WHOLE screen, this bar included (his call: "we need
-            // strong indicators").
-            .background(allPacked ? Color.clear : Theme.bg)
+                .padding(.bottom, 6)
             }
         }
         }
@@ -902,6 +848,166 @@ struct TripScreen: View {
             clock = Today.now
         }
         .onChange(of: scenePhase) { _, phase in if phase == .active { clock = Today.now } }
+    }
+
+    /// The floating bar at a trip's foot (B, 0.111).
+    private func footBar(_ trip: TripEvent) -> some View {
+        HStack(spacing: 10) {
+            HStack(spacing: 2) {
+                if placeFilter == nil {
+                    // Share (a link, a QR code when it fits, or a file) — the mark alone, as in Apple's toolbars.
+                    ShareDoor(id: "trip-share", bare: true) {
+                        ShareOffer(title: "Share \u{201C}\(trip.name)\u{201D}", link: model.library.shareLink(tripId: tripId),
+                                   file: model.library.shareFile(tripId: tripId))
+                    }
+                }
+                #if os(iOS)
+                // Pack by voice (0.71, spec 07 part 10): the microphone; the panel gone, Weigh may open now if
+                // the walk packed the last thing (0.79).
+                VoiceSortingRow(tripId: tripId, compact: true) { sorting } closed: { weighByItself() }
+                #else
+                sorting
+                #endif
+            }
+            .padding(.leading, 8).padding(.trailing, 14)
+            .frame(minHeight: Metrics.tap + 8)
+            .glassBar()
+            Spacer(minLength: 0)
+            if placeFilter == nil && !adding {
+                // Always full colour (his rule for a main button).
+                Button { adding = true; addFocus = true } label: {
+                    HStack(spacing: 5) {
+                        SVGPath.path("M12 5v14M5 12h14")
+                            .stroke(style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
+                            .onGrid(Metrics.glyph * 0.85)
+                        Text("Add").font(.system(.body, weight: .semibold))
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 16).frame(minHeight: Metrics.tap + 8)
+                    .background(Capsule().fill(AppSection.events.color))
+                    .shadow(color: .black.opacity(0.15), radius: 6, y: 2)
+                    .contentShape(Capsule())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("trip-add-open")
+                .accessibilityLabel("Add a thing to this trip")
+            }
+        }
+        .padding(.horizontal, 16)
+    }
+
+    /// ＋ Add's field (0.111), right above the bar: "Add a thing to this trip", Add — always in colour; pressed
+    /// with nothing typed it says so under the field — and Bought on site once something is typed (his idea 12:
+    /// on the list in one go, in hand already). It stays open to add several; ✕ closes it.
+    private var addPanel: some View {
+        HStack(spacing: 8) {
+            TextField("Add a thing to this trip", text: $newName)
+                .textFieldStyle(.plain)
+                .font(.system(.body)).foregroundStyle(Theme.ink)
+                .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
+                .background(RoundedRectangle(cornerRadius: 10).fill(Theme.bg))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
+                .focused($addFocus)
+                .onSubmit { add(); addFocus = true }
+                .accessibilityIdentifier("trip-add-name")
+            Button { if jsTrim(newName).isEmpty { addNeeds = "Type a thing first." } else { add() } } label: {
+                FieldButtonLabel(title: "Add", tint: AppSection.events.color)
+            }
+            .buttonStyle(.plain).focusEffectDisabled()
+            .accessibilityIdentifier("trip-add")
+            // "On site", not "there" — their word from the field test (Oct 2026).
+            if !jsTrim(newName).isEmpty {
+                Button { addBought() } label: {
+                    Text("Bought on site").font(.system(.callout, weight: .semibold))
+                        .lineLimit(1).fixedSize()
+                        .foregroundStyle(AppSection.events.color)
+                        .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(AppSection.events.color, lineWidth: 1.4))
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("trip-add-bought")
+            }
+            Button { adding = false; addFocus = false; addNeeds = "" } label: {
+                IconMark(path: StationDrawings.cross, size: Metrics.glyph * 0.8, weight: 2)
+                    .foregroundStyle(Theme.muted)
+                    .frame(width: Metrics.tap, height: Metrics.tap)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).focusEffectDisabled()
+            .accessibilityIdentifier("trip-add-close")
+            .accessibilityLabel("Close")
+        }
+        .needsLine($addNeeds, typed: newName, id: "trip-add-needs")
+        .padding(10)
+        .background(RoundedRectangle(cornerRadius: 16).fill(Theme.card))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.line, lineWidth: 1))
+        .shadow(color: .black.opacity(0.10), radius: 8, y: 2)
+        .padding(.horizontal, 16)
+    }
+
+    /// The grouped list at the top of a trip (B, 0.111): the rows that have something to say.
+    @ViewBuilder private func topGroup(_ trip: TripEvent) -> some View {
+        let rows = topRows(trip)
+        if !rows.isEmpty { GroupedRows(rows: rows, id: "trip-top-group") }
+    }
+
+    private func topRows(_ trip: TripEvent) -> [(key: String, view: AnyView)] {
+        let today = Today.iso(clock), time = Today.time(of: clock)
+        var rows: [(key: String, view: AnyView)] = []
+        if !model.library.beforeYouStart(tripId: trip.id, today: today, time: time).isEmpty {
+            rows.append(("start", AnyView(BeforeYouStartDoor(tripId: trip.id, today: today, time: time).environmentObject(model))))
+        }
+        if !Library.hasSetOff(trip, today: today, time: time) {
+            rows.append(("weather", AnyView(WeatherCard(tripId: trip.id).environmentObject(model))))
+        }
+        if model.library.weighedBags(tripId: trip.id).contains(where: { $0.load.items > 0 || $0.added }) {
+            rows.append(("bags", AnyView(BagsCard(tripId: trip.id).environmentObject(model))))
+        }
+        return rows
+    }
+
+    /// The line under the title (B, 0.111): "3 of 7 packed", then what is left at his pace while the trip
+    /// is at Pack ("4 left · about 5 min"), then "from 4 Dec" until it starts. `apart`: on one line with
+    /// dots between; else the count over the rest. The count keeps "3/7" as what it SAYS (VoiceOver and
+    /// the tests read it so since 0.30) — the screen shows the words.
+    @ViewBuilder private func statusWords(_ trip: TripEvent, p: PackingProgress, allPacked: Bool,
+                                          step: Library.LoopStep, apart: Bool, part: StatusPart = .all) -> some View {
+        let said = p.aside > 0 ? "\(p.done)/\(p.total) · \(p.aside) set aside" : "\(p.done)/\(p.total)"
+        let shown = "\(p.done) of \(p.total) packed" + (p.aside > 0 ? " · \(p.aside) set aside" : "")
+        let left = step == .pack ? model.library.whatsLeft(tripId: tripId, today: Today.iso(clock)) : nil
+        let from = !Library.hasSetOff(trip, today: Today.iso(clock), time: Today.time(of: clock)) && !trip.startDate.isEmpty
+            ? "from \(TripScreen.shortDay(trip.startDate))" : nil
+        let dot = Text(" \u{00B7} ").font(.system(.subheadline)).foregroundStyle(Theme.muted)
+        if part != .day {
+        Text(shown)
+            .font(.system(.subheadline, weight: allPacked ? .semibold : .regular).monospacedDigit())
+            .foregroundStyle(allPacked ? AppSection.events.color : Theme.muted)
+            .lineLimit(1).fixedSize()
+            .accessibilityLabel(said)
+            .accessibilityIdentifier("trip-progress")
+            .accessibilityValue(allPacked ? "all packed" : "")
+        // What's left (0.82, his yes of 14 Oct 2026; spec 07 part 20).
+        if let left {
+            if apart { dot }
+            WhatsLeftLine(left: left).fixedSize()
+        }
+        }
+        if part != .count, let from {
+            if apart && part == .all { dot }
+            Text(from).font(.system(.subheadline)).foregroundStyle(Theme.muted).lineLimit(1).fixedSize()
+                .accessibilityIdentifier("trip-from")
+        }
+    }
+
+    /// Which words of the status line a part of it shows (0.111).
+    enum StatusPart { case all, count, day }
+
+    /// "4 Dec" this year, "4 Dec 2027" another.
+    static func shortDay(_ ymd: String) -> String {
+        let said = TripChecksCard.day(ymd)
+        let year = " \(Calendar.current.component(.year, from: Today.now))"
+        return said.hasSuffix(year) ? String(said.dropLast(year.count)) : said
     }
 
     /// A tap on a line, or Tick in its menu: ticks it, or takes the tick back — not a line set aside.
@@ -1193,7 +1299,7 @@ struct TripScreen: View {
     /// Everything, or Still to pack (0.108): two halves of one capsule right under Group by, the chosen
     /// one filled the trip's green. Still to pack says how many are left. Until 0.108 a door check's
     /// view had a line of its own, "Only what is still unticked" with Show all.
-    private func showRow(left: Int) -> some View {
+    private func showRow(left: Int, headings: [String]) -> some View {
         let tint = AppSection.events.color
         func half(_ title: String, on: Bool, id: String, _ act: @escaping () -> Void) -> some View {
             Button(action: act) {
@@ -1207,14 +1313,19 @@ struct TripScreen: View {
             .accessibilityIdentifier(id)
             .accessibilityAddTraits(on ? .isSelected : [])
         }
-        return HStack(spacing: 2) {
-            half("Everything", on: !onlyUnticked, id: "trip-show-all") { onlyUnticked = false }
-            half(left > 0 ? "Still to pack \u{00B7} \(left)" : "Still to pack", on: onlyUnticked, id: "trip-show-left") { onlyUnticked = true }
+        // Fold all at its right end (0.111: it stood beside Group by, which went down to the bar).
+        return HStack(spacing: 8) {
+            HStack(spacing: 2) {
+                half("Everything", on: !onlyUnticked, id: "trip-show-all") { onlyUnticked = false }
+                half(left > 0 ? "Still to pack \u{00B7} \(left)" : "Still to pack", on: onlyUnticked, id: "trip-show-left") { onlyUnticked = true }
+            }
+            .padding(2)
+            .overlay(Capsule().stroke(tint, lineWidth: 1.2))
+            .frame(maxWidth: 420)
+            Spacer(minLength: 0)
+            foldAllButton(headings)
         }
-        .padding(2)
-        .overlay(Capsule().stroke(tint, lineWidth: 1.2))
-        .frame(maxWidth: 420)
-        .padding(.horizontal, 16).padding(.top, 6)
+        .padding(.horizontal, 16).padding(.top, 10)
     }
 
     /// The place a code opened the trip on (0.69), as a chip under Sorting: its name and
@@ -1519,7 +1630,8 @@ struct PackLine: View {
         .padding(.vertical, 2)
         .frame(minHeight: Metrics.line)
         .contentShape(Rectangle())
-        .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
+        // Its own line underneath went in 0.111: the section's card draws one hairline across the whole row
+        // (`LineCell`), the ⊘ included.
     }
 }
 
@@ -1728,7 +1840,7 @@ struct WhatsLeftLine: View {
 
     var body: some View {
         Text(left.words)
-            .font(.system(.footnote, weight: left.allPacked ? .semibold : .regular).monospacedDigit())
+            .font(.system(.subheadline, weight: left.allPacked ? .semibold : .regular).monospacedDigit())
             .foregroundStyle(left.allPacked ? GroupProgressMark.words(scheme) : Theme.muted)
             .lineLimit(2).minimumScaleFactor(0.85)
             .fixedSize(horizontal: false, vertical: true)
@@ -1883,3 +1995,99 @@ final class SelectionKeys: ObservableObject {
     }
 }
 #endif
+
+// MARK: - Redesign B, stage 2 (0.111): the trip's grouped rows
+
+private struct InGroupKey: EnvironmentKey { static let defaultValue = false }
+
+extension EnvironmentValues {
+    /// A card drawn as a ROW of a grouped list (B, 0.111): Before you start, Weather and Bags at the top of
+    /// a trip stand in one card with hairlines between, as Apple's Settings — each drops its own frame.
+    var inGroup: Bool {
+        get { self[InGroupKey.self] }
+        set { self[InGroupKey.self] = newValue }
+    }
+}
+
+/// A card of its own, or — inside `GroupedRows` — a plain row of the group (0.111).
+private struct TripCardLook: ViewModifier {
+    let inGroup: Bool
+    let border: Color
+    func body(content: Content) -> some View {
+        if inGroup {
+            content
+        } else {
+            content
+                .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(border, lineWidth: 1).allowsHitTesting(false))
+        }
+    }
+}
+
+extension View {
+    func tripCardLook(_ inGroup: Bool, border: Color = Theme.line) -> some View {
+        modifier(TripCardLook(inGroup: inGroup, border: border))
+    }
+}
+
+/// One grouped inset list (B, 0.111): its rows in one rounded card, a hairline between them. The rows
+/// are given as a list of views that may be absent; the hairlines go only between those shown.
+struct GroupedRows: View {
+    /// Each row with a name of its own, so a row coming or going leaves the others' state alone.
+    let rows: [(key: String, view: AnyView)]
+    var id: String
+    var body: some View {
+        VStack(spacing: 0) {
+            ForEach(Array(rows.enumerated()), id: \.element.key) { n, row in
+                if n > 0 { CardHairline() }
+                row.view
+            }
+        }
+        .environment(\.inGroup, true)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1).allowsHitTesting(false))
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier(id)
+    }
+}
+
+/// A packing line's cell in its section's card (B, 0.111): the first rounded at the top, the last at the
+/// bottom, a hairline over every one but the first. Drawn per row, so the list stays lazy.
+struct LineCell: View {
+    let first: Bool
+    let last: Bool
+    var body: some View {
+        let r: CGFloat = 12
+        UnevenRoundedRectangle(topLeadingRadius: first ? r : 0, bottomLeadingRadius: last ? r : 0,
+                               bottomTrailingRadius: last ? r : 0, topTrailingRadius: first ? r : 0)
+            .fill(Theme.card)
+            .overlay(alignment: .top) {
+                if !first { Theme.line.frame(height: 1).padding(.leading, Metrics.mark + 14) }
+            }
+            .accessibilityHidden(true)
+    }
+}
+
+/// "‹ Trips" (0.111): the back arrow at the top left of a trip's page — it closes the page, as Done does.
+struct BackArrow: View {
+    let title: String
+    let tint: Color
+    let id: String
+    let act: () -> Void
+    var body: some View {
+        Button(action: act) {
+            HStack(spacing: 2) {
+                SVGPath.path("M15 6l-6 6 6 6")
+                    .stroke(style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
+                    .onGrid(Metrics.glyph)
+                Text(title).font(.system(.body))
+            }
+            .foregroundStyle(tint)
+            .frame(minHeight: Metrics.tap).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .accessibilityIdentifier(id)
+        .accessibilityLabel(title)
+    }
+}

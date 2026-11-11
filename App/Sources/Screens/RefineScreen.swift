@@ -15,11 +15,8 @@ struct RefineScreen: View {
     var body: some View {
         let offers = model.library.refineSuggestions()
         VStack(spacing: 0) {
+            // B (0.111): the buttons on their own line, the page's name under them as a big coloured title.
             HStack {
-                Text("Refine").font(.system(.title3, weight: .bold)).foregroundStyle(AppSection.templates.color)
-                Text("\(offers.count)").font(.system(.subheadline, weight: .semibold).monospacedDigit())
-                    .foregroundStyle(Theme.muted)
-                    .accessibilityIdentifier("refine-count")
                 Spacer()
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.templates.color, filled: true)).focusEffectDisabled()
@@ -28,10 +25,19 @@ struct RefineScreen: View {
                     .commandS { dismiss() }                         // ⌘S = Done (0.103)
                     .accessibilityIdentifier("refine-done")
             }
-            .padding(16)
+            .frame(minHeight: Metrics.tap)
+            .padding(.horizontal, 16).padding(.top, 8)
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("Refine").font(.system(.largeTitle, weight: .bold)).foregroundStyle(AppSection.templates.color)
+                Text("\(offers.count)").font(.system(.title3, weight: .semibold).monospacedDigit())
+                    .foregroundStyle(Theme.muted)
+                    .accessibilityIdentifier("refine-count")
+                Spacer()
+            }
+            .padding(.horizontal, 16).padding(.bottom, 8)
             LoopDoor(here: .refine, id: "refine-loop")
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16).padding(.top, -6).padding(.bottom, 10)
+                .padding(.horizontal, 16).padding(.bottom, 10)
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 12) {
                     if offers.isEmpty {

@@ -57,14 +57,8 @@ struct WayHomeScreen: View {
         // Every bag of the way home, by the name the Bags card keeps its photos under.
         let shots = bagShots(model.library.homeBags(tripId: tripId))
         VStack(spacing: 0) {
-            HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Way home").font(.system(.title3, weight: .bold)).foregroundStyle(AppSection.events.color)
-                    // "I think there should be '1 used up' in the heading counting" (3 Oct 2026).
-                    Text(usedUp > 0 ? "\(p.done)/\(p.total) · \(usedUp) used up" : "\(p.done)/\(p.total)")
-                        .font(.system(.subheadline, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
-                        .accessibilityIdentifier("wayhome-progress")
-                }
+            // B (0.111): the buttons on their own line, the page's name under them as a big coloured title.
+            HStack {
                 Spacer()
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.events.color, filled: true)).focusEffectDisabled()
@@ -73,7 +67,17 @@ struct WayHomeScreen: View {
                     .commandS { dismiss() }                         // ⌘S = Done (0.103)
                     .accessibilityIdentifier("wayhome-done")
             }
-            .padding(16)
+            .frame(minHeight: Metrics.tap)
+            .padding(.horizontal, 16).padding(.top, 8)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Way home").font(.system(.largeTitle, weight: .bold)).foregroundStyle(AppSection.events.color)
+                // "I think there should be '1 used up' in the heading counting" (3 Oct 2026).
+                Text(usedUp > 0 ? "\(p.done)/\(p.total) · \(usedUp) used up" : "\(p.done)/\(p.total)")
+                    .font(.system(.subheadline, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
+                    .accessibilityIdentifier("wayhome-progress")
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 16).padding(.bottom, 10)
             if !lines.isEmpty {
                 searchField.padding(.horizontal, 16).padding(.bottom, 6)
             }

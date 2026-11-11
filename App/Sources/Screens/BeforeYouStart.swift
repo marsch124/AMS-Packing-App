@@ -19,18 +19,20 @@ struct BeforeYouStartDoor: View {
     let time: String
     @EnvironmentObject var model: LibraryModel
     @State private var open = false
+    /// A row of the trip's grouped list (B, 0.111) instead of a card of its own.
+    @Environment(\.inGroup) private var inGroup
 
     var body: some View {
         let start = model.library.beforeYouStart(tripId: tripId, today: today, time: time)
         VStack(spacing: 0) {
-            if !start.isEmpty { door(start).padding(.top, 10) }
+            if !start.isEmpty { door(start).padding(.top, inGroup ? 0 : 10) }
         }
         .sheet(isPresented: $open) { BeforeYouStartSheet(tripId: tripId).environmentObject(model) }
     }
 
     /// The name, the words and the chevron on one line when they fit; else the words under the name.
     private func door(_ start: BeforeYouStart) -> some View {
-        let title = Text("Before you start").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
+        let title = Text("Before you start").font(.system(.body, weight: inGroup ? .regular : .semibold)).foregroundStyle(Theme.ink)
             .lineLimit(1)
         let words = Text(start.words).font(.system(.footnote).monospacedDigit()).foregroundStyle(Theme.muted)
             .lineLimit(1)
@@ -54,9 +56,8 @@ struct BeforeYouStartDoor: View {
                 }
                 .padding(.vertical, 6)
             }
-            .padding(.horizontal, 14).frame(minHeight: Metrics.row)
-            .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.events.color, lineWidth: 1.2))
+            .padding(.horizontal, inGroup ? Metrics.cardSide : 14).frame(minHeight: Metrics.row)
+            .tripCardLook(inGroup, border: AppSection.events.color)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain).focusEffectDisabled()
@@ -93,8 +94,8 @@ struct BeforeYouStartSheet: View {
         let start = model.library.beforeYouStart(tripId: tripId, today: today, time: Today.time)
         let name = model.library.trips.first { $0.id == tripId }?.name ?? ""
         VStack(spacing: 0) {
+            // B (0.111): the buttons on their own line, the page's name under them as a big coloured title.
             HStack {
-                Text("Before you start").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
                 Spacer()
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.events.color, filled: true)).focusEffectDisabled()
@@ -103,7 +104,12 @@ struct BeforeYouStartSheet: View {
                     .commandS { dismiss() }                         // ⌘S = Done (0.103)
                     .accessibilityIdentifier("beforestart-done")
             }
-            .padding(16)
+            .frame(minHeight: Metrics.tap)
+            .padding(.horizontal, 16).padding(.top, 8)
+            Text("Before you start").font(.system(.largeTitle, weight: .bold)).foregroundStyle(AppSection.events.color)
+                .lineLimit(1).minimumScaleFactor(0.7)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16).padding(.bottom, 8)
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 12) {
                     Text(jsTrim(name).isEmpty ? "What to buy and get ready before you start packing."

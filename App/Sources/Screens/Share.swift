@@ -64,6 +64,8 @@ struct ShareDoor: View {
     /// of the open list. His words, 15 Oct 2026: "Please move the share button down to the
     /// bottom right. I almost never use it. … can we make the share button more rounded?"
     var round = false
+    /// The mark alone, no frame (0.111): Share in a trip's floating bar (B), as Apple's toolbars have it.
+    var bare = false
     let make: () -> ShareOffer
     @State private var offer: ShareOffer?
 
@@ -82,6 +84,15 @@ struct ShareDoor: View {
                     WideButtonLabel(title: "Share", tint: tint) { ShareMark() }
                 }
                 .buttonStyle(.plain)
+            } else if bare {
+                Button { offer = make() } label: {
+                    ShareMark().foregroundStyle(tint)
+                        .frame(width: 22, height: 22)
+                        .frame(width: Metrics.tap, height: Metrics.tap)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Share")
             } else if round {
                 // Outlined in the list's colour on its 10 % fill, as Edit is — never grey.
                 Button { offer = make() } label: {

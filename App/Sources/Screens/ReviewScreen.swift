@@ -37,19 +37,25 @@ struct ReviewScreen: View {
         let target = missWhere ?? (lists.first?.id ?? "")
         VStack(spacing: 0) {
             // Cancel top left (0.92, Cancel everywhere); Save review stays at the foot, always in sight.
-            HStack(spacing: 12) {
-                Button("Cancel") { dismiss() }
-                    .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
-                    .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.muted)
-                    .keyboardShortcut(.cancelAction)            // Escape = Cancel (the spec pass, 5 Oct 2026)
-                    .accessibilityIdentifier("review-cancel")
-                Text("Trip review").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
-                Spacer()
+            // B (0.111): the buttons on their own line, the page's name under them as a big coloured title.
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 12) {
+                    Button("Cancel") { dismiss() }
+                        .buttonStyle(HeaderButtonStyle(tint: Theme.muted, filled: false)).focusEffectDisabled()
+                        .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.muted)
+                        .keyboardShortcut(.cancelAction)            // Escape = Cancel (the spec pass, 5 Oct 2026)
+                        .accessibilityIdentifier("review-cancel")
+                    Spacer()
+                }
+                .frame(minHeight: Metrics.tap)
+                // In the Templates (Refine) violet — what a review teaches goes to the templates (0.81).
+                Text("Trip review").font(.system(.largeTitle, weight: .bold)).foregroundStyle(AppSection.templates.color)
+                    .lineLimit(1).minimumScaleFactor(0.7)
             }
-            .padding(16)
+            .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 8)
             LoopDoor(here: .review, id: "review-loop")
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16).padding(.top, -6).padding(.bottom, 10)
+                .padding(.horizontal, 16).padding(.bottom, 10)
             KeyboardAwayScroll {
                 LazyVStack(alignment: .leading, spacing: 6) {
                     // "From Apple Health" opens the review on the iPhone (0.70): the trip's

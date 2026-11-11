@@ -44,6 +44,8 @@ struct BagsCard: View {
     @State private var addingBag = false
     /// The bag whose own page is open from its pen (0.90, "Edit bag when packing").
     @State private var editing: EditBagOpen?
+    /// A row of the trip's grouped list (B, 0.111): "Bags   2.0 kg ⌄", the arrow at the right.
+    @Environment(\.inGroup) private var inGroup
 
     var body: some View {
         // Every bag that has something in it — weighed or not (the spec pass, 5 Oct
@@ -62,12 +64,15 @@ struct BagsCard: View {
                     // their own (the Mac folds a button's texts into the button).
                     Button { unfolded.toggle() } label: {
                         HStack(spacing: 6) {
-                            SVGPath.path("M9 6l6 6-6 6")
-                                .stroke(style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
-                                .onGrid(Metrics.glyph)
-                                .rotationEffect(.degrees(unfolded ? 90 : 0))
+                            if !inGroup {
+                                SVGPath.path("M9 6l6 6-6 6")
+                                    .stroke(style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
+                                    .onGrid(Metrics.glyph)
+                                    .rotationEffect(.degrees(unfolded ? 90 : 0))
+                                    .foregroundStyle(Theme.ink)
+                            }
+                            Text("Bags").font(inGroup ? .system(.body) : .system(.subheadline, weight: .semibold))
                                 .foregroundStyle(Theme.ink)
-                            Text("Bags").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.ink)
                         }
                         // 28 on both until 0.104: 24 on the Mac now (`Metrics.cardLine`), the iPhone's 28 kept.
                         .frame(minHeight: min(Metrics.cardLine, 28)).contentShape(Rectangle())
@@ -98,9 +103,20 @@ struct BagsCard: View {
                     }
                     Spacer(minLength: 8)
                     Text(BagsCard.kilos(bags.reduce(0) { $0 + $1.grams }))
-                        .font(.system(.footnote, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
+                        .font(inGroup ? .system(.subheadline).monospacedDigit() : .system(.footnote, weight: .semibold).monospacedDigit())
+                        .foregroundStyle(Theme.muted)
                         .accessibilityIdentifier("bags-total")
+                    // In the grouped list (0.111) the arrow is at the row's right, as Apple's rows have it.
+                    if inGroup {
+                        SVGPath.path("M9 6l6 6-6 6")
+                            .stroke(style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                            .onGrid(12)
+                            .rotationEffect(.degrees(unfolded ? 90 : 0))
+                            .foregroundStyle(Theme.faint)
+                            .accessibilityHidden(true)
+                    }
                 }
+                .frame(minHeight: inGroup ? min(Metrics.cardLine, 28) : nil)
                 // The rest of the line opens and folds it too.
                 .contentShape(Rectangle())
                 .onTapGesture { unfolded.toggle() }
@@ -179,12 +195,10 @@ struct BagsCard: View {
             // Folded: one slim line — 4 above and below it (6 until 0.104, his arrows of 28 Oct 2026: "a
             // tad" tighter; 14 at the sides and under an open card then, `Metrics.cardSide`/`cardInset` now).
             .padding(.horizontal, Metrics.cardSide).padding(.vertical, unfolded ? Metrics.cardInset : 4)
-            .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
             // The border takes no click (0.104): on the Mac a ring of corner 12 round a card under ~37
             // high took the clicks meant for the fold — the folded line, 32 high, no longer opened.
-            .overlay(RoundedRectangle(cornerRadius: 12)
-                .stroke(bags.contains(where: \.over) ? AppSection.actions.color : Theme.line, lineWidth: 1)
-                .allowsHitTesting(false))
+            // In the trip's grouped list (0.111) no frame of its own; the over badge says it in red.
+            .tripCardLook(inGroup, border: bags.contains(where: \.over) ? AppSection.actions.color : Theme.line)
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("bags-card")
             .sheet(item: $lost) { open in LostBagScreen(tripId: tripId, bag: open.bag).environmentObject(model) }

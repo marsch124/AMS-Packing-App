@@ -35,13 +35,8 @@ struct OnSiteScreen: View {
     var body: some View {
         let lib = model.library
         VStack(spacing: 0) {
-            HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("On site").font(.system(.title3, weight: .bold)).foregroundStyle(tint)
-                    Text(lib.onSiteSummary(tripId: tripId))
-                        .font(.system(.subheadline, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
-                        .accessibilityIdentifier("onsite-summary")
-                }
+            // B (0.111): the buttons on their own line, the page's name under them as a big coloured title.
+            HStack {
                 Spacer()
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: tint, filled: true)).focusEffectDisabled()
@@ -50,7 +45,16 @@ struct OnSiteScreen: View {
                     .commandS { dismiss() }                         // ⌘S = Done (0.103)
                     .accessibilityIdentifier("onsite-done")
             }
-            .padding(16)
+            .frame(minHeight: Metrics.tap)
+            .padding(.horizontal, 16).padding(.top, 8)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("On site").font(.system(.largeTitle, weight: .bold)).foregroundStyle(tint)
+                Text(lib.onSiteSummary(tripId: tripId))
+                    .font(.system(.subheadline).monospacedDigit()).foregroundStyle(Theme.muted)
+                    .accessibilityIdentifier("onsite-summary")
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 16).padding(.bottom, 10)
             KeyboardAwayScroll {
                 VStack(alignment: .leading, spacing: 6) {
                     bought(lib.boughtOnSite(tripId: tripId))

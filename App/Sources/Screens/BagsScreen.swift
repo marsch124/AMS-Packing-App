@@ -64,11 +64,8 @@ struct BagsScreen: View {
     var body: some View {
         let bags = shown
         VStack(spacing: 0) {
+            // B (0.111): the buttons on their own line, the page's name under them as a big coloured title.
             HStack {
-                Text("Your bags").font(.system(.title3, weight: .bold)).foregroundStyle(AppSection.care.color)
-                Text("\(bags.count)").font(.system(.subheadline, weight: .semibold).monospacedDigit())
-                    .foregroundStyle(Theme.muted)
-                    .accessibilityIdentifier("yourbags-count")
                 Spacer()
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.care.color, filled: true)).focusEffectDisabled()
@@ -77,7 +74,16 @@ struct BagsScreen: View {
                     .commandS { dismiss() }                         // ⌘S = Done (0.103)
                     .accessibilityIdentifier("yourbags-done")
             }
-            .padding(16)
+            .frame(minHeight: Metrics.tap)
+            .padding(.horizontal, 16).padding(.top, 8)
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("Your bags").font(.system(.largeTitle, weight: .bold)).foregroundStyle(AppSection.care.color)
+                Text("\(bags.count)").font(.system(.title3, weight: .semibold).monospacedDigit())
+                    .foregroundStyle(Theme.muted)
+                    .accessibilityIdentifier("yourbags-count")
+                Spacer()
+            }
+            .padding(.horizontal, 16).padding(.bottom, 8)
 
             // The line and the column names stay put while the bags scroll under
             // them — his ask (2026-09-26): "keep the header row visible".

@@ -90,7 +90,9 @@ private enum DropDownTool { case rename, up, down, remove, putBack, yes, keep, o
 /// Section on each of its templates, under "On these templates"); or a word to the
 /// LEFT of the field on the same line (the trip's Sorting — his marks of 2026-09-25,
 /// "Sorting" on the left, kept when its pills became a drop-down, 6 Oct 2026).
-enum DropDownHeading { case band, title, beside }
+/// `inline` (0.111): the heading and the choice as words in a floating bar — "Group by When ▾" — no field's
+/// frame round it (a trip's bottom bar, B).
+enum DropDownHeading { case band, title, beside, inline }
 
 struct DropDown: View {
     let title: String?
@@ -184,6 +186,16 @@ struct DropDown: View {
 
     @ViewBuilder var body: some View {
         switch heading {
+        case .inline:
+            HStack(spacing: 4) {
+                if let title {
+                    Text(title)
+                        .font(.system(.subheadline)).foregroundStyle(Theme.ink)
+                        .lineLimit(1).fixedSize()
+                        .accessibilityIdentifier(ids.title)
+                }
+                field
+            }
         case .beside:
             HStack(spacing: 10) {
                 if let title {
@@ -216,6 +228,16 @@ struct DropDown: View {
             #endif
             open = true
         } label: {
+            if heading == .inline {
+                HStack(spacing: 3) {
+                    Text(shown).font(.system(.subheadline, weight: .semibold)).foregroundStyle(tint).lineLimit(1).fixedSize()
+                    SVGPath.path("M6 9l6 6 6-6")
+                        .stroke(style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                        .frame(width: 14, height: 14).foregroundStyle(tint)
+                        .accessibilityHidden(true)
+                }
+                .frame(minHeight: Metrics.tap).contentShape(Rectangle())
+            } else {
             HStack(spacing: 8) {
                 Text(shown)
                     .font(.body).foregroundStyle(same("", selected) ? Theme.muted : Theme.ink)
@@ -230,6 +252,7 @@ struct DropDown: View {
             .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(ring ?? Theme.line, lineWidth: ring == nil ? 1 : 2))
             .contentShape(Rectangle())
+            }
         }
         .buttonStyle(.plain).focusEffectDisabled()
         // Read as "Kind of thing, Electronics": the heading names it, the value is the choice.

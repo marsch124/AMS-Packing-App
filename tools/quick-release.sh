@@ -43,6 +43,7 @@
 # <main checkout>/private/release-tools/ asc.py, ensure-group.sh, revoke-api-certs.sh (or RELEASE_TOOLS).
 #
 # Environment (all optional):
+#   PACKING_TESTS_DONE 1 = skip stages 2–5: --tests-only already ran green on this checkout (0.111)
 #   PACKING_SIM        the model the test simulators copy  (default "Packing CI iPhone 17 Pro 26", iOS 26.5: its iPhone
 #                      model and iOS; it is not tested on itself any more)
 #   PACKING_SIM_COUNT  how many simulators run the tests side by side, 1–9 (default 3 — measured 14 Oct 2026
@@ -478,6 +479,11 @@ WORK="$TMP/AMSPacking-release/$VERSION-$(date +%Y%m%d-%H%M%S)$DRYTAG$([ $TESTS_O
 mkdir -p "$WORK"
 say "logs$([ $TESTS_ONLY = 1 ] || echo ' and archives'): $WORK"
 
+# PACKING_TESTS_DONE=1 (0.111): stages 2–5 already ran green on this very checkout (--tests-only just before) —
+# his rule "never re-run what already passed" (2 Nov 2026); the archive and upload follow at once.
+if [ "${PACKING_TESTS_DONE:-0}" = 1 ] && [ $TESTS_ONLY = 0 ]; then
+  stage "Tests"; done_stage "already green on this checkout (PACKING_TESTS_DONE=1) — not run again"
+else
 if [ $TESTS_ONLY = 0 ]; then
 # ==== 2 Model tests =======================================================================================
 stage "Model tests"
@@ -686,6 +692,7 @@ NEVER=$(python3 tools/ui-split.py unpassed "${ALL_BUNDLES[@]}" -- "${NAMES[@]}" 
 [ -z "${NEVER// /}" ] || fail "these tests never passed — did a test runner stop half way? $NEVER— logs: $WORK/iphone-tests*.log"
 release_sims
 done_stage "${#NAMES[@]} tests, every one passed, on $SIM_COUNT simulator(s)"
+fi
 
 if [ $TESTS_ONLY = 1 ]; then
   summary

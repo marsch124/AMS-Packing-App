@@ -281,53 +281,31 @@ struct LoopDoor: View {
         return parts.joined(separator: ". ") + "."
     }
 
+    /// The five steps as Apple's segmented control (B, 0.111): a grey track, the step the trip is at
+    /// filled in its own colour with white words, the steps done in their colour's words, those ahead
+    /// in ink. Until 0.110 a row of pills with arrows between. A tap still shows the whole loop.
     private func strip(_ fit: Fit) -> some View {
-        HStack(spacing: fit.space) {
+        HStack(spacing: 2) {
             ForEach(Library.LoopStep.allCases, id: \.self) { step in
-                if step != .plan {
-                    // The chevron is 5 wide, drawn in the middle of its room: a narrower
-                    // room with the full-size path ran into the next step (the iPhone
-                    // screenshot, 3 Oct 2026).
-                    let x = (fit.arrow - 5) / 2
-                    SVGPath.path("M\(x) 7l5 5-5 5").stroke(style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round))
-                        .frame(width: fit.arrow, height: 24).frame(height: Metrics.loopPill)   // drawn on 24, centred in the pill's height
-                        .foregroundStyle(Theme.muted)
-                }
                 let stage = step.stage(at: here)
-                HStack(spacing: 4) {
-                    // Slimmed down, the step it is at keeps its mark.
-                    if fit.marks || stage == .here { StepMark(step: step, size: 13) }
-                    Text(step.name)
-                        .font(.system(fit.size < 14 ? .caption : .footnote, weight: .semibold))
-                        .lineLimit(1).fixedSize()
-                }
-                    .foregroundStyle(stage == .done ? Color.white : step.words(scheme))
-                    // `Metrics.loopPill` (0.104, his arrows of 28 Oct 2026: 28 on both until then — 22 on
-                    // the Mac now, 24 on the iPhone, where `loopReach` keeps the strip's tap 28 high).
-                    .padding(.horizontal, fit.pad).frame(minHeight: Metrics.loopPill)
-                    // The Stations' looks (0.101): done full, here a light shading — over a solid card,
-                    // so it stands out on the green of an all-packed trip too (night mode, 2026-09-27) —
-                    // ahead the card itself.
+                Text(step.name)
+                    .font(.system(fit.size < 14 ? .caption : .footnote, weight: stage == .ahead ? .medium : .semibold))
+                    .lineLimit(1).fixedSize()
+                    .foregroundStyle(stage == .here ? Color.white : stage == .done ? step.words(scheme) : Theme.ink.opacity(0.75))
+                    .padding(.horizontal, fit.pad)
+                    // The track's 2 round it: the whole control as high as the pills were (`Metrics.loopPill`).
+                    .frame(maxWidth: .infinity, minHeight: Metrics.loopPill - 4)
                     .background {
-                        switch stage {
-                        case .done: Capsule().fill(step.tint)
-                        case .here: Capsule().fill(Theme.card).overlay(Capsule().fill(step.tint.opacity(0.14)))
-                        case .ahead: Capsule().fill(Theme.card)
-                        }
-                    }
-                    .overlay {
-                        switch stage {
-                        case .done: EmptyView()
-                        case .here: Capsule().stroke(step.tint, lineWidth: 2)
-                        case .ahead: Capsule().stroke(step.tint.opacity(0.7), lineWidth: 1.2)
+                        if stage == .here {
+                            RoundedRectangle(cornerRadius: 7).fill(step.tint)
+                                .shadow(color: .black.opacity(0.12), radius: 1, y: 1)
                         }
                     }
             }
-            // No "round again" arrow after Refine: it read as a reload button (his
-            // screenshot, 2026-09-28). The loop itself is in the picture a tap opens.
         }
+        .padding(2)
+        .background(RoundedRectangle(cornerRadius: 9).fill(Theme.line.opacity(scheme == .dark ? 0.9 : 0.6)))
         .padding(.vertical, Metrics.loopReach)
-        .fixedSize()
     }
 }
 

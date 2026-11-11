@@ -240,19 +240,8 @@ struct PackingDaySheet: View {
         let day = model.library.packingDay(tripId: tripId) ?? PackingDay(bags: [], packed: 0, total: 0)
         let trip = model.library.trips.first { $0.id == tripId }
         VStack(spacing: 0) {
-            HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 8) {
-                        StationMark(mark: PackingDayStation.dayMark, size: 22)
-                            .alignmentGuide(.firstTextBaseline) { d in d[VerticalAlignment.center] + 6 }
-                        Text("Packing Stations").font(.system(.title3, weight: .bold))
-                    }
-                    .foregroundStyle(Library.LoopStep.pack.words(scheme))
-                    .accessibilityElement(children: .combine)
-                    .accessibilityIdentifier("day-heading")
-                    Text(trip?.name ?? "").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
-                        .lineLimit(1)
-                }
+            // B (0.111): the buttons on their own line, the page's name under them as a big coloured title.
+            HStack {
                 Spacer()
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: tint, filled: true)).focusEffectDisabled()
@@ -260,7 +249,22 @@ struct PackingDaySheet: View {
                     .commandS { dismiss() }                         // ⌘S = Done (0.103)
                     .accessibilityIdentifier("day-done")
             }
-            .padding(16)
+            .frame(minHeight: Metrics.tap)
+            .padding(.horizontal, 16).padding(.top, 8)
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 8) {
+                    StationMark(mark: PackingDayStation.dayMark, size: 28)
+                    Text("Packing Stations").font(.system(.largeTitle, weight: .bold))
+                        .lineLimit(1).minimumScaleFactor(0.7)
+                }
+                .foregroundStyle(Library.LoopStep.pack.words(scheme))
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("day-heading")
+                Text(trip?.name ?? "").font(.system(.subheadline)).foregroundStyle(Theme.muted)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 16).padding(.bottom, 8)
             // A bag's own page from its pen (0.90) — on the header, a view of its own (two sheets on one
             // view is the Search lesson); closed, the station is as it was.
             .sheet(item: $editing) { open in BagDetail(bagId: open.id).environmentObject(model) }

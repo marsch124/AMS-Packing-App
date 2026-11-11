@@ -434,7 +434,7 @@ private struct SideRowLabel: View {
     }
 }
 
-private extension View {
+extension View {
     /// The bar's glass (iOS 26), or a thin material with a hairline on older systems.
     @ViewBuilder
     func glassBar() -> some View {

@@ -1091,6 +1091,64 @@ The screen shows `startedId ?? openedId`: after *Start a new trip from this one*
 place of the opened one on the same sheet. If the trip disappears (deleted on the other device), the
 screen shows an empty placeholder trip ("Untitled event", 0/0).
 
+### Redesign B, stage 2 (0.111) — the trip pages
+
+Stage 2 of the "B" redesign (stage 1 = 0.110, spec 02 §1 and §3: Apple's order with his own look — hand-drawn marks, a
+colour per part, tight rows, full-colour main buttons). Where the text below describes the trip's header, its steps, its
+Before you start / Weather / Bags cards, its Group by row, its Add field or its foot, read this instead. Nothing stored
+changes: no new key, no change to a trip, a line, a template, to sync or to a backup.
+- **Top line.** At the left **‹ Trips** (`trip-back`) — it closes the trip, exactly as Done does (also the swipe down on the
+  iPhone and Escape on the Mac). At the right, in this order: the **pen** (trip settings), **Review** when it is offered (same
+  rule as before: the trip has started, or has no dates), and a full-colour green **Done** (`trip-done`, ⌘S on the Mac).
+- **Title.** Under the top line the trip's name as a big green title (the Trips colour), `trip-name`; "Untitled event" when empty.
+- **The one line** under the title: `3 of 7 packed · 4 left · about 5 min · from 4 Dec`. Packed = ticked of counted lines;
+  left = what is not ticked or set aside (with "· 2 to charge" as before when something is left to charge); "about 5 min" =
+  the owner's own pace, shown only while the trip is being packed (the 0.8x rule: the middle time between ticks over the last
+  packings, 45 s a thing until 20 ticks); "from 4 Dec" = **the trip's start date** (`event.start`, the first day), shown
+  while the trip has not started, in the date style of the Trips list. Once the trip has started the date goes; when
+  everything is in the line says "All packed". **Take a break** (the cup, spec below) stays at the right end of this line.
+- **The five steps** (Plan / Pack / On site / Review / Refine) are drawn like Apple's segmented control: a grey track, the step
+  the trip is at filled with its own colour, steps already done with their words in colour, steps ahead plain. A tap opens the
+  picture of the whole loop as before (`trip-loop`).
+- **Stations row** (Packing day): stays under the steps while the trip is being packed, unchanged.
+- **One grouped list** for **Before you start**, **Weather** and **Bags**: one card (corner 14, `Theme.card`, hairline
+  between rows, like Apple's Settings). Row 1 "Before you start" with its count line ("1 to buy ›") and a chevron, until
+  the first thing is packed; row 2 "Weather" — with no place "Where is this trip?" and a **Weather** button, with a forecast the
+  forecast line with the rain/cold gear under it (the rules of the Weather card: gear not yet packed, Add all, gone once the
+  trip has started, ~15 days ahead, no dates = today); row 3 "Bags" with the total ("2.0 kg") and a small arrow: a tap opens
+  the bags **in place** (the old Bags card's content, same open/closed memory per device). **Before you go** and **On site**
+  stay cards of their own, as before.
+- **The packing lines.** Each heading (name, count "0/7", fold arrow, progress ring, round tick; the 0.10x heading rules, the
+  green fold-to-one-line when all is in hand) stands **above a white rounded card** that holds its lines, with thin lines
+  between rows. Row height as before: **30 pt on the iPhone, 22 pt on the Mac**. Kept as they were: the ⊘ "not this time"
+  mark and ↻, the template marks, kits (and their rows), pockets, drag to reorder/move, the line menu, multi-select on the Mac.
+- **Above the list:** the **Everything | Still to pack** switch, as before; **Fold all** (the two-arrow button, folds all /
+  opens all, Option-click on the Mac) moved to the **right end of that line** (`trip-top-group` marks this line's container;
+  it was beside Group by).
+- **The floating glass bar** at the bottom (material fill, hairline edge, space around it; the list scrolls beneath and leaves
+  room): **Share** (icon only; the link / QR / file of 0.38), **Pack by voice** (microphone, iPhone only, the 0.9x walk),
+  **Group by When ▾** (the same drop-down and the same seven groupings, `trip-view` kept; drawn as words, `DropDownHeading.inline`), and at the right a full-colour green
+  **＋ Add** (`trip-add-open`).
+- **＋ Add** opens the add field right above the bar: "Add a thing to this trip" (`trip-add-name`), **Add** (`trip-add`) and
+  **Bought on site** (`trip-add-bought`) — the same two actions as the section below. It **stays open** after an Add so several
+  things go in; **✕** (`trip-add-close`) closes it. Add with an empty field adds nothing and says so (`trip-add-needs`).
+  With several Mac lines selected, the selection bar sits above the bottom bar.
+- **The foot of the list:** **Save as Excel** on its own line (`trip-excel`, status `trip-excel-status` as before) with **Delete trip**
+  under it (asks first, as before); after a review the **Obsidian vault** card follows. Share is no longer beside Excel.
+- **The trip's own pages** — Pack (the Packing day sheet), On site, Review, Refine, the Stations, Before you start and Bags — get
+  the same top: the buttons on their own line, **Cancel / Done** as before (Escape = Cancel on the Mac), and the page's name
+  under them as a Large Title in its colour (Review and Refine violet, Your bags orange, the rest green; Packing Stations the
+  Pack step's colour with its mark). What they hold and do is unchanged. The Way home page (inside On site) too.
+- **Order at the top kept:** Before you start stays above Before you go (test `trip-beforestart` above `trip-beforego`): the
+  grouped list comes first, Before you go under it.
+- **The pen** moved from right after the name to the buttons' line, before Done — as picture B shows (his pick).
+- **Sizes kept:** lines 30/22 (`Metrics.line`), the five steps' control as tall as the old strip (`Metrics.loopPill` + reach),
+  the folded Bags row 28/24 (`Metrics.cardLine`).
+- **Nothing he placed moved:** the Grab and go frame, the quiet "+ New trip" line while away (0.109) and the sync dot (0.110)
+  keep their places.
+- **New accessibility identifiers (0.111):** `trip-back`, `trip-add-open`, `trip-add-close`, `trip-top-group`. Kept: `trip-excel`
+  (on its own line), `trip-done`, `trip-add-name`, `trip-add`, `trip-add-bought`, `trip-add-needs`, `trip-view`, `trip-group-<g>-…`, `trip-name`.
+
 ### What is on screen (top to bottom)
 
 **Header** (padding 16) — since 0.73 ONE centre line, then the count under it (his picture of a reviewed

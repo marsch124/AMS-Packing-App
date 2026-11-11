@@ -11,6 +11,8 @@ struct VoiceSortingRow<Sorting: View>: View {
     let tripId: String
     /// Start the walk at this place (a place opened by its printed code, spec 07 part 3).
     var startAt: String? = nil
+    /// The microphone alone, before the sorting (0.111): in a trip's floating bar (B).
+    var compact = false
     @ViewBuilder var sorting: () -> Sorting
     /// Told when the panel has gone — the trip may then open what waited for it (the Packing
     /// day's Weigh, 0.79: one sheet cannot come up while another is up).
@@ -26,9 +28,13 @@ struct VoiceSortingRow<Sorting: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 8) { sorting(); door("Pack by voice") }
-                HStack(spacing: 8) { sorting(); door("Voice") }
+            if compact {
+                HStack(spacing: 4) { mic; sorting() }
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 8) { sorting(); door("Pack by voice") }
+                    HStack(spacing: 8) { sorting(); door("Voice") }
+                }
             }
             if !needs.isEmpty {
                 Text(needs)
@@ -49,6 +55,19 @@ struct VoiceSortingRow<Sorting: View>: View {
             VoicePanel(walker: walker, tripId: tripId) { open = false }
                 .environmentObject(model)
         }
+    }
+
+    /// The bar's microphone (0.111): the same door, the mark alone.
+    private var mic: some View {
+        Button { begin(at: startAt) } label: {
+            MicMark().frame(width: 20, height: 20)
+                .foregroundStyle(AppSection.events.color)
+                .frame(width: Metrics.tap, height: Metrics.tap)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .accessibilityIdentifier("voice-start")
+        .accessibilityLabel("Pack by voice")
     }
 
     private func door(_ title: String) -> some View {

@@ -434,6 +434,14 @@ final class AMSPackingUITests: XCTestCase {
 
     /// Type into a field and make sure it landed — on a slow Mac runner the first
     /// click has been seen to focus the window and nothing else.
+    /// A trip's "Add a thing to this trip" field (0.111): behind the floating bar's ＋ Add, opened when it is not up.
+    private func addField(_ app: XCUIApplication) -> XCUIElement {
+        let field = app.textFields["trip-add-name"]
+        if !field.exists, app.buttons["trip-add-open"].waitForExistence(timeout: 5) { tap(app, id: "trip-add-open") }
+        _ = field.waitForExistence(timeout: 5)
+        return field
+    }
+
     private func type(_ text: String, into field: XCUIElement) {
         for _ in 0..<3 {
             field.tap()
@@ -1367,7 +1375,7 @@ final class AMSPackingUITests: XCTestCase {
         let total = Int(words(progress).split(separator: "/").last ?? "") ?? 0
         // Two things with no place: typed on the trip.
         for name in ["Tripod", "Sit mat"] {
-            type(name, into: app.textFields["trip-add-name"])
+            type(name, into: addField(app))
             XCTAssertTrue(waitUntil { app.buttons["trip-add"].isEnabled })
             tap(app, id: "trip-add")
         }
@@ -2077,11 +2085,11 @@ final class AMSPackingUITests: XCTestCase {
         #else
         let app = launch("-uiTesting", ["-uiTestingVoice", ""])
         openSampleTrip(app)
-        // At the end of the Sorting row: on its line, after the field, as tall, on the screen.
+        // In the floating bar since 0.111 (B): the microphone just before Group by, on its line, as tall, on the screen.
         let field = app.buttons["trip-view"], voice = app.buttons["voice-start"]
         XCTAssertTrue(voice.waitForExistence(timeout: 5), "no Pack by voice on the trip")
-        XCTAssertLessThan(field.frame.maxX, voice.frame.minX, "Pack by voice is not at the end of the Sorting row")
-        XCTAssertLessThan(abs(field.frame.midY - voice.frame.midY), 4, "Pack by voice is not on the Sorting line")
+        XCTAssertLessThan(voice.frame.maxX, field.frame.minX, "Pack by voice is not before Group by in the bar")
+        XCTAssertLessThan(abs(field.frame.midY - voice.frame.midY), 4, "Pack by voice is not on the bar's line")
         XCTAssertLessThan(abs(field.frame.height - voice.frame.height), 4, "Pack by voice is not as tall as the field")
         XCTAssertTrue(app.windows.firstMatch.frame.contains(voice.frame), "Pack by voice runs off the screen")
         shot(app, "voice-trip-button")
@@ -2259,7 +2267,7 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "trip-row-0")
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
         let progress = app.staticTexts["trip-progress"]
-        type("Tripod", into: app.textFields["trip-add-name"])
+        type("Tripod", into: addField(app))
         tap(app, id: "trip-add")
         XCTAssertTrue(waitUntil { self.words(progress) == "0/8" }, "the typed line was not added: '\(words(progress))'")
         hideKeyboard(app)
@@ -4330,7 +4338,7 @@ final class AMSPackingUITests: XCTestCase {
         // so the bag goes home; and a thing bought there, so the way home is open whatever
         // the sample trip's dates.
         tickEveryLine(app)
-        type("Sun hat", into: app.textFields["trip-add-name"])
+        type("Sun hat", into: addField(app))
         tap(app, id: "trip-add-bought")
         hideKeyboard(app)
         openWayHome(app)
@@ -4358,7 +4366,7 @@ final class AMSPackingUITests: XCTestCase {
         let progress = app.staticTexts["trip-progress"]
         XCTAssertTrue(waitUntil { self.words(progress) == "0/7" }, "the sample trip is not what it was: '\(words(progress))'")
         XCTAssertFalse(app.buttons["trip-add-bought"].exists, "Bought on site is offered before anything is typed")
-        type("Sun cream", into: app.textFields["trip-add-name"])
+        type("Sun cream", into: addField(app))
         XCTAssertTrue(waitUntil { self.words(app.buttons["trip-add-bought"]) == "Bought on site" },
                       "the button does not say Bought on site: '\(words(app.buttons["trip-add-bought"]))'")
         shot(app, "bought-on-site-button")
@@ -4390,7 +4398,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(progress) == "1/7" })
         app.buttons["trip-line-1"].tap()
         XCTAssertTrue(waitUntil { self.words(progress) == "2/7" })
-        type("Sandals", into: app.textFields["trip-add-name"])
+        type("Sandals", into: addField(app))
         XCTAssertTrue(app.buttons["trip-add-bought"].waitForExistence(timeout: 10),
                       "with the keyboard up the trip no longer answers: no Bought on site")
         tap(app, id: "trip-add")
@@ -4409,7 +4417,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(progress) == "1/7" })
         app.buttons["trip-line-1"].tap()
         XCTAssertTrue(waitUntil { self.words(progress) == "2/7" })
-        type("Sandals", into: app.textFields["trip-add-name"])
+        type("Sandals", into: addField(app))
         tap(app, id: "trip-add-bought")
         XCTAssertTrue(waitUntil { self.words(progress) == "3/8" }, "Sandals did not go on: '\(words(progress))'")
         shot(app, "way-home-door")
@@ -4444,7 +4452,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(progress) == "1/7" })
         app.buttons["trip-line-1"].tap()
         XCTAssertTrue(waitUntil { self.words(progress) == "2/7" })
-        type("Sandals", into: app.textFields["trip-add-name"])
+        type("Sandals", into: addField(app))
         tap(app, id: "trip-add-bought")
         XCTAssertTrue(waitUntil { self.words(progress) == "3/8" }, "Sandals did not go on: '\(words(progress))'")
         openWayHome(app)
@@ -6062,12 +6070,10 @@ final class AMSPackingUITests: XCTestCase {
         let excel = app.buttons["trip-excel"]
         XCTAssertTrue(excel.waitForExistence(timeout: 5), "no Save as Excel on the trip")
         bringIntoView(app, excel)
-        // Share is a real button ON THE SAME LINE as Save as Excel (his test D.22).
+        // Share is in the floating bar at the foot since 0.111 (B, his pick of 11 Nov 2026), under Save as Excel.
         let share = app.buttons["trip-share"]
         XCTAssertTrue(share.exists, "no Share on the trip")
-        XCTAssertLessThan(abs(share.frame.midY - excel.frame.midY), 4,
-                          "Share is not on the Excel line: \(share.frame) vs \(excel.frame)")
-        XCTAssertGreaterThan(share.frame.minX, excel.frame.maxX - 1, "Share is not beside Save as Excel")
+        XCTAssertGreaterThan(share.frame.minY, excel.frame.minY, "Share is not in the bar under the list")
         tapVisible(app, excel)
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-excel-status"]).hasPrefix("Choosing") },
                       "the save was not started: '\(words(app.staticTexts["trip-excel-status"]))'")
@@ -6932,7 +6938,7 @@ final class AMSPackingUITests: XCTestCase {
         func undoSays(_ text: String) -> Bool { waitUntil { heard = self.words(said); return heard == text } }
         XCTAssertTrue(undo.waitForExistence(timeout: 5), "no Undo after a heading's tick")
         XCTAssertTrue(undoSays("Ticked 1 in Chest of drawers"), "the Undo bar says '\(heard)'")
-        let add = app.textFields["trip-add-name"]
+        let add = app.buttons["trip-add-open"]
         XCTAssertTrue(add.exists && undo.frame.maxY <= add.frame.minY, "Undo is not above the add bar: \(undo.frame) / \(add.frame)")
         shot(app, "trip-undo-heading")
         tap(app, id: "trip-undo")
@@ -7012,8 +7018,9 @@ final class AMSPackingUITests: XCTestCase {
         let progress = app.staticTexts["trip-progress"], left = app.staticTexts["trip-left"]
         XCTAssertTrue(waitUntil { self.words(progress) == "0/7" }, "'\(words(progress))'")
         XCTAssertTrue(waitUntil { self.words(left) == "7 left \u{00B7} about 5 min" }, "the trip says '\(words(left))'")
-        XCTAssertGreaterThanOrEqual(left.frame.minY, progress.frame.maxY - 1, "what's left is not under the count: \(left.frame) / \(progress.frame)")
-        XCTAssertEqual(left.frame.minX, progress.frame.minX, accuracy: 1.5, "what's left is not in the count's column")
+        // After the count on its line (0.111, B: "0 of 7 packed · 7 left · about 5 min"), or under it when narrow.
+        XCTAssertTrue(left.frame.minX >= progress.frame.maxX - 1 || left.frame.minY >= progress.frame.maxY - 1,
+                      "what's left is neither after nor under the count: \(left.frame) / \(progress.frame)")
         shot(app, "trip-whats-left")
         tap(app, id: "trip-line-0")
         XCTAssertTrue(waitUntil { self.words(left) == "6 left \u{00B7} about 5 min" }, "after a tick the trip says '\(words(left))'")
@@ -7549,7 +7556,7 @@ final class AMSPackingUITests: XCTestCase {
         let total = Int(before.split(separator: "/").last?.prefix { $0.isNumber } ?? "") ?? -1
         XCTAssertGreaterThan(total, 0, "could not read the total from '\(before)'")
 
-        let field = app.textFields["trip-add-name"]
+        let field = addField(app)
         XCTAssertTrue(field.waitForExistence(timeout: 5), "no field to add a thing")
         let add = app.buttons["trip-add"]
         // Never grey, never switched off (his rule for a main button): pressed with
@@ -13477,7 +13484,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertEqual(lines.count, 2, "not the Garage's two lines: \(lines)")
         XCTAssertTrue(lines.contains { $0.contains("Headlamp") } && lines.contains { $0.contains("Map") }, "\(lines)")
         // Nothing else on the page: the lines are what he sees first.
-        XCTAssertFalse(app.textFields["trip-add-name"].exists, "the add bar is shown with one place's lines")
+        XCTAssertFalse(app.buttons["trip-add-open"].exists, "the add bar is shown with one place's lines")
         shot(app, "place-trip-filtered")
 
         // Ticked from the place's page, as from the whole list.
@@ -13487,7 +13494,7 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "trip-place-filter")
         XCTAssertTrue(disappears(app, "trip-place-filter", timeout: 5) || !chip.exists, "the chip stayed")
         XCTAssertTrue(waitUntil { app.staticTexts["trip-group-1-label"].exists }, "every line did not come back")
-        XCTAssertTrue(app.textFields["trip-add-name"].waitForExistence(timeout: 5), "the add bar did not come back")
+        XCTAssertTrue(app.buttons["trip-add-open"].waitForExistence(timeout: 5), "the add bar did not come back")
     }
 
     /// Back from a trip, the same code shows what goes back to the Garage — opened the
@@ -17218,6 +17225,37 @@ final class AMSPackingUITests: XCTestCase {
     /// and did not read as a button, and "Reviewed" stood in grey words off Done's centre
     /// line. Now the pen is a round button right after the NAME, on its line; "Reviewed"
     /// is the Trips row's badge; the pen, the badge and Done share ONE centre line; the
+    /// A trip's page in look B (0.111, stage 2 of the redesign he picked on 11 Nov 2026): "‹ Trips" at the top
+    /// left, Done at the right on the same line, the big name under them, the five steps as one control, the
+    /// top's rows in one grouped list, and the floating bar at the foot whose full-colour ＋ Add opens the field
+    /// (and ✕ closes it). ‹ Trips closes the page. Pictures `trip-b`, day and night.
+    func testATripPageInLookB() {
+        continueAfterFailure = true
+        let night = ProcessInfo.processInfo.environment["NIGHT"] == "1" ? ["-AppleInterfaceStyle", "Dark"] : []
+        let app = launch("-uiTesting", night)
+        openSampleTrip(app)
+        let back = app.buttons["trip-back"], done = app.buttons["trip-done"], name = app.staticTexts["trip-name"]
+        for (id, e) in [("trip-back", back), ("trip-done", done), ("trip-name", name),
+                        ("trip-loop", app.buttons["trip-loop"]), ("trip-add-open", app.buttons["trip-add-open"]),
+                        ("trip-share", app.buttons["trip-share"]), ("trip-view", app.buttons["trip-view"])] {
+            XCTAssertTrue(e.waitForExistence(timeout: 5), "no \(id) on the trip")
+        }
+        XCTAssertNotNil(find(app, "trip-top-group"), "the trip's top is not one grouped list")
+        _ = waitUntil { self.settled(done) && self.settled(back) }
+        shot(app, "trip-b")
+        XCTAssertLessThan(back.frame.maxX, done.frame.minX, "‹ Trips is not left of Done")
+        XCTAssertLessThanOrEqual(abs(back.frame.midY - done.frame.midY), 2, "‹ Trips and Done are not on one line")
+        XCTAssertLessThanOrEqual(done.frame.maxY, name.frame.minY + 1, "the name is not under the buttons")
+        XCTAssertGreaterThan(app.buttons["trip-add-open"].frame.minY, app.buttons["trip-loop"].frame.maxY, "＋ Add is not at the foot")
+        tap(app, id: "trip-add-open")
+        XCTAssertTrue(app.textFields["trip-add-name"].waitForExistence(timeout: 5), "＋ Add did not open the field")
+        XCTAssertFalse(app.buttons["trip-add-open"].exists, "＋ Add stays while its field is open")
+        tap(app, id: "trip-add-close")
+        XCTAssertTrue(waitUntil { !app.textFields["trip-add-name"].exists }, "✕ did not close the field")
+        tap(app, id: "trip-back")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5), "‹ Trips did not close the trip")
+    }
+
     /// count is under them. Everything is measured, so one red run names every fault.
     func testTheTripsPenSitsBesideItsNameAndReviewedBesideDone() {
         continueAfterFailure = true
@@ -17233,12 +17271,11 @@ final class AMSPackingUITests: XCTestCase {
         _ = waitUntil { self.settled(done) && self.settled(pen) }
         shot(app, "trip-header-reviewed")
         let n = name.frame, p = pen.frame, b = badge.frame, d = done.frame, c = count.frame
-        // The pen: on the name's FIRST line (a long name wraps), right after it, above the count.
-        XCTAssertTrue(p.midY > n.minY && p.midY <= n.minY + n.height / 2 + 1.5,
-                      "the pen is not on the name's line: pen \(p) vs name \(n)")
-        XCTAssertGreaterThanOrEqual(p.minX, n.maxX - 1, "the pen is not after the name: pen \(p) vs name \(n)")
-        XCTAssertLessThanOrEqual(p.minX - n.maxX, 16, "the pen is not beside the name: pen \(p) vs name \(n)")
-        XCTAssertLessThanOrEqual(p.maxY, c.minY + 1, "the pen is on the count's line: pen \(p) vs count \(c)")
+        // The pen (B, 0.111 — his pick of 11 Nov 2026): on the buttons' line ABOVE the big name, just before
+        // Done; until 0.110 right after the name on its first line.
+        XCTAssertLessThanOrEqual(p.maxY, n.minY + 1, "the pen is not above the name: pen \(p) vs name \(n)")
+        XCTAssertLessThanOrEqual(p.maxX, d.minX, "the pen is not before Done: pen \(p) vs Done \(d)")
+        XCTAssertLessThanOrEqual(n.maxY, c.minY + 1, "the name is not above the count: name \(n) vs count \(c)")
         // A round button: as wide as it is tall.
         XCTAssertLessThanOrEqual(abs(p.width - p.height), 0.5, "the pen is not a round button: \(p)")
         // Reviewed, Done and the pen on one centre line; Reviewed before Done.
@@ -17379,12 +17416,17 @@ final class AMSPackingUITests: XCTestCase {
         let toggle = app.buttons["bags-toggle"]
         if toggle.exists { XCTAssertGreaterThanOrEqual(toggle.frame.height, bagsLine - 0.5, "the Bags fold takes a tap \(toggle.frame.height) high") }
 
-        // Between the cards: `gap` (14 and 10 until 0.104).
-        let gaps = [weather.frame.minY - card.frame.maxY, bags.frame.minY - weather.frame.maxY]
-        for (n, g) in gaps.enumerated() {
-            XCTAssertGreaterThanOrEqual(g, 2, "card \(n + 1) runs into the one above it: \(g)")
-            XCTAssertLessThanOrEqual(g, gap + 0.5, "card \(n + 1) stands \(g) under the one above it")
-        }
+        // The weather and the bags: rows of one grouped list since 0.111 (B), a hairline between them;
+        // Before you go `gap` under the list (14 and 10 until 0.104).
+        let rowsGap = bags.frame.minY - weather.frame.maxY
+        // The rows' frames are their contents: the weather's 6 under it, the hairline and the Bags row's 4 above — 11.
+        XCTAssertTrue(rowsGap >= 2 && rowsGap <= 12, "the Bags row is not right under the weather's: \(rowsGap)")
+        let group = find(app, "trip-top-group")
+        XCTAssertNotNil(group, "no grouped list at the trip's top")
+        let below = card.frame.minY - (group?.frame.maxY ?? 0)
+        XCTAssertGreaterThanOrEqual(below, 2, "Before you go runs into the grouped list: \(below)")
+        XCTAssertLessThanOrEqual(below, gap + 0.5, "Before you go stands \(below) under the grouped list")
+        let gaps = [rowsGap, below]
         print("TIGHT trip: loop \(loop.frame.height), beforego \(card.frame), weather \(weather.frame), bags \(bags.frame), gaps \(gaps)")
     }
 
@@ -17436,27 +17478,26 @@ final class AMSPackingUITests: XCTestCase {
         #endif
     }
 
-    /// The Sorting row directly above the list it sorts (his ask, 12 Oct 2026: it sat far
-    /// above, "disconnected from it"): under the cards (the weather, the bags), and the
-    /// first heading right under it.
+    /// Group by in the floating bar at the trip's foot (B, 0.111 — his pick of 11 Nov 2026; from 0.74 to 0.110
+    /// the row stood directly above the list, his ask of 12 Oct 2026 that it not be "disconnected from it"):
+    /// always in reach while the list scrolls under it, on the screen, the cards above the first heading.
     func testTheSortingSitsDirectlyAboveTheList() {
         let app = launch()
         tab(app, "events")
         tap(app, id: "trip-row-0")
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
         let field = app.buttons["trip-view"], heading = app.staticTexts["trip-group-0-label"]
-        XCTAssertTrue(field.waitForExistence(timeout: 5), "no Sorting")
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "no Group by")
         XCTAssertTrue(heading.waitForExistence(timeout: 5), "no first heading")
         bringIntoView(app, heading)
         _ = waitUntil { self.settled(field) && self.settled(heading) }
-        shot(app, "trip-sorting-above-list")
-        let gap = heading.frame.minY - field.frame.maxY
-        XCTAssertGreaterThanOrEqual(gap, 0, "the first heading is not under Sorting: \(heading.frame) vs \(field.frame)")
-        XCTAssertLessThanOrEqual(gap, 24, "Sorting is \(gap) pt above the first heading — not directly above the list")
+        shot(app, "trip-sorting-in-bar")
+        XCTAssertGreaterThan(field.frame.minY, heading.frame.maxY, "Group by is not in the bar under the list: \(field.frame) vs \(heading.frame)")
+        XCTAssertTrue(app.windows.firstMatch.frame.contains(field.frame), "Group by is off the screen: \(field.frame)")
         for id in ["bags-toggle", "weather-line"] {
             let card = app.descendants(matching: .any)[id]
             if card.exists {
-                XCTAssertLessThanOrEqual(card.frame.maxY, field.frame.minY, "\(id) sits between Sorting and the list")
+                XCTAssertLessThanOrEqual(card.frame.maxY, heading.frame.minY, "\(id) sits inside the list")
             }
         }
     }
@@ -17544,7 +17585,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertLessThanOrEqual(app.buttons["trip-line-3"].frame.height, 36, "the icons made the line taller")
         shot(app, "trip-line-templates")
         // Typed on the trip: no template.
-        let field = app.textFields["trip-add-name"]
+        let field = addField(app)
         XCTAssertTrue(field.waitForExistence(timeout: 5), "no field to add a thing")
         type("Tripod", into: field)
         tap(app, id: "trip-add")

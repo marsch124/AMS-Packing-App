@@ -18,6 +18,17 @@ struct WeatherCard: View {
     /// the forecast is in, and a field leaving with the keyboard still up hung the iPhone
     /// (iOS 26.5: "Looking…" for ever, the screen frozen — found by the tests, 7 Oct 2026).
     @FocusState private var typing: Bool
+    /// A row of the trip's grouped list (B, 0.111): "Weather" at its left, no frame of its own.
+    @Environment(\.inGroup) private var inGroup
+
+    /// "Weather", the row's name in the grouped list (0.111).
+    @ViewBuilder private var rowName: some View {
+        if inGroup {
+            Text("Weather").font(.system(.body)).foregroundStyle(Theme.ink)
+                .lineLimit(1).fixedSize()
+                .frame(minHeight: Metrics.compact)
+        }
+    }
 
     private var trip: TripEvent? { model.library.trip(tripId) }
     private var busy: Bool { model.lookingUpWeather.contains(tripId) }
@@ -34,9 +45,14 @@ struct WeatherCard: View {
         let missing = sky == nil ? [] : model.library.weatherMissing(tripId: tripId)
         VStack(alignment: .leading, spacing: 8) {
             if let sky {
-                Text(WeatherCard.line(sky))
-                    .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
-                    .accessibilityIdentifier("weather-line")
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    rowName
+                    if inGroup { Spacer(minLength: 8) }
+                    Text(WeatherCard.line(sky))
+                        .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
+                        .multilineTextAlignment(inGroup ? .trailing : .leading)
+                        .accessibilityIdentifier("weather-line")
+                }
                 HStack(spacing: 10) {
                     Text(sky.place).font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
                     Spacer()
@@ -88,6 +104,7 @@ struct WeatherCard: View {
                 }
             } else {
                 HStack(spacing: 8) {
+                    rowName
                     TextField("Where is this trip?", text: $place)
                         .textFieldStyle(.plain)
                         .font(.system(.callout)).foregroundStyle(Theme.ink)
@@ -129,9 +146,9 @@ struct WeatherCard: View {
         }
         // 12 all round until 0.104 (his arrows of 28 Oct 2026: a tad tighter) — 8 above and below on
         // the Mac, 10 on the iPhone; the field and Weather keep their height (`Metrics.compact`).
-        .padding(.horizontal, Metrics.cardSide).padding(.vertical, Metrics.cardInset)
-        .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
+        .padding(.horizontal, Metrics.cardSide).padding(.vertical, inGroup ? 6 : Metrics.cardInset)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .tripCardLook(inGroup)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("weather-card")
         .onAppear {
