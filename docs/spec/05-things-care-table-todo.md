@@ -3373,3 +3373,23 @@ pins · [idea] a gap worth deciding on.
     default; only the grab list's delete passes 15), the bag glance line 12, Your bags' column names 10, the
     bag page's number titles 11, the table's cells 13–14, headings 12 and bands 11, the kit figures' words 12
     and the year-ahead months 10, the calendar's weekday row 11 and counts 10, the Care doors' second lines 13.
+
+## Redesign B, stage 3 (0.112, 11 Nov 2026) — Care, Your things, To do
+
+Nothing stored changes. Where the text above describes the looks of these screens, read this instead; what they hold and do is unchanged.
+- **Care tab.** **Your things**, **Bags** and **All your things · table** (the doors) are one **grouped list**: one card (corner 14,
+  `Theme.card`), hairline between rows, a chevron on each row. **List | Calendar** is a segmented control (it was two buttons;
+  the same choice, the same memory). The care sections (**Overdue**, **Due soon**, the later ones and Done today as before) are
+  **grouped cards**: a heading above a rounded card with its services, hairlines between. Overdue and Due soon open, the far ones folded, as before.
+- **Your things page** (from Care). Top line: **‹ Care** at the left (it closes the page, as before), a full-colour **Done** at the right
+  (⌘S on the Mac; Escape = leave). Under it a big **orange** Large Title "Your things" (the Care colour), the **search field**,
+  and the **count in orange** ("12 things", "3 of 12" when searching). The things stand in **one grouped card**: a row per thing
+  (name, the templates in violet, where it is kept, as before), hairline between, a chevron; the "Just added" part stays at the
+  top of the list until the page is left. A floating full-colour **＋ New thing** at the **bottom right** (`things-new-open`) opens the
+  "A new thing" field at the foot (`thing-new-name`, New `thing-new`, focused at once) and hides itself; the field stays open
+  to add several, its ✕ (`things-new-close`) closes it and brings the button back. Until 0.111 the field was always open.
+  The new thing is shown under Just added as before. The search's ✕ empties it.
+- **To do tab.** A big **red** Large Title "To do"; under it **To do | To buy** as a segmented control (it was a pair of pills), and the
+  **search** field beside the title (the magnifier of the tab, same search). The to-dos stand in **grouped cards**: **Priority**,
+  **Others** and **Done** stay as parts of their own, each a card with hairlines; Done stays folded until tapped, Undo under
+  the list as before. The red badge on the tab is unchanged. The to-buy side keeps its lines and buttons (Send to Reminders etc.).

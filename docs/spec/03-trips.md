@@ -1149,6 +1149,28 @@ changes: no new key, no change to a trip, a line, a template, to sync or to a ba
 - **New accessibility identifiers (0.111):** `trip-back`, `trip-add-open`, `trip-add-close`, `trip-top-group`. Kept: `trip-excel`
   (on its own line), `trip-done`, `trip-add-name`, `trip-add`, `trip-add-bought`, `trip-add-needs`, `trip-view`, `trip-group-<g>-…`, `trip-name`.
 
+### Redesign B, stage 3 (0.112, 11 Nov 2026) — the steps open their step, and Add suggests
+
+Stage 3 of the "B" redesign (stages 1 and 2 above and in spec 02). Nothing stored changes: no new key, no change to a trip, a
+line, a thing, a template, to sync or to a backup. Two asks of his ride with it.
+- **A tap on a step opens that step.** The five steps (Plan / Pack / On site / Review / Refine, the segmented control of 0.111)
+  were one button up to 0.111: any tap showed the picture of the whole loop (`trip-loop`). Now each step has its own action:
+  **Plan** opens the trip's settings (the pen page, the same sheet as the pen); **Pack** scrolls the list to the next thing to
+  pack (the first line not ticked and not set aside, in the order on screen) and **lights** it for a moment; **On site** opens
+  the On site page; **Review** opens the trip review (the same page as the Review button; the rule for when Review is offered is
+  unchanged); **Refine** opens Refine. A step's colours (filled / words in colour / plain) are as in 0.111.
+- **The whole loop** is now under a **long press** on the steps (right-click on the Mac) in a context menu: **"Show the whole loop"**,
+  which opens the same picture as before. How it works still holds the loop's picture.
+- **＋ Add suggests his own things as he types** (the field of 0.111, `trip-add-name`). While the field holds text, up to **4** of
+  his things whose name matches show under it. Match = the name contains what he typed, ignoring case and accents; names that
+  **start with** it come first, then the rest, each in the order of Your things. A thing already on this trip is never offered
+  (a line whose thing is the same, kit insides included). Nothing typed = no suggestions.
+- **A tap on a suggestion adds that very thing** to this trip only: with its bag (Usually packed in), its **When**, its weight and
+  its kind, and **whatever goes with it** (its Also pack things, as the 0.6x rule for adding a thing with companions). It is the same add as
+  choosing the thing from a template; no second thing with the same name is made. The field stays open and empties, as after Add.
+  **Typing a new name and Add** works as before (a thing is made for this trip only; empty field = adds nothing and says so, `trip-add-needs`).
+  Core: `PackingLibrary/AddSuggestions.swift` (tests `AddSuggestionsTests`).
+
 ### What is on screen (top to bottom)
 
 **Header** (padding 16) — since 0.73 ONE centre line, then the count under it (his picture of a reviewed

@@ -40,15 +40,16 @@ struct ActionsScreen: View {
         VStack(spacing: 0) {
             // Two lists, one screen: things to DO and things to BUY. The buy-list
             // is the same store with kind "shopping", as the web app keeps it.
-            HStack(spacing: 8) {
-                sideButton("To do", on: !buying, id: "actions-tab-todo") { buying = false }
-                sideButton("To buy", on: buying, id: "actions-tab-buy") { buying = true }
-                Spacer()
-                SearchButton { searching = true }
+            // B (0.112, stage 3 of the redesign he picked on 11 Nov 2026): the tab's big red title with the search
+            // beside it, as every tab; To do | To buy as Apple's segmented control under it. Until 0.111 the two
+            // sides were two big buttons on the first line, and the tab had no title.
+            VStack(alignment: .leading, spacing: 6) {
+                ScreenHeader(title: "To do", tint: AppSection.actions.color, id: "actions-heading") {
+                    SearchButton { searching = true }
+                }
+                BSegmented(options: [("todo", "To do", "actions-tab-todo"), ("buy", "To buy", "actions-tab-buy")],
+                           chosen: buying ? "buy" : "todo", tint: AppSection.actions.color) { buying = $0 == "buy" }
             }
-            // Where every tab's first line is (0.67): under the status bar on the iPhone,
-            // on the traffic lights' line in the window's title bar strip on the Mac.
-            .headerLine()
             .padding(.horizontal, 16)
             #if os(macOS)
             .padding(.bottom, 6)                      // the page below never touches the strip (ScreenHeader.swift)
@@ -75,20 +76,30 @@ struct ActionsScreen: View {
                         VStack(alignment: .leading, spacing: 0) {
                             ForEach(Array(parts.priority.enumerated()), id: \.element.id) { n, a in row(a, n: n) }
                         }
+                        .bCard()
                         .accessibilityElement(children: .contain)
                         .accessibilityIdentifier("actions-priority")
                         if !parts.others.isEmpty {
                             partTitle("Others", count: parts.others.count, tint: Theme.muted, id: "actions-others-title")
                         }
                     }
-                    ForEach(Array(parts.others.enumerated()), id: \.element.id) { n, a in row(a, n: parts.priority.count + n) }
+                    // Each part in one rounded card (B, 0.112), a hairline between the to-dos.
+                    if !parts.others.isEmpty {
+                        VStack(alignment: .leading, spacing: 0) {
+                            ForEach(Array(parts.others.enumerated()), id: \.element.id) { n, a in row(a, n: parts.priority.count + n) }
+                        }
+                        .bCard()
+                    }
                     // Done (0.101): tucked away at the foot, folded until he opens it.
                     if !parts.done.isEmpty {
                         FoldHeading(title: "Done", count: parts.done.count, open: doneOpen, id: "actions-done-fold") {
                             withAnimation(.easeInOut(duration: 0.2)) { doneOpen.toggle() }
                         }
                         if doneOpen {
-                            ForEach(Array(parts.done.enumerated()), id: \.element.id) { n, a in row(a, n: parts.open + n) }
+                            VStack(alignment: .leading, spacing: 0) {
+                                ForEach(Array(parts.done.enumerated()), id: \.element.id) { n, a in row(a, n: parts.open + n) }
+                            }
+                            .bCard()
                         }
                     }
                 }
@@ -179,7 +190,8 @@ struct ActionsScreen: View {
             .accessibilityIdentifier("action-\(n)-remove")
             .accessibilityLabel("Remove")
         }
-        .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
+        .padding(.leading, 12).padding(.trailing, 4)
+        .overlay(alignment: .bottom) { Theme.line.frame(height: 1).padding(.leading, 12) }
         // Held anywhere on the row (right-click on the Mac), as Reminders does.
         .contextMenu {
             Button(Library.isPriority(a) ? "Remove priority" : "Mark as priority") {
@@ -206,22 +218,6 @@ struct ActionsScreen: View {
     private func tick(_ a: ActionItem) {
         withAnimation(.easeInOut(duration: 0.2)) { model.change { _ = $0.setActionDone(!a.done, id: a.id) } }
         if !a.done { ticked = a; removed = nil; step = model.lastStep } else if ticked?.id == a.id { ticked = nil }
-    }
-
-    /// One of the two sides at the top. Which one is showing is said by colour and
-    /// by the selected trait, never by its words alone.
-    private func sideButton(_ title: String, on: Bool, id: String, _ tap: @escaping () -> Void) -> some View {
-        Button(action: tap) {
-            Text(title).font(.system(.body, weight: .semibold))
-                .foregroundStyle(on ? Color.white : Theme.ink)
-                .frame(maxWidth: .infinity, minHeight: Metrics.tap)
-                .background(RoundedRectangle(cornerRadius: 10).fill(on ? AppSection.actions.color : Theme.card))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: on ? 0 : 1))
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain).focusEffectDisabled()
-        .accessibilityIdentifier(id)
-        .accessibilityAddTraits(on ? .isSelected : [])
     }
 
     /// ✕ takes the to-do away at once, and Undo under the list brings it back — the

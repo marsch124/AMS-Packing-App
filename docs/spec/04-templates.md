@@ -2617,3 +2617,14 @@ deciding before a rewrite.
 A block **Reminders** above a template's things (add, rename, When, up/down, remove) — specified in full in
 spec 07, part 12. The template's things list, its Find count, Arrange and the template card count leave the
 reminders out.
+
+## Redesign B, stage 3 (0.112, 11 Nov 2026) — the Templates tab
+
+Nothing stored changes. Where section 1 describes the tab's cards and its New button, read this instead.
+- Each **activity area's templates** (and Always packed, the transport groups, Other Templates, in the same order as before) are
+  **rows of one grouped list** — one card per area under its heading, hairline between rows — instead of **two cards across**. A row:
+  the **cover** (its icon or its colour, small), the **name**, **how many things** it holds, **when it was last used**
+  (section 16, the same words), and a **chevron**. A tap opens the template (section 6), as before.
+- **＋ New template** is a **full-colour floating button at the bottom right** (`templates-new`) instead of **+ New** at the top.
+  It opens the same step as before: name it and choose the activity area (section 5).
+- **Refine** (the door) and **Activity areas** (the pill after the last area) stay where they are; the magnifier is unchanged.

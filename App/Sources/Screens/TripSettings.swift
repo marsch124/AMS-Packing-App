@@ -394,6 +394,8 @@ struct TripSettingsScreen: View {
 /// has one for the review).
 struct TripSettingsDoor: View {
     let tripId: String
+    /// Raised by the strip's Plan step (0.112): the page opens as the pen opens it.
+    var openNow: Int = 0
     var rebuilt: (Library.TripRebuilt) -> Void
     var startedAgain: (TripEvent) -> Void = { _ in }
     var cleared: (TicksChanged) -> Void = { _ in }
@@ -409,6 +411,7 @@ struct TripSettingsDoor: View {
         .buttonStyle(.plain).focusEffectDisabled()
         .accessibilityIdentifier("trip-settings")
         .accessibilityLabel("Trip settings")
+        .onChange(of: openNow) { _, _ in open = true }
         .sheet(isPresented: $open) {
             TripSettingsScreen(tripId: tripId, rebuilt: rebuilt, startedAgain: startedAgain, cleared: cleared)
                 .environmentObject(model)

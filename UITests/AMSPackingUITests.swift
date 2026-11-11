@@ -435,6 +435,42 @@ final class AMSPackingUITests: XCTestCase {
     /// Type into a field and make sure it landed — on a slow Mac runner the first
     /// click has been seen to focus the window and nothing else.
     /// A trip's "Add a thing to this trip" field (0.111): behind the floating bar's ＋ Add, opened when it is not up.
+    /// The trip's five steps (0.112: each step a button of its own, `trip-step-<n>`; the strip a group
+    /// keeping its name, label and value).
+    private func loopStrip(_ root: XCUIElement) -> XCUIElement {
+        root.descendants(matching: .any).matching(identifier: "trip-loop").firstMatch
+    }
+
+    /// The step the trip is at: the strip's value — or, where a machine drops a group's value, its
+    /// selected step's name.
+    private func loopAt(_ strip: XCUIElement) -> String? {
+        if let v = strip.value as? String, !v.isEmpty { return v }
+        let on = strip.buttons.matching(NSPredicate(format: "selected == true")).firstMatch
+        return on.exists ? on.label : nil
+    }
+
+    /// The whole loop picture (0.112): a long press on the steps (a right-click on the Mac), Show the whole loop.
+    private func showWholeLoop(_ app: XCUIApplication) {
+        let strip = loopStrip(app)
+        XCTAssertTrue(strip.waitForExistence(timeout: 5), "no steps on the trip")
+        #if os(macOS)
+        strip.rightClick()
+        let item = app.menuItems["Show the whole loop"]
+        #else
+        strip.press(forDuration: 1.0)
+        let item = app.buttons["Show the whole loop"]
+        #endif
+        if item.waitForExistence(timeout: 5) { item.tap() } else { XCTFail("no Show the whole loop on the steps") }
+    }
+
+    /// Your things' new-thing field (0.112): behind the floating ＋ New thing.
+    private func newThingField(_ app: XCUIApplication) -> XCUIElement {
+        let field = app.textFields["thing-new-name"]
+        if !field.exists, app.buttons["things-new-open"].waitForExistence(timeout: 5) { tap(app, id: "things-new-open") }
+        _ = field.waitForExistence(timeout: 5)
+        return field
+    }
+
     private func addField(_ app: XCUIApplication) -> XCUIElement {
         let field = app.textFields["trip-add-name"]
         if !field.exists, app.buttons["trip-add-open"].waitForExistence(timeout: 5) { tap(app, id: "trip-add-open") }
@@ -1645,13 +1681,13 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "screen-events"))
         app.buttons["trip-row-0"].tap()
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
-        let strip = app.buttons["trip-loop"]
+        let strip = loopStrip(app)
         XCTAssertTrue(strip.waitForExistence(timeout: 5), "the trip does not show the loop")
         // The sample trip is ahead (Pack) — or, once its dates are past, waiting for Review.
-        let at = strip.value as? String ?? ""
+        let at = loopAt(strip) ?? ""
         XCTAssertTrue(["Pack", "Review"].contains(at), "an unreviewed trip with lines is at '\(at)'")
         shot(app, "loop-trip")
-        tap(app, id: "trip-loop")
+        showWholeLoop(app)
         XCTAssertTrue(appears(app, "loop-screen", timeout: 5), "the strip did not open the picture")
         let step = at == "Pack" ? 1 : 3
         XCTAssertTrue(waitUntil { self.isHere(app, step) }, "the picture does not say You are here on \(at)")
@@ -1668,19 +1704,18 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "loop-review")
         tap(app, id: "review-save")
         XCTAssertTrue(disappears(app, "review-detail", timeout: 5))
-        XCTAssertTrue(waitUntil { (strip.value as? String) == "Refine" },
-                      "a reviewed trip is not at Refine: '\(strip.value as? String ?? "")'")
-        tap(app, id: "trip-done")
-        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
-
-        tab(app, "templates")
-        tap(app, id: "refine-open")
-        XCTAssertTrue(appears(app, "refine-screen", timeout: 5))
+        XCTAssertTrue(waitUntil { (loopAt(strip)) == "Refine" },
+                      "a reviewed trip is not at Refine: '\(loopAt(strip) ?? "")'")
+        // Refine from its own step (0.112) — the Templates tab shows its door only while a review found something.
+        tap(app, id: "trip-step-4")
+        XCTAssertTrue(appears(app, "refine-screen", timeout: 5), "Refine's step did not open Refine")
         XCTAssertTrue(waitUntil { (app.buttons["refine-loop"].value as? String) == "Refine" },
                       "Refine is not at Refine: '\(app.buttons["refine-loop"].value as? String ?? "")'")
         shot(app, "loop-refine")
         tap(app, id: "refine-done")
         XCTAssertTrue(disappears(app, "refine-screen", timeout: 5))
+        tap(app, id: "trip-done")
+        XCTAssertTrue(disappears(app, "trip-detail", timeout: 5))
     }
 
     /// Each step wears its OWN mark (0.77, his pick of 13 Oct 2026 from the sample sheet) —
@@ -1874,7 +1909,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(disappears(app, "review-detail", timeout: 5), "Escape did not cancel the review")
         XCTAssertTrue(app.buttons["trip-review"].waitForExistence(timeout: 5), "Escape saved the review")
 
-        tap(app, id: "trip-loop")
+        showWholeLoop(app)
         XCTAssertTrue(appears(app, "loop-screen", timeout: 5))
         escape()
         XCTAssertTrue(disappears(app, "loop-screen", timeout: 5), "Escape did not close the loop")
@@ -5012,16 +5047,16 @@ final class AMSPackingUITests: XCTestCase {
         tab(app, "events")
         tap(app, id: "trip-row-0")
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
-        let strip = app.buttons["trip-loop"]
+        let strip = loopStrip(app)
         XCTAssertTrue(strip.waitForExistence(timeout: 5), "the trip does not show the loop")
-        XCTAssertTrue(waitUntil { (strip.value as? String) == "On site" }, "a trip under way is at '\(strip.value as? String ?? "")'")
+        XCTAssertTrue(waitUntil { (loopAt(strip)) == "On site" }, "a trip under way is at '\(loopAt(strip) ?? "")'")
         // The header's Review: once the trip has started (0.84, his yes of 15 Oct 2026).
         XCTAssertTrue(app.buttons["trip-review"].waitForExistence(timeout: 5), "no Review on a trip under way")
         let window = app.windows.firstMatch.frame
         XCTAssertLessThanOrEqual(strip.frame.maxX, window.maxX + 1, "the five steps run off the screen: \(strip.frame) in \(window)")
         XCTAssertGreaterThanOrEqual(strip.frame.minX, window.minX - 1, "the five steps run off the screen: \(strip.frame) in \(window)")
         shot(app, "loop-trip-onsite")
-        tap(app, id: "trip-loop")
+        showWholeLoop(app)
         XCTAssertTrue(appears(app, "loop-screen", timeout: 5), "the strip did not open the picture")
         XCTAssertTrue(waitUntil { self.isHere(app, 2) }, "the picture does not say You are here on On site")
         XCTAssertFalse([0, 1, 3, 4].contains { self.isHere(app, $0) }, "You are here on more than one step")
@@ -5041,9 +5076,9 @@ final class AMSPackingUITests: XCTestCase {
         tab(app, "events")
         tap(app, id: "trip-row-0")
         XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
-        let strip = app.buttons["trip-loop"]
+        let strip = loopStrip(app)
         XCTAssertTrue(strip.waitForExistence(timeout: 5), "the trip does not show the loop")
-        let before = strip.value as? String ?? ""
+        let before = loopAt(strip) ?? ""
         let doorBefore = app.buttons["trip-onsite"].exists
         if Date().timeIntervalSince(launched) < 25 {
             XCTAssertEqual(before, "Pack", "at 07:59, leaving at 08:00, the trip is at '\(before)'")
@@ -5052,8 +5087,8 @@ final class AMSPackingUITests: XCTestCase {
         } else {
             print("The trip opened after 07:59:55 on the app's clock: only the turn is checked.")
         }
-        XCTAssertTrue(waitUntil(timeout: 60) { (strip.value as? String) == "On site" },
-                      "08:00 passed and the open trip is at '\(strip.value as? String ?? "")'")
+        XCTAssertTrue(waitUntil(timeout: 60) { (loopAt(strip)) == "On site" },
+                      "08:00 passed and the open trip is at '\(loopAt(strip) ?? "")'")
         XCTAssertTrue(app.buttons["trip-onsite"].waitForExistence(timeout: 5), "08:00 passed and the open trip has no On site door")
         shot(app, "leave-after")
     }
@@ -5066,9 +5101,9 @@ final class AMSPackingUITests: XCTestCase {
     func testTheLoopStripSaysDoneAndHereAsTheStationsDo() {
         let app = launch("-uiTestingPackingDay")
         openPackingDayTrip(app)
-        let strip = app.buttons["trip-loop"]
+        let strip = loopStrip(app)
         XCTAssertTrue(strip.waitForExistence(timeout: 5), "the trip does not show the loop")
-        XCTAssertTrue(waitUntil { (strip.value as? String) == "Pack" }, "the trip being packed is at '\(strip.value as? String ?? "")'")
+        XCTAssertTrue(waitUntil { (loopAt(strip)) == "Pack" }, "the trip being packed is at '\(loopAt(strip) ?? "")'")
         XCTAssertEqual(strip.label, "The loop. Done: Plan. You are here: Pack. Ahead: On site, Review, Refine.",
                        "the strip does not show Plan done and Pack being worked on")
         // Bags out done: Pack becomes the Stations' next to do, lit as the strip's Pack is.
@@ -5086,8 +5121,8 @@ final class AMSPackingUITests: XCTestCase {
         tab(away, "events")
         tap(away, id: "trip-row-0")
         XCTAssertTrue(appears(away, "trip-detail", timeout: 5))
-        let later = away.buttons["trip-loop"]
-        XCTAssertTrue(waitUntil { (later.value as? String) == "On site" }, "the trip under way is at '\(later.value as? String ?? "")'")
+        let later = loopStrip(away)
+        XCTAssertTrue(waitUntil { (loopAt(later)) == "On site" }, "the trip under way is at '\(loopAt(later) ?? "")'")
         XCTAssertEqual(later.label, "The loop. Done: Plan, Pack. You are here: On site. Ahead: Review, Refine.",
                        "under way, Plan and Pack are not done")
         shot(away, "look101-loop-onsite")
@@ -5236,7 +5271,7 @@ final class AMSPackingUITests: XCTestCase {
         tab(later, "events")
         tap(later, id: "trip-row-0")
         XCTAssertTrue(appears(later, "trip-detail", timeout: 5))
-        XCTAssertTrue(waitUntil { (later.buttons["trip-loop"].value as? String) == "On site" })
+        XCTAssertTrue(waitUntil { loopAt(loopStrip(later)) == "On site" })
         XCTAssertFalse(later.buttons["trip-break"].exists, "Take a break on a trip that has set off")
     }
 
@@ -9826,7 +9861,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(count) == "10 things" }, "the sample library holds 10 things: '\(words(count))'")
         XCTAssertFalse(app.buttons["things-nolist"].exists, "nothing is on no list yet")
 
-        type("Sit mat", into: app.textFields["thing-new-name"])
+        type("Sit mat", into: newThingField(app))
         tap(app, id: "thing-new")
         XCTAssertTrue(waitUntil { self.words(count) == "11 things" }, "the new thing is not counted: '\(words(count))'")
         let noList = app.buttons["things-nolist"]
@@ -12430,7 +12465,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts["things-just-added"].exists, "Just added with nothing added")
 
         // Names that would sort LAST, A–Z.
-        type("Zip ties", into: app.textFields["thing-new-name"])
+        type("Zip ties", into: newThingField(app))
         tap(app, id: "thing-new")
         XCTAssertTrue(waitUntil { self.words(count) == "11 things" }, "the new thing was not added")
         let heading = app.staticTexts["things-just-added"]
@@ -12440,7 +12475,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertLessThanOrEqual(heading.frame.maxY, app.buttons["thing-row-0"].frame.minY + 1, "Just added is not above it")
         shot(app, "things-just-added")
 
-        type("Yoga strap", into: app.textFields["thing-new-name"])
+        type("Yoga strap", into: newThingField(app))
         tap(app, id: "thing-new")
         XCTAssertTrue(waitUntil { self.words(count) == "12 things" })
         XCTAssertTrue(waitUntil { app.buttons["thing-row-0"].label.contains("Yoga strap") },
@@ -12501,9 +12536,10 @@ final class AMSPackingUITests: XCTestCase {
         tab(app, "care")
         tap(app, id: "care-things")
         XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        _ = newThingField(app)                                  // behind ＋ New thing since 0.112
         misses.append(saysWhatIsMissing(app, "thing-new"))
         if app.staticTexts["thing-new-needs"].exists {
-            type("Zip ties", into: app.textFields["thing-new-name"])
+            type("Zip ties", into: newThingField(app))
             if !waitUntil({ !app.staticTexts["thing-new-needs"].exists }) { misses.append("thing-new-needs: stayed after typing") }
         }
         tap(app, id: "things-done")
@@ -12898,7 +12934,7 @@ final class AMSPackingUITests: XCTestCase {
         tab(app, "care")
         tap(app, id: "care-things")
         XCTAssertTrue(appears(app, "things-detail", timeout: 5))
-        type("map", into: app.textFields["thing-new-name"])
+        type("map", into: newThingField(app))
         tap(app, id: "thing-new")
         let says = app.staticTexts["thing-new-needs"]
         XCTAssertTrue(says.waitForExistence(timeout: 5), "a name he has already: nothing said")
@@ -14850,9 +14886,9 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertLessThanOrEqual(abs(off), 1.5, "home: grab-lists sits \(off) pt off Grab and go's centre line")
         let tabs: [(name: String, title: String, icons: [String])] = [
             ("events", "events-heading", ["events-map", "search-open", "events-todos"]),
-            ("templates", "templates-heading", ["search-open", "templates-new"]),
+            ("templates", "templates-heading", ["search-open"]),          // ＋ New template floats at the foot since 0.112
             ("care", "care-heading", ["search-open"]),
-            ("actions", "actions-tab-todo", ["search-open", "actions-tab-buy"]),
+            ("actions", "actions-heading", ["search-open"]),         // To do | To buy under the title since 0.112
         ]
         for (name, title, icons) in tabs {
             tab(app, name)
@@ -17236,7 +17272,7 @@ final class AMSPackingUITests: XCTestCase {
         openSampleTrip(app)
         let back = app.buttons["trip-back"], done = app.buttons["trip-done"], name = app.staticTexts["trip-name"]
         for (id, e) in [("trip-back", back), ("trip-done", done), ("trip-name", name),
-                        ("trip-loop", app.buttons["trip-loop"]), ("trip-add-open", app.buttons["trip-add-open"]),
+                        ("trip-loop", loopStrip(app)), ("trip-add-open", app.buttons["trip-add-open"]),
                         ("trip-share", app.buttons["trip-share"]), ("trip-view", app.buttons["trip-view"])] {
             XCTAssertTrue(e.waitForExistence(timeout: 5), "no \(id) on the trip")
         }
@@ -17246,7 +17282,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertLessThan(back.frame.maxX, done.frame.minX, "‹ Trips is not left of Done")
         XCTAssertLessThanOrEqual(abs(back.frame.midY - done.frame.midY), 2, "‹ Trips and Done are not on one line")
         XCTAssertLessThanOrEqual(done.frame.maxY, name.frame.minY + 1, "the name is not under the buttons")
-        XCTAssertGreaterThan(app.buttons["trip-add-open"].frame.minY, app.buttons["trip-loop"].frame.maxY, "＋ Add is not at the foot")
+        XCTAssertGreaterThan(app.buttons["trip-add-open"].frame.minY, loopStrip(app).frame.maxY, "＋ Add is not at the foot")
         tap(app, id: "trip-add-open")
         XCTAssertTrue(app.textFields["trip-add-name"].waitForExistence(timeout: 5), "＋ Add did not open the field")
         XCTAssertFalse(app.buttons["trip-add-open"].exists, "＋ Add stays while its field is open")
@@ -17254,6 +17290,66 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { !app.textFields["trip-add-name"].exists }, "✕ did not close the field")
         tap(app, id: "trip-back")
         XCTAssertTrue(disappears(app, "trip-detail", timeout: 5), "‹ Trips did not close the trip")
+    }
+
+    /// Redesign B stage 3 and his two asks (0.112, 11 Nov 2026): a tapped step opens its page; ＋ Add
+    /// suggests his own things as he types; Care, Your things, Templates and To do in look B.
+    func testStageThreeStepsSuggestionsAndTabsInLookB() {
+        continueAfterFailure = true
+        let night = ProcessInfo.processInfo.environment["NIGHT"] == "1" ? ["-AppleInterfaceStyle", "Dark"] : []
+        let app = launch("-uiTesting", night)
+        openSampleTrip(app)
+        // Review's step opens the review, not the loop picture.
+        XCTAssertTrue(app.buttons["trip-step-3"].waitForExistence(timeout: 5), "the steps are not buttons of their own")
+        tap(app, id: "trip-step-3")
+        XCTAssertTrue(appears(app, "review-detail", timeout: 5), "Review's step did not open the review")
+        XCTAssertFalse(app.otherElements["loop-screen"].exists, "a step still opens the whole loop")
+        tap(app, id: "review-cancel")
+        _ = disappears(app, "review-detail", timeout: 5)
+        // "gog" offers his Goggles; a tap puts that very thing on the trip.
+        type("gog", into: addField(app))
+        let offer = app.buttons["trip-add-suggest-0"]
+        XCTAssertTrue(offer.waitForExistence(timeout: 5), "＋ Add suggests nothing for 'gog'")
+        XCTAssertEqual(offer.label, "Add Goggles")
+        shot(app, "trip-add-suggest")
+        offer.tap()
+        XCTAssertTrue(waitUntil { !app.buttons["trip-add-suggest-0"].exists }, "the suggestion stayed after it was added")
+        type("gog", into: addField(app))
+        XCTAssertFalse(app.buttons["trip-add-suggest-0"].waitForExistence(timeout: 2), "Goggles offered again once on the trip")
+        tap(app, id: "trip-add-close")
+        tap(app, id: "trip-back")
+        _ = disappears(app, "trip-detail", timeout: 5)
+        // Care: one grouped list; Your things with ‹ Care, its big title and ＋ New thing.
+        tab(app, "care")
+        XCTAssertTrue(appears(app, "screen-care"))
+        XCTAssertNotNil(find(app, "care-group"), "Care's doors are not one grouped list")
+        shot(app, "care-b")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        XCTAssertTrue(app.buttons["things-back"].waitForExistence(timeout: 5), "no ‹ Care on Your things")
+        XCTAssertTrue(app.staticTexts["things-title"].exists, "no big title on Your things")
+        XCTAssertFalse(app.textFields["thing-new-name"].exists, "the new-thing field shows before ＋ New thing")
+        shot(app, "things-b")
+        tap(app, id: "things-new-open")
+        XCTAssertTrue(app.textFields["thing-new-name"].waitForExistence(timeout: 5), "＋ New thing did not open its field")
+        tap(app, id: "things-new-close")
+        tap(app, id: "things-back")
+        XCTAssertTrue(disappears(app, "things-detail", timeout: 5), "‹ Care did not close Your things")
+        // Templates: rows, and ＋ New template at the foot.
+        tab(app, "templates")
+        XCTAssertTrue(app.buttons["template-row-0"].waitForExistence(timeout: 5), "no template rows")
+        let new = app.buttons["templates-new"]
+        XCTAssertTrue(new.exists, "no ＋ New template")
+        XCTAssertGreaterThan(new.frame.minY, app.buttons["template-row-0"].frame.maxY, "＋ New template is not at the foot")
+        shot(app, "templates-b")
+        // To do: the big title, To do | To buy under it.
+        tab(app, "actions")
+        XCTAssertTrue(app.staticTexts["actions-heading"].waitForExistence(timeout: 5), "no To do title")
+        XCTAssertGreaterThan(app.buttons["actions-tab-buy"].frame.minY, app.staticTexts["actions-heading"].frame.maxY - 1,
+                             "To do | To buy is not under the title")
+        tap(app, id: "actions-tab-buy")
+        XCTAssertTrue(waitUntil { app.buttons["actions-tab-buy"].isSelected }, "To buy is not selected")
+        shot(app, "todo-b")
     }
 
     /// count is under them. Everything is measured, so one red run names every fault.
@@ -17371,7 +17467,7 @@ final class AMSPackingUITests: XCTestCase {
         #else
         let inset: CGFloat = 10, gap: CGFloat = 10, line: CGFloat = 36, strip: CGFloat = 28, bagsLine: CGFloat = 28
         #endif
-        let loop = app.buttons["trip-loop"]
+        let loop = loopStrip(app)
         XCTAssertTrue(loop.waitForExistence(timeout: 5), "no loop strip on the trip")
         let ids = ["trip-beforego", "weather-card", "bags-card"]
         for id in ids { XCTAssertTrue(appears(app, id, timeout: 5), "no \(id) on the trip") }
@@ -19223,7 +19319,7 @@ final class AMSPackingUITests: XCTestCase {
         tab(app, "events")
         app.buttons["trip-row-0"].tap()
         if appears(app, "trip-detail", timeout: 5) {
-            check("The loop", open: { self.tap(app, id: "trip-loop"); return true }, page: "loop-screen")
+            check("The loop", open: { self.showWholeLoop(app); return true }, page: "loop-screen")
             check("Share", open: { self.tapVisible(app, app.buttons["trip-share"]); return true }, page: "share-screen")
         } else {
             failed.append("the trip did not open")

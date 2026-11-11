@@ -65,22 +65,13 @@ struct TemplatesScreen: View {
         return parts.joined(separator: " · ")
     }
 
-    /// "Your templates", with the search and + New beside it — on ONE centre line
+    /// "Your templates", with the search beside it (+ New floats at the bottom right since 0.112) — on ONE centre line
     /// (ScreenHeader; his note on 0.63, "Overall, icons are not aligned"): the tab's first
     /// line on the iPhone, pinned in the window's title bar strip on the Mac.
     private func header(_ flat: [PackList]) -> some View {
         ScreenHeader(title: "Your templates", tint: AppSection.templates.color, id: "templates-heading",
                      line: TemplatesScreen.summary(flat, model.library), lineId: "templates-summary") {
             SearchButton { opened = .search }
-            Button { opened = .new } label: {
-                Text("+ New")
-                    .font(.system(.subheadline, weight: .semibold)).foregroundStyle(.white)
-                    .padding(.horizontal, 12).frame(minHeight: Metrics.chip)
-                    .background(Capsule().fill(AppSection.templates.color))
-                    .contentShape(Capsule())
-            }
-            .buttonStyle(.plain).focusEffectDisabled()
-            .accessibilityIdentifier("templates-new")
         }
         .padding(.bottom, 4)
     }
@@ -115,8 +106,8 @@ struct TemplatesScreen: View {
                         // or a built-in he renamed, is his words alone (0.89).
                         Text(area.title)
                             .font(.headline)
-                            .foregroundStyle(Theme.ink)
-                            .padding(.top, 16)
+                            .foregroundStyle(AppSection.templates.color)      // its part's colour (B, 0.112)
+                            .padding(.top, 12).padding(.leading, 4)
                             .accessibilityIdentifier("templates-area-\(area.testId)")
                         // Two across: more of his lists at a glance, as the web app shows them.
                         cardRows(area.lists, place: place, use: use)
@@ -130,9 +121,14 @@ struct TemplatesScreen: View {
                     .padding(.top, 20)
             }
             .padding(.horizontal, 16)
-            .padding(.bottom, 24)
+            .padding(.bottom, 80)          // room for the floating ＋ New template (0.112)
         }
         .headerOnTheMac { header(flat) }
+        // ＋ New template (B, 0.112): the tab's main button, full colour, floating at the bottom right — "+ New"
+        // beside the search until 0.111. Same name for the tests.
+        .overlay(alignment: .bottomTrailing) {
+            BFloatingButton(title: "New template", tint: AppSection.templates.color, id: "templates-new") { opened = .new }
+        }
         .sheet(item: $opened, onDismiss: {
             // Straight into a template just made: a list he cannot see the inside of
             // is not made yet. Opened once New has gone, never on top of it.
@@ -153,28 +149,21 @@ struct TemplatesScreen: View {
 }
 
 extension TemplatesScreen {
-    /// An area's cards, two across — in plain rows since 0.104.1 (a `LazyVGrid` until then; see `body`),
-    /// drawn as the grid drew them: two columns sharing the width, 8 apart, rows 8 apart, a shorter card
-    /// centred in its row, a last one alone in the left column.
+    /// An area's templates as rows of ONE grouped list (B, 0.112 — stage 3 of the redesign he picked on 11 Nov
+    /// 2026): cover, name, when last used, how many things, a chevron. Two cards across until 0.111. Plain
+    /// stacks, never lazy (see `body`).
     func cardRows(_ lists: [PackList], place: [String: Int], use: [String: Library.TemplateUse]) -> some View {
-        let rows = stride(from: 0, to: lists.count, by: 2).map { Array(lists[$0..<min($0 + 2, lists.count)]) }
-        return VStack(alignment: .leading, spacing: 8) {
-            ForEach(rows, id: \.[0].id) { row in
-                HStack(alignment: .center, spacing: 8) {
-                    ForEach(row, id: \.id) { list in
-                        Button { opened = .template(list.id) } label: { TemplateCard(list: list, use: use[list.id]) }
-                            .buttonStyle(.plain)
-                            .accessibilityIdentifier("template-row-\(place[list.id] ?? 0)")
-                            #if DEBUG
-                            // The tests' only way to see the colour its cover is drawn in (0.90).
-                            .accessibilityValue(Cover.fill(list))
-                            #endif
-                    }
-                    // The empty right column of an odd last row.
-                    if row.count == 1 { Color.clear.frame(maxWidth: .infinity, maxHeight: 0) }
-                }
-            }
-        }
+        GroupedRows(rows: lists.map { list in
+            (key: list.id, view: AnyView(
+                Button { opened = .template(list.id) } label: { TemplateRow(list: list, use: use[list.id]) }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("template-row-\(place[list.id] ?? 0)")
+                    #if DEBUG
+                    // The tests' only way to see the colour its cover is drawn in (0.90).
+                    .accessibilityValue(Cover.fill(list))
+                    #endif
+            ))
+        }, id: "templates-group-\(lists.first?.id ?? "")")
     }
 
     /// "Activity areas" — a quiet violet pill with the pen (0.89): his areas made, renamed, moved
@@ -221,6 +210,35 @@ extension TemplatesScreen {
 }
 
 extension PackList: Identifiable {}
+
+/// A template as a row of its area's grouped list (B, 0.112): its cover, its name and when it was last
+/// taken, how many things, a chevron.
+struct TemplateRow: View {
+    let list: PackList
+    var use: Library.TemplateUse?
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Cover(list: list, size: 28)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(list.name)
+                    .font(.system(.body)).foregroundStyle(Theme.ink).lineLimit(1)
+                Text(Library.TemplateUse.line(use, today: Today.local))
+                    .font(.system(.caption))
+                    .foregroundStyle(use == nil ? Theme.muted.opacity(0.65) : Theme.muted)
+                    .lineLimit(1)
+                    .accessibilityIdentifier("template-used")
+            }
+            Spacer(minLength: 8)
+            Text("\(list.items.filter { !Library.isReminder($0) }.count)")
+                .font(.system(.body).monospacedDigit()).foregroundStyle(Theme.muted)
+            BChevron()
+        }
+        .padding(.horizontal, 12).padding(.vertical, 5)
+        .frame(minHeight: Metrics.row)
+        .contentShape(Rectangle())
+    }
+}
 
 /// A list as a card: its cover, its name, how many things, and when it was last
 /// taken — two across, the way the web app shows them.

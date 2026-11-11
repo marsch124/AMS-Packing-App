@@ -14,6 +14,9 @@ struct ThingsScreen: View {
     /// Only the things with a battery (0.75, spec 07 part 15): the things to charge, at a glance.
     @State private var batteryOnly = false
     @State private var newName = ""
+    /// ＋ New thing's field is open (B, 0.112).
+    @State private var newOpen = false
+    @FocusState private var newFocus: Bool
     /// What New was missing, said under the field (never a grey button).
     @State private var newNeeds = ""
     @State private var editing: String?
@@ -42,8 +45,10 @@ struct ThingsScreen: View {
         let fresh = justAdded.compactMap { id in shown.first { $0.item.id == id } }
         let rest = fresh.isEmpty ? shown : shown.filter { !justAdded.contains($0.item.id) }
         VStack(spacing: 0) {
+            // B (0.112, stage 3 of the redesign he picked on 11 Nov 2026): "‹ Care" at the left, a full-colour
+            // Done at the right, the name as a big orange title under them, the search across the page.
             HStack {
-                Text("Your things").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
+                BackArrow(title: "Care", tint: AppSection.care.color, id: "things-back") { dismiss() }
                 Spacer()
                 Button("Done") { dismiss() }
                     .buttonStyle(HeaderButtonStyle(tint: AppSection.care.color, filled: true)).focusEffectDisabled()
@@ -52,18 +57,28 @@ struct ThingsScreen: View {
                     .commandS { dismiss() }                         // ⌘S = Done (0.103)
                     .accessibilityIdentifier("things-done")
             }
-            .padding(16)
+            .padding(.horizontal, 16).padding(.top, 8)
             // ⌘N (0.105, Mac): a new thing's page here too — the menu's New Thing is off while a page is open; made, the
             // thing stands under Just added, as one added at the foot.
             .commandN { editing = ThingEditor.newThing }
-            TextField("Search your things…", text: $query)
-                .textFieldStyle(.plain)
-                .font(.system(.body)).foregroundStyle(Theme.ink)
-                .clearButton($query, id: "things-search")
-                .padding(.horizontal, 12).frame(minHeight: Metrics.compact)
-                .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
-                .padding(.horizontal, 16)
+            Text("Your things").font(.system(.largeTitle, weight: .bold)).foregroundStyle(AppSection.care.color)
+                .lineLimit(1).minimumScaleFactor(0.8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16).padding(.bottom, 6)
+                .accessibilityIdentifier("things-title")
+            HStack(spacing: 6) {
+                SVGPath.path("M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14ZM20 20l-4-4")
+                    .stroke(style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                    .onGrid(Metrics.glyph).foregroundStyle(Theme.muted)
+                    .accessibilityHidden(true)
+                TextField("Search your things", text: $query)
+                    .textFieldStyle(.plain)
+                    .font(.system(.body)).foregroundStyle(Theme.ink)
+                    .clearButton($query, id: "things-search")
+            }
+            .padding(.horizontal, 10).frame(minHeight: Metrics.tap)
+            .background(RoundedRectangle(cornerRadius: 10).fill(Theme.line.opacity(0.7)))
+            .padding(.horizontal, 16)
             // The count and the filters on one line — or, where they do not fit (an iPhone with
             // both filters), the filters on a line of their own under the count (0.75).
             ViewThatFits(in: .horizontal) {
@@ -89,15 +104,17 @@ struct ThingsScreen: View {
                                 // A row of its own, not the A–Z row moved up: the Mac kept
                                 // the moved row's old name ("thing-row-7" at the top of the
                                 // list, 3 Oct 2026), so a test — and VoiceOver — lost it.
-                                thingRow(row, n: n, note: note(row)).id("just-added-\(row.item.id)")
+                                thingRow(row, n: n, note: note(row), first: n == 0, last: n == fresh.count - 1)
+                                    .id("just-added-\(row.item.id)")
                             }
                             if !rest.isEmpty { listHeading("A–Z", id: "things-rest") }
                         }
                         ForEach(Array(rest.enumerated()), id: \.element.item.id) { n, row in
-                            thingRow(row, n: fresh.count + n, note: note(row))
+                            thingRow(row, n: fresh.count + n, note: note(row), first: n == 0, last: n == rest.count - 1)
                         }
                     }
-                    .padding(.horizontal, 16).padding(.bottom, 24)
+                    // Room under the last row for the floating ＋ New thing (B, 0.112).
+                    .padding(.horizontal, 16).padding(.bottom, 72)
                 }
                 // Wherever the list was scrolled to, a new thing is seen arriving.
                 .onChange(of: justAdded) { _, _ in
@@ -105,6 +122,9 @@ struct ThingsScreen: View {
                     else { withAnimation { proxy.scrollTo(ThingsScreen.top, anchor: .top) } }
                 }
             }
+            // ＋ New thing (B, 0.112): floating at the bottom right, full colour; it opens the field, as ＋ Add does
+            // on a trip. The field stays open to add several; ✕ closes it. Always there until 0.111.
+            if newOpen {
             HStack(spacing: 8) {
                 TextField("A new thing", text: $newName)
                     .textFieldStyle(.plain)
@@ -112,14 +132,33 @@ struct ThingsScreen: View {
                     .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
                     .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
-                    .onSubmit { add() }
+                    .onSubmit { add(); newFocus = true }
+                    .focused($newFocus)
                     .accessibilityIdentifier("thing-new-name")
                 Button { add() } label: { FieldButtonLabel(title: "New", tint: AppSection.care.color) }
                     .buttonStyle(.plain).focusEffectDisabled()
                     .accessibilityIdentifier("thing-new")
+                Button { newOpen = false; newNeeds = "" } label: {
+                    IconMark(path: StationDrawings.cross, size: Metrics.glyph * 0.8, weight: 2)
+                        .foregroundStyle(Theme.muted)
+                        .frame(width: Metrics.tap, height: Metrics.tap)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("things-new-close")
+                .accessibilityLabel("Close")
             }
             .needsLine($newNeeds, typed: newName, id: "thing-new-needs")
             .padding(.horizontal, 16).padding(.vertical, 10)
+            }
+        }
+        .overlay(alignment: .bottomTrailing) {
+            if !newOpen {
+                BFloatingButton(title: "New thing", tint: AppSection.care.color, id: "things-new-open") {
+                    newOpen = true
+                    DispatchQueue.main.async { newFocus = true }
+                }
+            }
         }
         .background(Theme.bg.ignoresSafeArea())
         .sheet(item: Binding(get: { editing.map { Editing(id: $0) } }, set: { editing = $0?.id })) { e in
@@ -147,7 +186,7 @@ struct ThingsScreen: View {
 
     private func thingsCount(_ n: Int) -> some View {
         Text(n == 1 ? "1 thing" : "\(n) things")
-            .font(.system(.subheadline, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
+            .font(.system(.headline).monospacedDigit()).foregroundStyle(AppSection.care.color)
             .accessibilityIdentifier("things-count")
     }
 
@@ -202,7 +241,8 @@ struct ThingsScreen: View {
     /// the words searched for in Care's colour. Its own text, outside the row's button, so
     /// the Mac keeps it apart (a button folds its texts into itself there); a tap on it
     /// opens the thing too.
-    private func thingRow(_ row: (item: Item, templates: [String]), n: Int, note: NoteHit? = nil) -> some View {
+    private func thingRow(_ row: (item: Item, templates: [String]), n: Int, note: NoteHit? = nil,
+                          first: Bool = false, last: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 0) {
         // Its first photo, small, at the row's end (0.90): nothing when it has none.
         HStack(spacing: 10) {
@@ -235,7 +275,9 @@ struct ThingsScreen: View {
                     .accessibilityIdentifier("thing-row-\(n)-note")
             }
         }
-        .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
+        // A row of one rounded card (B, 0.112), drawn per row so the list stays lazy; a ruled line until 0.111.
+        .padding(.horizontal, 12)
+        .background(LineCell(first: first, last: last, inset: 12))
     }
 
     private func listHeading(_ title: String, id: String) -> some View {

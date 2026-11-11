@@ -37,6 +37,9 @@ struct TripScreen: View {
     @State private var adding = false
     @FocusState private var addFocus: Bool
     @State private var reviewing = false
+    /// A tapped step on the strip (0.112): Plan opens the pen's page, Refine its own.
+    @State private var settingsNow = 0
+    @State private var refining = false
     @State private var sweeping = false
     @State private var askingToDelete = false
     /// The line whose place is being chosen (his ask, 2026-09-26: set a place for
@@ -314,7 +317,7 @@ struct TripScreen: View {
                             .accessibilityIdentifier("trip-review")
                     }
                     // Its settings, after it is made (the gap list's first High item): the pen.
-                    TripSettingsDoor(tripId: tripId, rebuilt: { rebuiltNote = TripScreen.saying($0) },
+                    TripSettingsDoor(tripId: tripId, openNow: settingsNow, rebuilt: { rebuiltNote = TripScreen.saying($0) },
                                      startedAgain: { new in
                         let from = trip.name
                         startedId = new.id
@@ -365,7 +368,7 @@ struct TripScreen: View {
             }
             .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 10)
             // Where this trip stands in the loop (his picture, 2026-09-27); a tap shows it whole.
-            LoopDoor(here: step)
+            LoopDoor(here: step, onStep: { open($0, trip) })
                 .frame(maxWidth: .infinity, alignment: .leading)
                 // 6 under it (10 until 0.104, his arrows of 28 Oct 2026: a tad tighter). A segmented
                 // control since 0.111, right under the title's line.
@@ -802,6 +805,11 @@ struct TripScreen: View {
             .animation(.easeInOut(duration: 0.5), value: allPacked)
         }
         .sheet(isPresented: $reviewing) { ReviewScreen(tripId: tripId).environmentObject(model) }
+        .sheet(isPresented: $refining) { RefineScreen().environmentObject(model) }
+        // On site's page — from its door or from the strip's step (0.112; on the door until then).
+        .sheet(isPresented: $onSite, onDismiss: { homeFromDoor = false }) {
+            OnSiteScreen(tripId: tripId, openHome: homeFromDoor).environmentObject(model)
+        }
         .accessibilityElement(children: .contain)
         .overlay(alignment: .top) {
             // The moment: ONE sweep down the screen, never a blink — a blinking
@@ -900,6 +908,55 @@ struct TripScreen: View {
     /// with nothing typed it says so under the field — and Bought on site once something is typed (his idea 12:
     /// on the list in one go, in hand already). It stays open to add several; ✕ closes it.
     private var addPanel: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            addSuggestions
+            addRow
+        }
+        .needsLine($addNeeds, typed: newName, id: "trip-add-needs")
+        .padding(10)
+        .background(RoundedRectangle(cornerRadius: 16).fill(Theme.card))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.line, lineWidth: 1))
+        .shadow(color: .black.opacity(0.10), radius: 8, y: 2)
+        .padding(.horizontal, 16)
+    }
+
+    /// His own things as he types (0.112, his ask of 11 Nov 2026: "＋ Add could suggest your own things as you
+    /// type"): up to four whose name matches, those starting with what he typed first, none already on the
+    /// trip. A tap puts that very thing on — its bag, its When, its weight — and what goes with it.
+    @ViewBuilder private var addSuggestions: some View {
+        let found = model.library.addSuggestions(tripId: tripId, typed: newName)
+        if !found.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(Array(found.enumerated()), id: \.element.id) { n, thing in
+                        Button {
+                            model.change { _ = $0.addOwnThing(tripId: tripId, itemId: thing.id) }
+                            newName = ""; addNeeds = ""; addFocus = true
+                        } label: {
+                            HStack(spacing: 4) {
+                                SVGPath.path("M12 5v14M5 12h14")
+                                    .stroke(style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                                    .onGrid(Metrics.glyph * 0.7)
+                                Text(thing.name).font(.system(.subheadline, weight: .semibold)).lineLimit(1)
+                            }
+                            .foregroundStyle(AppSection.events.color)
+                            .padding(.horizontal, 10).frame(minHeight: Metrics.chip)
+                            .background(Capsule().fill(AppSection.events.color.opacity(0.10)))
+                            .overlay(Capsule().stroke(AppSection.events.color, lineWidth: 1))
+                            .contentShape(Capsule())
+                        }
+                        .buttonStyle(.plain).focusEffectDisabled()
+                        .accessibilityIdentifier("trip-add-suggest-\(n)")
+                        .accessibilityLabel("Add \(thing.name)")
+                    }
+                }
+            }
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("trip-add-suggestions")
+        }
+    }
+
+    private var addRow: some View {
         HStack(spacing: 8) {
             TextField("Add a thing to this trip", text: $newName)
                 .textFieldStyle(.plain)
@@ -938,12 +995,6 @@ struct TripScreen: View {
             .accessibilityIdentifier("trip-add-close")
             .accessibilityLabel("Close")
         }
-        .needsLine($addNeeds, typed: newName, id: "trip-add-needs")
-        .padding(10)
-        .background(RoundedRectangle(cornerRadius: 16).fill(Theme.card))
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Theme.line, lineWidth: 1))
-        .shadow(color: .black.opacity(0.10), radius: 8, y: 2)
-        .padding(.horizontal, 16)
     }
 
     /// The grouped list at the top of a trip (B, 0.111): the rows that have something to say.
@@ -1512,8 +1563,16 @@ struct TripScreen: View {
         .buttonStyle(.plain).focusEffectDisabled()
         .accessibilityIdentifier("trip-onsite")
         .accessibilityValue(says)
-        .sheet(isPresented: $onSite, onDismiss: { homeFromDoor = false }) {
-            OnSiteScreen(tripId: trip.id, openHome: homeFromDoor).environmentObject(model)
+    }
+
+    /// A step tapped on the strip (0.112, his ask of 11 Nov 2026): its page, not the loop picture.
+    private func open(_ step: Library.LoopStep, _ trip: TripEvent) {
+        switch step {
+        case .plan: settingsNow += 1
+        case .pack: toList += 1
+        case .onSite: onSite = true
+        case .review: reviewing = true
+        case .refine: refining = true
         }
     }
 
@@ -2057,13 +2116,15 @@ struct GroupedRows: View {
 struct LineCell: View {
     let first: Bool
     let last: Bool
+    /// Where the hairline starts: past a trip line's circle; the row's own edge elsewhere (0.112).
+    var inset: CGFloat = Metrics.mark + 14
     var body: some View {
         let r: CGFloat = 12
         UnevenRoundedRectangle(topLeadingRadius: first ? r : 0, bottomLeadingRadius: last ? r : 0,
                                bottomTrailingRadius: last ? r : 0, topTrailingRadius: first ? r : 0)
             .fill(Theme.card)
             .overlay(alignment: .top) {
-                if !first { Theme.line.frame(height: 1).padding(.leading, Metrics.mark + 14) }
+                if !first { Theme.line.frame(height: 1).padding(.leading, inset) }
             }
             .accessibilityHidden(true)
     }

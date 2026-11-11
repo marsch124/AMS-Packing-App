@@ -59,67 +59,21 @@ struct CareScreen: View {
                 header(stats)
                 #endif
 
-                // Everything he owns, on a list or not — the web app's "Your things".
-                Button { opening = ThingsRequest(search: "") } label: {
-                    HStack {
-                        Text("Your things").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
-                        Text("\(model.library.ownThings().count)").font(.system(.callout, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
-                        Spacer()
-                        SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
-                            .frame(width: 24, height: 24).foregroundStyle(Theme.muted)
-                    }
-                    .padding(.horizontal, 12).frame(minHeight: Metrics.row)
-                    .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain).focusEffectDisabled()
-                .padding(.top, 14)
-                .accessibilityIdentifier("care-things")
-
-                Button { bagsOpen = true } label: {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            HStack(spacing: 6) {
-                                Text("Bags").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
-                                Text("\(model.library.bags().count)")
-                                    .font(.system(.subheadline, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
-                            }
-                            Text("How much each may carry, and what goes in it")
-                                .font(.system(.footnote)).foregroundStyle(Theme.muted).lineLimit(1)
-                        }
-                        Spacer()
-                        SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
-                            .frame(width: 24, height: 24).foregroundStyle(Theme.muted)
-                    }
-                    .padding(.horizontal, 12).frame(minHeight: Metrics.row)
-                    .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain).focusEffectDisabled()
-                .padding(.top, 8)
-                .accessibilityIdentifier("care-bags")
-
-                Button { openTable() } label: {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("All your things · table").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
-                            Text("Weight and where each one lives, filled in row by row")
-                                .font(.system(.footnote)).foregroundStyle(Theme.muted).lineLimit(1)
-                        }
-                        Spacer()
-                        SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
-                            .frame(width: 24, height: 24).foregroundStyle(Theme.muted)
-                    }
-                    .padding(.horizontal, 12).frame(minHeight: Metrics.row)
-                    .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain).focusEffectDisabled()
-                .padding(.top, 8)
-                .accessibilityIdentifier("care-table")
+                // B (0.112, stage 3 of the redesign he picked on 11 Nov 2026): Your things, Bags and the
+                // table as rows of ONE grouped list, as Apple's Settings — three cards of their own until 0.111.
+                GroupedRows(rows: [
+                    ("things", AnyView(Button { opening = ThingsRequest(search: "") } label: {
+                        BRow(title: "Your things", count: "\(model.library.ownThings().count)")
+                    }.buttonStyle(.plain).focusEffectDisabled().accessibilityIdentifier("care-things"))),
+                    ("bags", AnyView(Button { bagsOpen = true } label: {
+                        BRow(title: "Bags", detail: "How much each may carry, and what goes in it",
+                             count: "\(model.library.bags().count)")
+                    }.buttonStyle(.plain).focusEffectDisabled().accessibilityIdentifier("care-bags"))),
+                    ("table", AnyView(Button { openTable() } label: {
+                        BRow(title: "All your things · table", detail: "Weight and where each one lives, filled in row by row")
+                    }.buttonStyle(.plain).focusEffectDisabled().accessibilityIdentifier("care-table")))
+                ], id: "care-group")
+                .padding(.top, 10)
 
                 Text(CareScreen.summary(rows: rows.count, overdue: overdue, soon: soon))
                     .font(.system(.body, weight: .semibold))
@@ -127,24 +81,11 @@ struct CareScreen: View {
                     .padding(.top, 10)
                     .accessibilityIdentifier("care-summary")
 
-                // List or Calendar — the web app's two views of the same services.
-                HStack(spacing: 6) {
-                    ForEach(["list", "calendar"], id: \.self) { view in
-                        Button { careView = view } label: {
-                            Text(view == "list" ? "List" : "Calendar")
-                                .font(.system(.footnote, weight: .semibold))
-                                .foregroundStyle(careView == view ? .white : Theme.muted)
-                                .padding(.horizontal, 14).frame(minHeight: 32)
-                                .background(Capsule().fill(careView == view ? AppSection.care.color : Theme.card))
-                                .overlay(Capsule().stroke(Theme.line, lineWidth: careView == view ? 0 : 1))
-                                .contentShape(Capsule())
-                        }
-                        .buttonStyle(.plain).focusEffectDisabled()
-                        .accessibilityIdentifier("care-view-\(view)")
-                        .accessibilityAddTraits(careView == view ? .isSelected : [])
-                    }
-                }
-                .padding(.top, 6)
+                // List or Calendar — the web app's two views of the same services; Apple's segmented
+                // control since 0.112 (two pills until then).
+                BSegmented(options: [("list", "List", "care-view-list"), ("calendar", "Calendar", "care-view-calendar")],
+                           chosen: careView, tint: AppSection.care.color) { careView = $0 }
+                    .padding(.top, 6)
 
                 if careView == "calendar" {
                     CareCalendarView(today: today, showList: { careView = "list" }).environmentObject(model)
@@ -172,12 +113,18 @@ struct CareScreen: View {
                     .disabled(!section.fold)
                     .accessibilityIdentifier("care-section-\(section.key)")
                     if shown {
-                        ForEach(section.rows, id: \.item.id) { row in
-                            CareRow(row: row, n: order.firstIndex(of: row.item.id) ?? 0) {
-                                let id = row.item.itemId ?? row.item.id
-                                model.change { _ = $0.logCare(itemId: id, on: today) }
+                        // In one rounded card per part (B, 0.112), a hairline between the rows.
+                        let last = section.rows.last?.item.id
+                        VStack(spacing: 0) {
+                            ForEach(section.rows, id: \.item.id) { row in
+                                CareRow(row: row, n: order.firstIndex(of: row.item.id) ?? 0, last: row.item.id == last) {
+                                    let id = row.item.itemId ?? row.item.id
+                                    model.change { _ = $0.logCare(itemId: id, on: today) }
+                                }
                             }
                         }
+                        .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1).allowsHitTesting(false))
                     }
                 }
 
@@ -226,6 +173,7 @@ struct CareScreen: View {
 struct CareRow: View {
     let row: MaintenanceRow
     let n: Int
+    var last = false
     let done: () -> Void
 
     var body: some View {
@@ -253,8 +201,8 @@ struct CareRow: View {
                 .accessibilityLabel("\(row.item.name) done today")
             }
         }
-        .padding(.vertical, 5)
-        .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
+        .padding(.vertical, 5).padding(.horizontal, 12)
+        .overlay(alignment: .bottom) { if !last { Theme.line.frame(height: 1).padding(.leading, 12) } }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("care-row-\(n)")
     }

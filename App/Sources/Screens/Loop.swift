@@ -242,6 +242,10 @@ struct LoopDoor: View {
     let here: Library.LoopStep
     /// Its own name on each screen: a sheet can sit over another strip.
     var id = "trip-loop"
+    /// A tap on a step opens that step's page (0.112, his ask of 11 Nov 2026: "Tapping a step (for example
+    /// Review) could open that step's page directly"). Given on a trip's page; nil = the whole strip is one
+    /// button that shows the loop, as before (Review, Refine).
+    var onStep: ((Library.LoopStep) -> Void)? = nil
     @Environment(\.colorScheme) private var scheme
     @State private var open = false
 
@@ -251,6 +255,29 @@ struct LoopDoor: View {
                                Fit(marks: false, size: 13, pad: 5, arrow: 8, space: 1)]
 
     var body: some View {
+        if onStep != nil {
+            // Each step its own button (`trip-step-<n>`), the step the trip is at selected; the whole loop
+            // under a long press (a right-click on the Mac). The strip keeps its name and value for the tests.
+            ViewThatFits(in: .horizontal) {
+                strip(LoopDoor.fits[0])
+                strip(LoopDoor.fits[1])
+                strip(LoopDoor.fits[2])
+            }
+            .contextMenu {
+                Button("Show the whole loop") { open = true }
+            }
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier(id)
+            .accessibilityLabel(LoopDoor.said(here))
+            .accessibilityValue(here.name)
+            .accessibilityAction(named: "Show the whole loop") { open = true }
+            .sheet(isPresented: $open) { LoopScreen(here: here) }
+        } else {
+            whole
+        }
+    }
+
+    private var whole: some View {
         Button { open = true } label: {
             ViewThatFits(in: .horizontal) {
                 strip(LoopDoor.fits[0])
@@ -283,29 +310,48 @@ struct LoopDoor: View {
 
     /// The five steps as Apple's segmented control (B, 0.111): a grey track, the step the trip is at
     /// filled in its own colour with white words, the steps done in their colour's words, those ahead
-    /// in ink. Until 0.110 a row of pills with arrows between. A tap still shows the whole loop.
+    /// in ink. Until 0.110 a row of pills with arrows between. On a trip each step opens its page (0.112).
     private func strip(_ fit: Fit) -> some View {
         HStack(spacing: 2) {
-            ForEach(Library.LoopStep.allCases, id: \.self) { step in
-                let stage = step.stage(at: here)
-                Text(step.name)
-                    .font(.system(fit.size < 14 ? .caption : .footnote, weight: stage == .ahead ? .medium : .semibold))
-                    .lineLimit(1).fixedSize()
-                    .foregroundStyle(stage == .here ? Color.white : stage == .done ? step.words(scheme) : Theme.ink.opacity(0.75))
-                    .padding(.horizontal, fit.pad)
-                    // The track's 2 round it: the whole control as high as the pills were (`Metrics.loopPill`).
-                    .frame(maxWidth: .infinity, minHeight: Metrics.loopPill - 4)
-                    .background {
-                        if stage == .here {
-                            RoundedRectangle(cornerRadius: 7).fill(step.tint)
-                                .shadow(color: .black.opacity(0.12), radius: 1, y: 1)
-                        }
-                    }
+            ForEach(Array(Library.LoopStep.allCases.enumerated()), id: \.element) { n, step in
+                segment(step, n: n, fit)
             }
         }
         .padding(2)
         .background(RoundedRectangle(cornerRadius: 9).fill(Theme.line.opacity(scheme == .dark ? 0.9 : 0.6)))
         .padding(.vertical, Metrics.loopReach)
+    }
+
+    /// One step of the strip: a button of its own when the page opens steps (0.112), else words.
+    @ViewBuilder
+    private func segment(_ step: Library.LoopStep, n: Int, _ fit: Fit) -> some View {
+        if let onStep {
+            Button { onStep(step) } label: { words(step, fit).contentShape(Rectangle()) }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("trip-step-\(n)")
+                .accessibilityLabel(step.name)
+                .accessibilityHint("Opens \(step.name)")
+                .accessibilityAddTraits(step == here ? .isSelected : [])
+        } else {
+            words(step, fit)
+        }
+    }
+
+    private func words(_ step: Library.LoopStep, _ fit: Fit) -> some View {
+        let stage = step.stage(at: here)
+        return Text(step.name)
+            .font(.system(fit.size < 14 ? .caption : .footnote, weight: stage == .ahead ? .medium : .semibold))
+            .lineLimit(1).fixedSize()
+            .foregroundStyle(stage == .here ? Color.white : stage == .done ? step.words(scheme) : Theme.ink.opacity(0.75))
+            .padding(.horizontal, fit.pad)
+            // The track's 2 round it: the whole control as high as the pills were (`Metrics.loopPill`).
+            .frame(maxWidth: .infinity, minHeight: Metrics.loopPill - 4)
+            .background {
+                if stage == .here {
+                    RoundedRectangle(cornerRadius: 7).fill(step.tint)
+                        .shadow(color: .black.opacity(0.12), radius: 1, y: 1)
+                }
+            }
     }
 }
 
