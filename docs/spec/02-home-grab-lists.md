@@ -50,6 +50,31 @@ this device's ticks and skips for one list (`GrabState`), never synced.
 
 ## 1. The frame: RootView, the tab bar and the version marker
 
+**0.110 — the frame of the "B" redesign, stage 1** (his pick of 11 Nov 2026: Apple's order with his own look — his
+hand-drawn marks, a colour per part, tight rows, full-colour main buttons). This replaces the six-button tab bar
+described below; where the text below says "six tabs", "the tab bar's sixth button" or "the version marker under the
+bar", read the following instead:
+- **Five tabs**, in this order: Home (blue), Trips (green), Templates (violet), Care (orange), To do (red). The
+  `AppSection` order stays; `.settings` is no longer a tab. The To do tab keeps its red count badge (to-dos and
+  to-buys still open, together; none, no badge).
+- **The tab bar floats** above the page (iPhone): a rounded, glass-style bar (material fill, a hairline edge) with
+  space around it, over the page instead of a strip under it; the page scrolls beneath. Each tab keeps its
+  hand-drawn mark (`SectionMark`, never a stock icon) in its own colour: the selected tab's mark full colour on a
+  tint of that colour, the others muted. Labels: Home, Trips, Templates, Care, To do. VoiceOver reads each tab's label
+  and the selected trait as before.
+- **Settings** opens from the **nut** button (the hand-drawn nut, slate) at the top right of Home, as a screen pushed
+  above the tab bar's page, with a "‹ Home" back button at its top left. It still opens on an empty library (state
+  `.empty`) so a fresh device can restore from a file. On the Mac Settings is a row of the sidebar (below).
+- **The version marker** (`AppInfo.version`, the "0.110 (1)" text) is no longer a row under the tab bar. It shows at
+  the foot of Settings and, small and muted, under Home's nut.
+- **Each tab's main screen starts with a big coloured title at the left**, in its part's colour: "Home", "Trips",
+  "Your templates", "Care" (To do keeps its own header). One title line, no second heading above it.
+- **The Mac** shows a **sidebar** at the left (a list, not a bar under the page): Home, Trips, Templates, Care, To do
+  and Settings, each row with its mark and colour, the chosen row highlighted. The window has its normal title bar
+  again — the 0.67 "header in the title-bar strip" is gone (spec 06 §21 and §24). ⌘1 to ⌘5 choose Home to To do
+  and ⌘6 (or ⌘,) opens Settings — the Go menu keeps its six items. "All your things" is unchanged.
+- Nothing stored changes: no new key, no change to a trip, a thing, a template or a grab list, to sync or to a backup.
+
 **Purpose and origin.** One screen at a time with the tab bar under it, the same six sections in the
 same order and colours as the web app's tab bar (`Sections.swift`). The "Actions" tab has been labelled
 **"To do"** since test G.4 (2026-09-30, the owner's choice, release 0.43). The version marker has its own
@@ -298,6 +323,39 @@ the path must lie inside the app's sandbox container (`docs/store.md`).
 ---
 
 ## 3. Home screen: layout and everything it opens
+
+**0.110 — Home laid out again** (stage 1 of the "B" redesign). Home is now, top to bottom (16 pt side padding as
+before; the tab bar floats over the bottom, the page leaves room for it):
+1. **The title line**: "Home", big, bold, in Home's blue, at the left; at the right the **nut** button (slate, hand-drawn,
+   at least `Metrics.tap` square) that opens Settings (spec 06 §1); under it the version marker, small and muted.
+2. **The search field**: a field-shaped button reading "Search things and trips" with a drawn magnifier; a tap opens the
+   SAME search as before (`SearchScreen`, §15), unchanged inside. It is not a text field on Home itself.
+3. **Next trip**: a small coloured heading, then the countdown card (§11, unchanged: the days, the trip's name, what is
+   still to pack, the from date, what is to buy; a tap opens the trip). While a trip is under way, going home or back home
+   and not reviewed, the **On your trip** card (§11a, unchanged) takes its place; with no trip ahead, no card and no heading.
+4. **Grab and go**: its heading with Grab Lists at the right, then the eight grab tiles (§4), exactly as before.
+5. **Library**: a heading and one card of three tight rows — **Trips**, **Things**, **Templates** — each with its drawn mark in
+   its part's colour, its name and its count (as the old tiles: `library.trips.count`, the things, the templates; "This device"
+   counted the same). A row opens its tab: Trips, Care (where his things live), Templates (`home-library-<section>`; the
+counts keep `count-trips`, `count-things`, `count-templates`).
+   Hairlines between rows, like Settings' card of doors.
+6. **"＋ New trip"**: a full-colour button (the main button: never grey), full width, at the foot of Home.
+**What is gone from Home:** the three count tiles under "This Device" (§12 — the Library rows replace them) and the
+Create new trip card with its frame. The **sync dot** (§12b) moved with the counts: it stands at the right of the Library
+heading (`home-device` holds it; `home-sync-light` unchanged). The 0.109 rule stays: while away or going home (not
+`backHome`) the button is ONE quiet muted line "+ New trip" (`home-create-folded`) that opens the same page; otherwise the
+full-colour button (`home-new-trip`). Grab and go keeps its frame (`home-grab-frame`, his 0.91 ask).
+**Create new trip as a page of its own** (0.110): "＋ New trip" opens it as a full page (a sheet on the iPhone, a sheet on the
+Mac; `CreateTripPage`, `screen-new-trip`) with the title "New trip" (`home-create-heading`), **Cancel** at the top left
+(`trip-create-cancel`) and **Create** at the top right (`trip-create-top`, full colour); at the foot, always in sight, the
+full-colour **Create trip** (`trip-create`), with what is missing said right above it (`trip-create-needs`).
+Its content is exactly what the card held (name, Full trip | Quick, the templates, Travelling by, Flights and stay, More
+choices, the always-open calendar; spec 03). Cancel closes it and keeps nothing; Create makes the trip and closes it, and
+the new trip opens as before. On the Mac **Escape is Cancel** and ⌘S is Create. A swipe down on the iPhone closes it when
+nothing was typed; with something typed it asks first (Discard changes?), as every page.
+Tests (0.110): the five tabs and Settings via the nut; Home's order of parts; Library rows open their places; "＋ New trip"
+opens the page and Cancel closes it. (The 0.109 test `testOnATripCreateNewTripFoldsToOneQuietLine` is replaced: on a trip
+the button is just the same button.)
 
 **Purpose and origin.** "Home: build a trip." Since the field test of 3 Oct 2026 its two parts lead with
 real headings: "the headings … dominant". They had been small and grey.
@@ -2135,6 +2193,8 @@ counted down in its usual place under Grab and go — never the trip on the card
   the card; Review opens the review). Red on 0.107 ("Home shows nothing of the trip he is on"), green on 0.108.
 
 ## 12. "This Device": the count tiles on Home
+
+> **0.110: gone from Home.** The three count tiles and the sync dot under "This Device" are no longer on Home; Home's **Library** (§3, 0.110) shows the same three counts as rows that open Trips, Things and Templates, and the sync dot stands at the right of the Library heading. The text below describes the tiles as they were up to 0.109.
 
 **Purpose and origin.** How many trips, things and templates this device holds. On the Mac the owner
 marked the heading to be struck out and written **down the side** instead (and Trips and Templates

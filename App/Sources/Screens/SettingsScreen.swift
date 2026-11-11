@@ -34,6 +34,26 @@ struct SettingsScreen: View {
             // marked): "Far too much space in the settings tab." (Until 0.67 every door was
             // a card of its own, 60 points tall, and the cards stood 10 points apart.)
             VStack(alignment: .leading, spacing: 8) {
+                // Settings is no longer a tab (0.110, the redesign "B"): it opens from the nut on
+                // Home, and on the iPhone "‹ Home" at the top goes back — Apple's back arrow. Its
+                // big title in its own slate, as every tab's.
+                #if os(iOS)
+                Button { model.tabToOpen = .home } label: {
+                    HStack(spacing: 2) {
+                        SVGPath.path("M15 6l-6 6 6 6")
+                            .stroke(style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
+                            .onGrid(Metrics.glyph)
+                            .accessibilityHidden(true)
+                        Text("Home").font(.system(.body))
+                    }
+                    .foregroundStyle(AppSection.home.color)
+                    .frame(minHeight: Metrics.compact).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("settings-back")
+                .padding(.top, Metrics.screenTop)
+                #endif
+                ScreenHeader(title: "Settings", tint: AppSection.settings.color, id: "settings-heading") { EmptyView() }
                 // First, as the iPhone's own Settings starts with the person (0.80, spec 07 part 18 C):
                 // his details for the lost-luggage desk, then Your choices — rows of one card.
                 VStack(spacing: 0) {
@@ -47,9 +67,6 @@ struct SettingsScreen: View {
                     .accessibilityIdentifier("settings-lists")
                 }
                 .settingsCard()
-                // Settings has no header line: its first card starts where every tab's
-                // first line does (Metrics.screenTop, 0.67; was 14).
-                .padding(.top, Metrics.screenTop)
 
                 // Remind me to pack (his idea 7) — per device, off until he says.
                 RemindersCard().environmentObject(model)
@@ -215,6 +232,12 @@ struct SettingsScreen: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier("device-import")
                 }
+                // The version, quietly at the foot (0.110: no longer under the tab bar).
+                Text("AMS Packing \(AppInfo.version)")
+                    .font(.system(.caption, weight: .semibold)).foregroundStyle(Theme.muted)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 4)
+                    .accessibilityIdentifier("settings-version")
             }
             .padding(.horizontal, 16).padding(.bottom, 24)
         }

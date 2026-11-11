@@ -10,7 +10,16 @@ This chapter also writes down the conventions every screen follows (colours, dra
 type sizes, identifiers, the Mac rules), the invented sample library the UI tests run on, and the build, test
 and release machinery.
 
-**How one reaches it.** The tab bar's sixth button, *Settings* (id `tab-settings`, the slate "nut" mark). The
+**0.110 — Settings is no longer a tab** (stage 1 of the "B" redesign, 11 Nov 2026). It opens from the **nut** button (hand-drawn,
+slate) at the top right of Home (spec 02 §3), as a screen of its own above the tab bar, with a **"‹ Home" back button** at its top left
+on the iPhone (`settings-back`; a tap on Home's tab does the same — Home's tab is lit while Settings is open), and its big slate
+title "Settings" (`settings-heading`). On the Mac Settings is the last row of the sidebar (`tab-settings`), also ⌘6 or ⌘,. The
+version number (`AppInfo.version`) shows at the **foot of Settings** ("AMS Packing 0.110 (n)", `settings-version`), small under
+Home's nut (`app-version`), and on the Mac under the sidebar (`sidebar-version`). Settings keeps the
+slate colour for its heading and marks, and every card, row and test below is unchanged. Where this chapter says "the tab bar's sixth
+button" or "another tab", read: the nut on Home / "‹ Home" (iPhone), the sidebar row or ⌘, (Mac).
+
+**How one reaches it.** (Until 0.109:) the tab bar's sixth button, *Settings* (id `tab-settings`, the slate "nut" mark). The
 screen container is `screen-settings`. Settings is one of only two tabs with real content on an EMPTY library
 (state `.empty`): `RootView.SectionScreen` shows `SettingsScreen` for both `(.ready, .settings)` and
 `(.empty, .settings)`, so a fresh device can restore from a file before anything has arrived. No Shortcut and no
@@ -955,6 +964,8 @@ against `Releases.swift`):
 
 | Version | Date | Title | Lines | Gist |
 |---|---|---|---|---|
+| 0.110 | 11 Nov 2026 | A new frame: five tabs, a calmer Home, and the Mac with a sidebar | N5 C7 R1 | frame110 (stage 1 of the "B" redesign: five tabs in a floating glass-style bar, Settings from the nut on Home with a ‹ Home back button, version at the foot of Settings and under the nut, big coloured tab titles, Home = title + nut, search field, Next trip, Grab and go, Library rows, ＋ New trip opening Create new trip as its own page with Cancel/Create, the Mac's sidebar and normal title bar, ⌘1–⌘5; 0.109's folded New trip line and Home's count tiles gone; no data changes) |
+| 0.109 | 4 Nov 2026 | New trip steps back while you travel | C1 | Create new trip folds to one quiet line on a trip (replaced by the 0.110 button) |
 | 0.108 | 2 Nov 2026 | Your trip on Home, Still to pack, and grab list icons | N3 C2 F1 | home108 (On your trip card first on Home: away / going home / welcome home, `onTripCard`, 14 days after the end at most; grab list icon from the template icons, stored as "icon:<key>" in the existing `icon`, `grab-icon-<key>` quick-action pictures; Your grab lists rows 37/31 pt with an On Home switch), left108 (Everything / Still to pack under Group by, kept per trip, `ams.trip.onlyLeft`; no weather card once `hasSetOff`; Fold all glyph `onGrid(18)`, measured in a picture of the pill) |
 | 0.107 | 30 Oct 2026 | Your choices fold, and a kind can go | N2 C2 | choices107 (Your choices: every part folds, chevron left, starts folded, `ChoicesFold` per device; a sixth part Kinds of thing; removing a kind in use asks "Move them to" — Other, else Comfort & misc — held until Done/Save, one ⌘Z step, in Your choices and in a thing's Kind of thing; `reminderKind()` so a removed Reminders never comes back), refine107 (`RefineDoor` only while `refineSuggestions()` is not empty or its page is open), suite107 (tests only: a Mac launch under `-uiTesting` opens its window — `openAWindowIfNoneCame`; kit and Take a break test fixes; the Templates-tab test 2× faster) |
 | 0.106 | 28 Oct 2026 | Not this time, and once under Template | C2 | his picks "1D 2B" while packing (28 Oct): `NotThisTimeMark` (a faint ⊘, `trip-line-<n>-notthistime`) instead of a set-aside line's empty ring; `linesByTemplate` puts a line on several templates under the first only, `alsoOnTemplates` → `TemplateMarks(also:)` "also" + icons; model tests TripByTemplateTests, UI tests testASetAsideLineIsNotPacked, testATripSortedByTemplateShowsAThingOnceAndSaysWhereElse, testATripsLineShowsTheTemplatesItComesFrom |
@@ -2329,7 +2340,7 @@ besides). The Mac hands a sheet its own window, so a page's hidden ⌘S can neve
 | ⌘S | Save / Done / Make / Add / Create trip | every page below; Thing menu ▸ Save on a thing's page |
 | Esc, ⌘. | Cancel, or close | every sheet's Cancel or Done (`.cancelAction`); a template being arranged: Arrange first |
 | Return | adds what is typed in an Add field; saves a thing's page from any field but Notes (Mac) | `onSubmit`; `ThingEditor.key` |
-| ⌘1 … ⌘6 | Home, Trips, Templates, Care, To do, Settings | Go menu (`GoCommands`, Mac only) |
+| ⌘1 … ⌘6 | Home, Trips, Templates, Care, To do, Settings (Settings also ⌘,) | Go menu (`GoCommands`, Mac only) |
 | ⌘, | the Settings tab | app menu ▸ Settings… (`SettingsAndHelpCommands`, Mac only) |
 | — | Help ▸ Keyboard Shortcuts: How it works at its topic | `SettingsAndHelpCommands`, `LibraryModel.keysToOpen` |
 | ⌘F | search How it works; find an icon | `GuideScreen`, `TemplatesScreen` icon picker (Mac) |
@@ -2704,6 +2715,8 @@ traffic lights. On
 0.66 it was red on four tabs (the magnifier 10–11 pt off everywhere, Home's Grab Lists and Templates' + New 2.5 pt);
 planted again by aligning `ScreenHeader`'s row on `.firstTextBaseline`, the same four.
 
+**0.110: gone — the Mac's main window has its normal title bar again; see §24.** What follows is how it was from 0.67 to 0.109.
+
 **The Mac: the header in the title bar strip** (0.67; his boxes on the 0.63 picture covered the title bar too). The
 main window (`WindowGroup`) has **no title bar**: `.windowStyle(.hiddenTitleBar)`. The window "All your things" keeps
 its own. `RootView` measures the strip with a `GeometryReader` — its height is the window's top safe area (32 on
@@ -3026,8 +3039,24 @@ label (`quickstart-step-<n>`, `loop-step-<n>`).
 
 ## 24. Windows, tab bar, version marker and launch modes (`AMSPackingApp.swift`, `RootView.swift`, `LibraryModel.forThisLaunch`)
 
-**Scenes.** One `WindowGroup` showing `RootView` with the shared `LibraryModel`. Mac only: content frame min 480 ×
-600, ideal 760 × 900; `.defaultSize(760, 900)`; on appear `useTheRunnersWindowSize()`. Mac only: a second scene
+**0.110 — the frame, again** (stage 1 of the "B" redesign; replaces the "Tab bar" paragraph below and the 0.67 Mac
+header). `RootView` shows the current section's screen and, over its bottom edge (`safeAreaInset`, so a page scrolls under it), a **floating tab bar** (`AppSection.tabs`): FIVE
+equal buttons (Home, Trips, Templates, Care, To do; plain, no focus ring, id `tab-<section>`, VoiceOver label = the tab label,
+selected trait on the current one) in a capsule bar at most 520 wide, 16 in from the sides — `glassEffect(.regular)` on iOS 26, a thin
+material with a hairline before it. Each button: the hand-drawn mark in its colour (Home blue, Trips green, Templates violet, Care orange, To do red);
+the selected one on a soft capsule of its colour (14 %), its label bold in its colour; the others' labels muted.
+While Settings is open, Home's tab is the lit one. To do keeps its red count badge. On the iPhone there is
+no `tab-settings`: Settings opens from the nut at the top right of Home (`home-settings`). The build marker is no longer a row under the bar: it
+shows at the foot of Settings and small under Home's nut (id `app-version` stays on it).
+**The Mac**: the main window has its NORMAL title bar again (`.windowStyle(.hiddenTitleBar)` and the `lead` / title-strip
+measuring of §21 are gone; the window's three buttons sit in the title bar, nothing of a page reaches under it). Instead of the
+tab bar it shows a **sidebar** at the left — Home, Trips, Templates, Care, To do, then Settings — each row with its mark and
+colour (the chosen one highlighted), 180 wide, the version under it (`sidebar-version`); a 1-pt line, then the page (at most 720 wide, centred). Rows keep
+`tab-<section>` (Settings: `tab-settings`), To do's badge at the row's right end. The window title says the open part
+(`navigationTitle`). ⌘1 to ⌘6 as before (the Go menu keeps six items); ⌘, opens Settings too. Starts on Home; not remembered.
+
+**Scenes.** One `WindowGroup` showing `RootView` with the shared `LibraryModel`. Mac only: content frame min 640 ×
+600, ideal 940 × 900 (0.110, room for the sidebar; 480/760 until 0.109); `.defaultSize(940, 900)`; on appear `useTheRunnersWindowSize()`. Mac only: a second scene
 `Window("All your things", id: ThingsTable.windowId)` (the table, his ask 4 Oct 2026: "I would like it wider"), default
 1180 × 780 (760 × 620 under tests), `.windowResizability(.contentMinSize)`, restoration disabled, launch suppressed.
 Links (0.69, a place's label, spec 05): on the Mac the main window's content says `.handlesExternalEvents(preferring:

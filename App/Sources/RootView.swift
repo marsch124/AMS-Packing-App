@@ -23,21 +23,7 @@ struct RootView: View {
     /// This window, for `RootPages`.
     @State private var windowKey = UUID()
 
-    var body: some View {
-        #if os(macOS)
-        // The window has no title bar (0.67): its strip holds each tab's header. How tall
-        // it is — the window's top safe area — and how far a header steps in to clear the
-        // window buttons, from the column's left edge (the column is centred).
-        GeometryReader { geo in
-            let column = min(geo.size.width, RootView.column)
-            page.environment(\.titleBarStrip, TitleBarStrip(
-                height: geo.safeAreaInsets.top,
-                lead: max(0, Metrics.windowButtons - (geo.size.width - column) / 2 - 16)))
-        }
-        #else
-        page
-        #endif
-    }
+    var body: some View { page }
 
     /// The web app's column, on the Mac.
     static let column: CGFloat = 720
@@ -57,13 +43,29 @@ struct RootView: View {
         #endif
     }
 
-    private var page: some View {
-        VStack(spacing: 0) {
+    /// The frame (0.110, the redesign "B" — his pick, 11 Nov 2026). The iPhone: the tab's screen, and
+    /// over its foot a floating, glass-style bar of five tabs. The Mac: a sidebar at the left — the
+    /// five parts and Settings — and the screen beside it, under the window's normal title bar.
+    @ViewBuilder
+    private var frame: some View {
+        #if os(macOS)
+        HStack(spacing: 0) {
+            SideBar(section: $section)
+            Theme.line.frame(width: 1)
             SectionScreen(section: section, go: { section = $0 })
                 .frame(maxWidth: RootView.column)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-            TabBar(section: $section)
         }
+        .navigationTitle(section.label)
+        #else
+        SectionScreen(section: section, go: { section = $0 })
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .safeAreaInset(edge: .bottom, spacing: 0) { TabBar(section: $section) }
+        #endif
+    }
+
+    private var page: some View {
+        frame
         .background(Theme.bg.ignoresSafeArea())
         // The Go menu acts on the window in front (0.103, Keys.swift): which tab it shows and how to change it.
         .focusedSceneValue(\.sectionSwitch, SectionSwitch(current: section, go: { section = $0 }))
@@ -294,6 +296,9 @@ private struct SectionScreen: View {
     }
 }
 
+/// The iPhone's tab bar (0.110, the redesign "B"): five tabs — Settings is the nut on Home now — in a
+/// rounded bar that floats over the foot of the page, glass on iOS 26, each tab his hand-drawn mark in
+/// its part's colour. Settings open lights Home, where its door is. The version is on Home (`app-version`).
 private struct TabBar: View {
     @Binding var section: AppSection
     @EnvironmentObject var model: LibraryModel
@@ -301,31 +306,60 @@ private struct TabBar: View {
     var body: some View {
         // What is still open on the To do tab's two sides (0.101, `Library.toDoTabCount`).
         let open = model.library.toDoTabCount()
-        VStack(spacing: 0) {
-            HStack(spacing: 0) {
-                ForEach(AppSection.allCases) { s in tab(s, count: s == .actions ? open : nil) }
+        HStack(spacing: 0) {
+            ForEach(AppSection.tabs) { s in
+                TabButton(section: s, current: $section, count: s == .actions ? open : nil)
             }
-            // A quiet build marker in its own thin row, so it can never sit on
-            // top of a tab's label.
+        }
+        .padding(.horizontal, 6).padding(.vertical, 4)
+        .glassBar()
+        .frame(maxWidth: 520)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 2)
+        .frame(maxWidth: .infinity)
+    }
+}
+
+/// The Mac's sidebar (0.110): the five parts and, under them, Settings — each its mark and its name,
+/// the open one on a soft band of its colour; To do's badge at the right of its row.
+private struct SideBar: View {
+    @Binding var section: AppSection
+    @EnvironmentObject var model: LibraryModel
+
+    var body: some View {
+        let open = model.library.toDoTabCount()
+        VStack(alignment: .leading, spacing: 2) {
+            ForEach(AppSection.tabs) { s in
+                TabButton(section: s, current: $section, count: s == .actions ? open : nil, row: true)
+            }
+            Spacer(minLength: 12)
+            TabButton(section: .settings, current: $section, count: nil, row: true)
             Text(AppInfo.version)
                 .font(.system(.caption2, weight: .semibold))
                 .foregroundStyle(Theme.muted.opacity(0.7))
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .padding(.trailing, 8)
+                .padding(.leading, 10).padding(.top, 2)
                 .allowsHitTesting(false)
-                .accessibilityIdentifier("app-version")
+                .accessibilityIdentifier("sidebar-version")
         }
-        .frame(maxWidth: 720)
-        .frame(maxWidth: .infinity)
-        .padding(.top, 6)
-        .padding(.bottom, 2)
-        .background(Theme.card.ignoresSafeArea(edges: .bottom))
-        .overlay(alignment: .top) { Theme.line.frame(height: 1) }
+        .padding(.horizontal, 8).padding(.vertical, 10)
+        .frame(width: 180)
+        .frame(maxHeight: .infinity, alignment: .top)
+        .background(Theme.card.opacity(0.6).ignoresSafeArea())
     }
+}
 
-    /// One tab. Its own function (0.101): GitHub's Mac could not type-check the badge's words inside
-    /// the `ForEach` in reasonable time ("the compiler is unable to type-check this expression").
-    private func tab(_ s: AppSection, count: ToDoTabCount?) -> some View {
+/// One tab (iPhone) or sidebar row (Mac). Its own type (0.101): GitHub's Mac could not type-check the
+/// badge's words inside the `ForEach` in reasonable time.
+private struct TabButton: View {
+    let section: AppSection
+    @Binding var current: AppSection
+    let count: ToDoTabCount?
+    var row = false
+
+    /// Settings is reached from Home: while it is open, Home's tab is the lit one.
+    private var active: Bool { section == current || (!row && section == .home && current == .settings) }
+
+    var body: some View {
         // The two counts behind the badge, in words: VoiceOver says them, and on the Mac they are the
         // tab's tooltip (0.101). In DEBUG builds the value starts with the badge's number, for the tests.
         let words: String = count.map { $0.total > 0 ? $0.words : "" } ?? ""
@@ -336,42 +370,80 @@ private struct TabBar: View {
             value = badge + " \u{00B7} " + c.words
         }
         #endif
-        let selected: AccessibilityTraits = s == section ? .isSelected : []
-        return Button { section = s } label: { TabButtonLabel(section: s, active: s == section, badge: count?.badge) }
-            .buttonStyle(.plain)
-            .focusEffectDisabled()      // no keyboard ring round a tab on the Mac
-            .accessibilityIdentifier("tab-\(s.rawValue)")
-            .accessibilityLabel(s.label)
-            .accessibilityValue(value)
-            #if os(macOS)
-            .help(words)
-            #endif
-            .accessibilityAddTraits(selected)
+        let selected: AccessibilityTraits = section == current ? .isSelected : []
+        return Button { current = section } label: {
+            if row { SideRowLabel(section: section, active: active, badge: count?.badge) }
+            else { TabButtonLabel(section: section, active: active, badge: count?.badge) }
+        }
+        .buttonStyle(.plain)
+        .focusEffectDisabled()      // no keyboard ring round a tab on the Mac
+        .accessibilityIdentifier("tab-\(section.rawValue)")
+        .accessibilityLabel(section.label)
+        .accessibilityValue(value)
+        #if os(macOS)
+        .help(words)
+        #endif
+        .accessibilityAddTraits(selected)
     }
 }
 
 private struct TabButtonLabel: View {
     let section: AppSection
     let active: Bool
-    /// The tab's badge (0.101 — his words, 26 Oct 2026: "To-do and to-buy counters on the 'To do'
-    /// navigation pill/button"): To do's open to-dos and to-buys together, nil = none.
+    /// The tab's badge (0.101 — his words, 26 Oct 2026): To do's open to-dos and to-buys together, nil = none.
     var badge: String? = nil
 
     var body: some View {
-        VStack(spacing: 3) {
-            SectionMark(section: section, size: 24, weight: active ? 2.2 : 1.9)
-                .foregroundStyle(active ? Color.white : section.color)
-                .frame(width: 46, height: 30)
-                .background(Capsule().fill(active ? section.color : section.color.opacity(0.14)))
-                .overlay(alignment: .topTrailing) { if let badge { TabBadge(text: badge).offset(x: 9, y: -6) } }
+        VStack(spacing: 1) {
+            SectionMark(section: section, size: 22, weight: active ? 2.2 : 1.9)
+                .foregroundStyle(section.color)
+                .frame(width: 30, height: 26)
+                .overlay(alignment: .topTrailing) { if let badge { TabBadge(text: badge).offset(x: 12, y: -4) } }
             Text(section.label)
-                .font(.system(.caption, weight: .semibold))
-                .foregroundStyle(active ? Theme.ink : Theme.muted)
+                .font(.system(.caption2, weight: active ? .bold : .semibold))
+                .foregroundStyle(active ? section.color : Theme.muted)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
         }
-        .frame(maxWidth: .infinity, minHeight: 54)
+        .frame(maxWidth: .infinity, minHeight: 44)
+        .background(Capsule().fill(active ? section.color.opacity(0.14) : Color.clear))
         .contentShape(Rectangle())
+    }
+}
+
+private struct SideRowLabel: View {
+    let section: AppSection
+    let active: Bool
+    var badge: String? = nil
+
+    var body: some View {
+        HStack(spacing: 8) {
+            SectionMark(section: section, size: 18, weight: active ? 2.2 : 1.9)
+                .foregroundStyle(section.color)
+            Text(section.label)
+                .font(.system(.body, weight: active ? .semibold : .regular))
+                .foregroundStyle(active ? section.color : Theme.ink)
+                .lineLimit(1)
+            Spacer(minLength: 4)
+            if let badge { TabBadge(text: badge) }
+        }
+        .padding(.horizontal, 10)
+        .frame(maxWidth: .infinity, minHeight: Metrics.row, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 8).fill(active ? section.color.opacity(0.14) : Color.clear))
+        .contentShape(Rectangle())
+    }
+}
+
+private extension View {
+    /// The bar's glass (iOS 26), or a thin material with a hairline on older systems.
+    @ViewBuilder
+    func glassBar() -> some View {
+        if #available(iOS 26.0, macOS 26.0, *) {
+            self.glassEffect(.regular, in: Capsule())
+        } else {
+            self.background(Capsule().fill(.ultraThinMaterial))
+                .overlay(Capsule().stroke(Theme.line, lineWidth: 1))
+        }
     }
 }
 

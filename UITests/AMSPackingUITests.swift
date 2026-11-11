@@ -138,13 +138,54 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "home")
     }
 
+    /// 0.110, the redesign "B" (his pick, 11 Nov 2026): Home's big title, the nut for Settings with the
+    /// version under it, the search, Library's three rows, "＋ New trip" opening Create new trip as its own
+    /// page (Cancel closes it), and the nut opening Settings — "‹ Home" (iPhone) brings Home back.
+    func testHomeBHasLibraryNewTripAndTheSettingsNut() {
+        let app = launch()
+        XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        for id in ["home-heading", "app-version"] {
+            XCTAssertTrue(app.staticTexts[id].waitForExistence(timeout: 5), "Home has no \(id)")
+        }
+        for id in ["home-settings", "search-open", "home-library-events", "home-library-care", "home-library-templates", "home-new-trip"] {
+            XCTAssertTrue(app.buttons[id].waitForExistence(timeout: 5), "Home has no \(id)")
+        }
+        XCTAssertFalse(app.textFields["trip-name"].exists, "the Create new trip form is still on Home")
+        shot(app, "home110")
+        // ＋ New trip → its own page, Cancel → Home again.
+        tap(app, id: "home-new-trip")
+        XCTAssertTrue(appears(app, "screen-new-trip", timeout: 5), "New trip did not open its page")
+        XCTAssertTrue(app.buttons["trip-create-top"].exists && app.buttons["trip-create"].exists, "the page has no Create")
+        tap(app, id: "trip-create-cancel")
+        XCTAssertTrue(disappears(app, "screen-new-trip", timeout: 5), "Cancel did not close the page")
+        // A Library row opens its tab.
+        tap(app, id: "home-library-templates")
+        XCTAssertTrue(appears(app, "screen-templates", timeout: 5), "Library's Templates row did not open Templates")
+        tab(app, "home")
+        // The nut → Settings, with its title and the version at its foot.
+        tap(app, id: "home-settings")
+        XCTAssertTrue(appears(app, "screen-settings", timeout: 5), "the nut did not open Settings")
+        XCTAssertTrue(app.staticTexts["settings-heading"].waitForExistence(timeout: 5), "Settings has no title")
+        #if os(iOS)
+        XCTAssertFalse(app.buttons["tab-settings"].exists, "Settings is still a tab")
+        tap(app, id: "settings-back")
+        XCTAssertTrue(appears(app, "screen-home", timeout: 5), "‹ Home did not go back")
+        #endif
+    }
+
     /// Every tab opens its own screen — and leaves the previous one.
     func testEveryTabOpensItsScreen() {
         let app = launch()
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
 
         for name in ["events", "templates", "care", "actions", "settings", "home"] {
+            #if os(iOS)
+            // 0.110: five tabs — Settings is the nut on Home, never a tab.
+            if name == "settings" { XCTAssertFalse(app.buttons["tab-settings"].exists, "Settings is still a tab") }
+            else { XCTAssertTrue(app.buttons["tab-\(name)"].waitForExistence(timeout: 5), "no tab-\(name)") }
+            #else
             XCTAssertTrue(app.buttons["tab-\(name)"].waitForExistence(timeout: 5), "no tab-\(name)")
+            #endif
             // His name for it (G.4, 2026-09-30): the Actions tab says To do.
             if name == "actions" {
                 XCTAssertTrue(words(app.buttons["tab-actions"]).hasPrefix("To do"),
@@ -666,6 +707,17 @@ final class AMSPackingUITests: XCTestCase {
 
     private func tab(_ app: XCUIApplication, _ name: String) {
         hideKeyboard(app)
+        // The Create new trip page (0.110) covers the tabs: Cancel closes it first.
+        if app.buttons["trip-create-cancel"].exists { app.buttons["trip-create-cancel"].tap(); _ = disappears(app, "screen-new-trip", timeout: 5) }
+        // Settings is no longer a tab on the iPhone (0.110): the nut on Home opens it. (The Mac's sidebar has its row.)
+        if name == "settings" && !app.buttons["tab-settings"].exists {
+            for _ in 0..<3 {
+                if !app.buttons["home-settings"].exists { app.buttons["tab-home"].tap(); _ = appears(app, "screen-home", timeout: 4) }
+                app.buttons["home-settings"].tap()
+                if appears(app, "screen-settings", timeout: 4) { return }
+            }
+            return
+        }
         // 🪤 A tap can be swallowed on a slow machine: on GitHub (0.17, 2026-09-25)
         // the app took 43 s to launch, the tap on Trips was synthesised — and the
         // screen stayed on Home. So: tap, check the screen changed, tap again if not.
@@ -673,6 +725,20 @@ final class AMSPackingUITests: XCTestCase {
             app.buttons["tab-\(name)"].tap()
             if appears(app, "screen-\(name)", timeout: 4) { return }
         }
+    }
+
+    /// Create new trip, its own page since 0.110: opened from Home's "＋ New trip" (or, away, the quiet
+    /// line) — unless it is open already.
+    private func openNewTrip(_ app: XCUIApplication) {
+        if app.textFields["trip-name"].exists { return }
+        for _ in 0..<3 {
+            if !app.buttons["home-new-trip"].exists && !app.buttons["home-create-folded"].exists { tab(app, "home") }
+            let button = app.buttons["home-new-trip"].exists ? app.buttons["home-new-trip"] : app.buttons["home-create-folded"]
+            bringIntoView(app, button)
+            button.tap()
+            if app.textFields["trip-name"].waitForExistence(timeout: 5) { return }
+        }
+        XCTFail("New trip did not open Create new trip")
     }
 
     /// Is the on-screen keyboard still sliding in, when every control above it is
@@ -836,6 +902,7 @@ final class AMSPackingUITests: XCTestCase {
     /// Create new trip's More choices (0.76) folds Season, Food and Laundry away, closed to
     /// begin with: open it, unless it is open already, and wait for Season.
     private func openMoreChoices(_ app: XCUIApplication) {
+        openNewTrip(app)
         let more = app.buttons["trip-more"]
         XCTAssertTrue(more.waitForExistence(timeout: 5), "no More choices on Create new trip")
         for _ in 0..<3 where !app.buttons["trip-season-0"].exists {
@@ -896,6 +963,7 @@ final class AMSPackingUITests: XCTestCase {
     func testHomeBuildsATrip() {
         let app = launch()
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        openNewTrip(app)
         let field = app.textFields["trip-name"]
         XCTAssertTrue(field.waitForExistence(timeout: 5), "no name field")
         // His words (2026-09-26): the central button must never look switched off.
@@ -952,6 +1020,7 @@ final class AMSPackingUITests: XCTestCase {
 
         tab(app, "home")
         XCTAssertTrue(appears(app, "screen-home"))
+        openNewTrip(app)
         type("Short trip", into: app.textFields["trip-name"])
         hideKeyboard(app)
         select(app, app.buttons["trip-kind-quick"])
@@ -990,6 +1059,7 @@ final class AMSPackingUITests: XCTestCase {
             let c = cal.dateComponents([.day, .month], from: d)
             return "\(c.day!) \(mo[c.month! - 1])"
         }
+        openNewTrip(app)
         func pick(_ d: Date) { pickDay(app, d, grid: "trip-range") }
 
         // The month grid is OPEN on the form from the start (0.67, his words: "always having
@@ -2369,6 +2439,7 @@ final class AMSPackingUITests: XCTestCase {
         // The name first, while its field is in view: after scrolling down to the pills
         // the Mac's field sat under the window's toolbar and took no typing (0.95's full
         // run, 20 Oct 2026: "Neither element nor any descendant has keyboard focus").
+        openNewTrip(app)
         bringIntoView(app, app.textFields["trip-name"])
         type("Lunch out", into: app.textFields["trip-name"])
         hideKeyboard(app)
@@ -2498,6 +2569,7 @@ final class AMSPackingUITests: XCTestCase {
         let app = launch()
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
         pickDates(app, from: 3, to: 10)                      // 7 nights
+        openNewTrip(app)
         type("Swim week", into: app.textFields["trip-name"])
         hideKeyboard(app)
         select(app, app.buttons["trip-kind-quick"])
@@ -4812,6 +4884,7 @@ final class AMSPackingUITests: XCTestCase {
     func testCreateNewTripTakesTheTimeHeLeaves() {
         let app = launch("-uiTesting")
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        openNewTrip(app)
         XCTAssertFalse(app.buttons["trip-leave-out-add"].exists, "a time to leave with no days")
         let cal = Calendar.current
         let today = cal.startOfDay(for: Date())
@@ -4863,6 +4936,7 @@ final class AMSPackingUITests: XCTestCase {
         let app = launch("-uiTesting")
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
         pickDates(app, from: 3, to: 5)
+        openNewTrip(app)
         leaveFrameHoldsItsLines(app, "trip-leave", timed: false)
         tap(app, id: "trip-leave-out-add")
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-leave-out-check"]) == "Check 07:15" })
@@ -5374,11 +5448,9 @@ final class AMSPackingUITests: XCTestCase {
             // At the foot of "This Device", in its narrow column; the block no taller than 0.91's. (The dot's
             // frame is its 44-point tap area: its middle is the dot's.)
             deviceBlockIsAsIn091(app)
-            let box = app.otherElements["count-trips-tile"].exists ? app.otherElements["count-trips-tile"] : app.groups["count-trips-tile"]
-            XCTAssertLessThan(dot.frame.midX + 4, box.frame.minX, "the dot is not in the side column (\(dot.frame) vs \(box.frame))")
-            XCTAssertGreaterThanOrEqual(dot.frame.midY - 4, label.frame.maxY - 1, "the dot is not under This Device (\(dot.frame) vs \(label.frame))")
-            XCTAssertLessThanOrEqual(dot.frame.midY + 4, box.frame.maxY + 1, "the dot hangs below the tiles (\(dot.frame) vs \(box.frame))")
-            XCTAssertEqual(dot.frame.midX, label.frame.midX, accuracy: 1.5, "the dot is not centred under This Device")
+            // 0.110: at the right end of the Library heading's line (the dot moved with the counts).
+            XCTAssertGreaterThan(dot.frame.midX, label.frame.maxX, "the dot is not right of Library (\(dot.frame) vs \(label.frame))")
+            XCTAssertEqual(dot.frame.midY, label.frame.midY, accuracy: 8, "the dot is not on Library's line (\(dot.frame) vs \(label.frame))")
             _ = tile
             bringIntoView(app, dot)
             shot(app, "synclight2-\(state)")
@@ -5609,15 +5681,11 @@ final class AMSPackingUITests: XCTestCase {
         shot(app, "look101-todo-badge")
     }
 
-    /// This Device as in 0.91 (0.92's sync dot must not move anything): its tiles 76 tall, and Create new
-    /// trip's card the stack's 10 points under them — nothing pushed down.
+    /// Home's Library (0.110, redesign B — it replaced This Device's tiles): three rows, each with its count.
     private func deviceBlockIsAsIn091(_ app: XCUIApplication) {
-        let box = app.otherElements["count-trips-tile"].exists ? app.otherElements["count-trips-tile"] : app.groups["count-trips-tile"]
-        XCTAssertTrue(box.waitForExistence(timeout: 5), "no Trips tile")
-        let card = find(app, "home-create-card")?.frame ?? .zero
-        XCTAssertEqual(box.frame.height, 76, accuracy: 1, "the tiles are not 76 tall: \(box.frame)")
-        XCTAssertEqual(card.minY - box.frame.maxY, 10, accuracy: 1,
-                       "This Device pushed Create new trip down: \(card.minY - box.frame.maxY) pt under the tiles (\(box.frame) vs \(card))")
+        for id in ["home-library-events", "home-library-care", "home-library-templates"] {
+            XCTAssertTrue(app.buttons[id].waitForExistence(timeout: 5), "Library lost its row \(id)")
+        }
     }
 
     /// Field test 7.3/6.1 (3 Oct 2026): the trip's own bag says whether it goes in the cabin,
@@ -5626,6 +5694,7 @@ final class AMSPackingUITests: XCTestCase {
     /// (plain words since 0.78; 0.76 said "Plane and RV still count", which he did not understand).
     func testABagOnTheTripSaysWhetherItGoesInTheCabin() {
         let app = launch("-uiTestingChecks")
+        openNewTrip(app)
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-kind-note"]).contains("Plane still turns on the airport checks") },
                       "Quick does not say that Plane still counts: '\(words(app.staticTexts["trip-kind-note"]))'")
         tab(app, "events")
@@ -6016,6 +6085,7 @@ final class AMSPackingUITests: XCTestCase {
     func testTheDateGridCanBeLeftAndQuickSaysSo() {
         let app = launch()
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        openNewTrip(app)
         let note = app.staticTexts["trip-kind-note"]
         XCTAssertTrue(note.waitForExistence(timeout: 5), "Quick does not say what it leaves out")
         // In plain words since 0.78 ("Plane and RV still count" was not understood), naming the
@@ -6165,6 +6235,7 @@ final class AMSPackingUITests: XCTestCase {
     func testContextSitsUnderTheWorkouts() {
         let app = launch()
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        openNewTrip(app)
         XCTAssertFalse(app.staticTexts["trip-context-title"].exists, "Context shows before a workout is picked")
         let swim = app.buttons["trip-activity-1"]                  // Swim, in the WET activity area
         XCTAssertTrue(swim.waitForExistence(timeout: 5))
@@ -6194,6 +6265,7 @@ final class AMSPackingUITests: XCTestCase {
     func testTravellingByIsPlaneOrRVOrNeither() {
         let app = launch("-uiTestingTravel")
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        openNewTrip(app)
         let plane = app.buttons["trip-transport-1"], rv = app.buttons["trip-transport-2"]
         XCTAssertTrue(plane.waitForExistence(timeout: 5) && rv.exists, "no Plane and RV pills")
         XCTAssertFalse(app.buttons["trip-transport-0"].exists, "Car is still a pill")
@@ -6294,6 +6366,7 @@ final class AMSPackingUITests: XCTestCase {
     func testFlightsAndStayOnlyOnAPlaneTrip() {
         let app = launch()
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        openNewTrip(app)
         let plane = app.buttons["trip-transport-1"]
         XCTAssertTrue(plane.waitForExistence(timeout: 5), "no Plane pill")
         XCTAssertFalse(find(app, "trip-flights-frame") != nil, "Flights and stay on a trip that is not by plane")
@@ -6379,6 +6452,7 @@ final class AMSPackingUITests: XCTestCase {
     func testMoreChoicesFoldSeasonFoodAndLaundry() {
         let app = launch()
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        openNewTrip(app)
         let more = app.buttons["trip-more"], summary = app.staticTexts["trip-more-summary"]
         XCTAssertTrue(more.waitForExistence(timeout: 5), "no More choices on Create new trip")
         XCTAssertFalse(app.buttons["trip-season-0"].exists, "More choices is open to begin with")
@@ -6436,6 +6510,7 @@ final class AMSPackingUITests: XCTestCase {
                                      "the Food pills wrap: \(pills.map { "\(self.words($0)) at \($0.frame.minY)" })")
             XCTAssertEqual(words(pills[2]), "Mix", "the third Food pill does not say Mix")
         }
+        openNewTrip(app)
         oneLine("trip-catering")
         shot(app, "food-one-line")
         tab(app, "events")
@@ -6460,6 +6535,7 @@ final class AMSPackingUITests: XCTestCase {
             XCTAssertEqual(winter.value as? String, "snow", "\(id): Winter has no snowflake")
         }
         openMoreChoices(app)
+        openNewTrip(app)
         marked("trip-season")
         shot(app, "season-icons-create")
         // The More choices line stays words only.
@@ -6523,6 +6599,7 @@ final class AMSPackingUITests: XCTestCase {
         let app = launch()
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
         openMoreChoices(app)
+        openNewTrip(app)
         let summer = app.buttons["trip-season-0"], winter = app.buttons["trip-season-1"]
         XCTAssertTrue(isOn(summer), "no dates is not Summer")
         let cal = Calendar.current
@@ -6588,6 +6665,7 @@ final class AMSPackingUITests: XCTestCase {
         let app = launch("-uiTestingWorkouts")
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
         // Hiking 0; the workouts Swim 1 and Run 2.
+        openNewTrip(app)
         let swim = app.buttons["trip-activity-1"], run = app.buttons["trip-activity-2"]
         XCTAssertTrue(swim.waitForExistence(timeout: 5))
         XCTAssertEqual(words(swim), "Swim")
@@ -6642,6 +6720,7 @@ final class AMSPackingUITests: XCTestCase {
     func testFullTripOrQuickIsChosenUnderTheName() {
         let app = launch()
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
+        openNewTrip(app)
         let full = app.buttons["trip-kind-full"], quick = app.buttons["trip-kind-quick"]
         XCTAssertTrue(full.waitForExistence(timeout: 5), "no Full trip | Quick on Create new trip")
         XCTAssertTrue(isOn(full), "Full trip is not the starting choice")
@@ -6687,6 +6766,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
         // The grid itself, open, with nothing tapped (his words that evening: "always having
         // the date picker OPEN in Create new Trip") — no switch, no field, no OK.
+        openNewTrip(app)
         XCTAssertTrue(app.staticTexts["trip-range-title-0"].waitForExistence(timeout: 5),
                       "the month grid is not open on Create new trip")
         XCTAssertFalse(app.switches["trip-dates"].exists || app.checkBoxes["trip-dates"].exists, "the Dates switch is still there")
@@ -7403,6 +7483,7 @@ final class AMSPackingUITests: XCTestCase {
     /// Dates on Create new trip: today + `a` to today + `b`, tapped in its always-open
     /// grid (0.67) — set at once, no OK.
     private func pickDates(_ app: XCUIApplication, from a: Int, to b: Int) {
+        openNewTrip(app)
         pickDay(app, dayFromToday(a), grid: "trip-range")
         pickDay(app, dayFromToday(b), grid: "trip-range")
         let summary = app.staticTexts["trip-range-summary"]
@@ -8172,6 +8253,7 @@ final class AMSPackingUITests: XCTestCase {
 
         // Create new trip: Hiking 0, Swim 1 — and now Common base, to tick.
         tab(app, "home")
+        openNewTrip(app)
         XCTAssertTrue(scrollUntil(app, "trip-activity-2"), "the moved template is not offered to tick")
         XCTAssertEqual(words(app.buttons["trip-activity-2"]), "Common base")
 
@@ -8563,6 +8645,7 @@ final class AMSPackingUITests: XCTestCase {
 
         // Create new trip: his area first, under his name.
         tab(app, "home")
+        openNewTrip(app)
         XCTAssertTrue(scrollUntil(app, "trip-activity-0"))
         let groups = app.staticTexts.matching(identifier: "trip-activity-title").allElementsBoundByIndex.map { words($0) }
         XCTAssertEqual(groups.first, "Mountains", "Create new trip does not lead with his area: \(groups)")
@@ -8869,6 +8952,7 @@ final class AMSPackingUITests: XCTestCase {
         let app = launch()
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
         // Hiking 0 (Automatic), Swim 1 (a workout).
+        openNewTrip(app)
         let hiking = app.buttons["trip-activity-0"], swim = app.buttons["trip-activity-1"]
         XCTAssertTrue(scrollUntil(app, "trip-activity-1"), "no template pills on Create new trip")
         XCTAssertEqual(hiking.value as? String ?? "", "", "Automatic Hiking's pill has a colour of its own")
@@ -8941,70 +9025,28 @@ final class AMSPackingUITests: XCTestCase {
     func testHomeHoldsGrabAndGoAndCreateNewTripInFrames() {
         let app = launch("-uiTestingChecks")
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
-        // Grab and go: one frame round its heading, Grab Lists and the tiles.
+        // Grab and go: one frame round its heading, Grab Lists and the tiles (his 0.91 ask, kept in B).
         XCTAssertTrue(appears(app, "home-grab-frame", timeout: 5), "no frame round Grab and go")
         let heading = app.staticTexts["home-grab-heading"], first = app.buttons["grab-0"]
         XCTAssertTrue(heading.waitForExistence(timeout: 5) && first.waitForExistence(timeout: 5), "no Grab and go or no grab list")
         if let frame = find(app, "home-grab-frame")?.frame {
             let box = frame.insetBy(dx: -1, dy: -1)
-            var parts = [heading, app.buttons["grab-lists"], first]
-            #if os(iOS)
-            parts.append(app.buttons["search-open"])          // the Mac's is in the title bar strip
-            #endif
-            for part in parts {
+            for part in [heading, app.buttons["grab-lists"], first] {
                 XCTAssertTrue(part.exists, "Grab and go lost \(part)")
                 XCTAssertTrue(box.contains(part.frame), "\(part.identifier) at \(part.frame) is outside Grab and go's frame \(frame)")
             }
-            XCTAssertLessThan(heading.frame.minY - frame.minY, 24, "Grab and go does not lead its frame (\(heading.frame) in \(frame))")
-            XCTAssertLessThanOrEqual(heading.frame.maxY, first.frame.minY + 1, "a grab list stands above Grab and go")
-            #if os(macOS)
-            XCTAssertLessThan(app.buttons["search-open"].frame.maxY, frame.minY, "the Mac's search left the title bar strip")
-            #endif
         }
-
-        // This Device, right under the trip: the countdown card, the counts, then Create new trip.
-        let countdown = app.buttons["home-countdown"], trips = app.staticTexts["count-trips"]
-        XCTAssertTrue(countdown.waitForExistence(timeout: 10) && trips.exists, "no countdown or no This Device")
-        XCTAssertTrue(appears(app, "home-create-card", timeout: 5), "no card round Create new trip")
-        let card = find(app, "home-create-card")?.frame ?? .zero
-        let under = trips.frame.minY - countdown.frame.maxY
-        XCTAssertTrue(under > 0 && under < 40, "This Device is not right under the trip: \(under) pt (\(trips.frame) vs \(countdown.frame))")
-        XCTAssertLessThan(trips.frame.maxY, card.minY, "This Device is not above Create new trip (\(trips.frame) vs \(card))")
-
-        // Create new trip: its heading inside its card, above the name.
-        let createHeading = app.staticTexts["home-create-heading"], name = app.textFields["trip-name"]
-        XCTAssertTrue(createHeading.exists && name.exists, "Create new trip lost its heading or its name")
-        let box = card.insetBy(dx: -1, dy: -1)
-        XCTAssertTrue(box.contains(createHeading.frame), "Create new trip at \(createHeading.frame) is outside its card \(card)")
-        XCTAssertTrue(box.contains(name.frame), "the name at \(name.frame) is outside Create new trip's card \(card)")
-        XCTAssertLessThanOrEqual(createHeading.frame.maxY, name.frame.minY + 1, "the heading is not above the name")
-        // A tad smaller than Grab and go since 0.92 — his words (19 Oct 2026): "could we please make it a tad
-        // smaller? Not much, but a bit smaller." One text style down; Grab and go keeps its own.
-        XCTAssertLessThan(createHeading.frame.height, heading.frame.height - 1,
-                          "Create new trip is not smaller than Grab and go: \(createHeading.frame.height) vs \(heading.frame.height) pt")
-        #if os(iOS)
-        // …and a tad grey, "not so super black" (0.92): `Theme.inkGrey`, not `ink` (#16232a/#e7edee).
-        XCTAssertEqual(createHeading.value as? String, "#34444c/#c4cfd2", "Create new trip is not written in the ink grey")
-        #endif
-        bringIntoView(app, createHeading)
-        shot(app, "home92-create")
-
-        // Full trip | Quick: as wide as the name field, edge to edge.
-        XCTAssertTrue(appears(app, "trip-kind-track", timeout: 5), "Full trip | Quick has no track")
-        let track = find(app, "trip-kind-track")?.frame ?? .zero
-        #if os(macOS)
-        // The Mac reports the field itself, inside the 12 pt its box has at each side (GitHub's Mac:
-        // the field 193…814, the box and the track 181…826); the iPhone reports the whole box.
-        let nameBox = name.frame.insetBy(dx: -12, dy: 0)
-        #else
-        let nameBox = name.frame
-        #endif
-        XCTAssertEqual(track.minX, nameBox.minX, accuracy: 1, "Full trip | Quick does not start with the name (\(track) vs \(nameBox))")
-        XCTAssertEqual(track.maxX, nameBox.maxX, accuracy: 1, "Full trip | Quick does not end with the name (\(track) vs \(nameBox))")
-        shot(app, "home91-top")
-        bringIntoView(app, app.buttons["trip-kind-quick"])
-        sleep(1)
-        shot(app, "home91-create")
+        // B's order (0.110): Next trip's countdown above Grab and go, the Library under it, then New trip.
+        let countdown = app.buttons["home-countdown"], library = app.buttons["home-library-events"], new = app.buttons["home-new-trip"]
+        XCTAssertTrue(countdown.waitForExistence(timeout: 10) && library.exists && new.exists, "no countdown, Library or New trip")
+        XCTAssertLessThan(countdown.frame.maxY, heading.frame.minY, "the countdown is not above Grab and go")
+        XCTAssertLessThan(first.frame.maxY, library.frame.minY, "Library is not under Grab and go")
+        XCTAssertLessThan(library.frame.maxY, new.frame.minY, "New trip is not under Library")
+        // Create new trip: its own page, no longer on Home.
+        XCTAssertFalse(app.textFields["trip-name"].exists, "the Create new trip form is still on Home")
+        openNewTrip(app)
+        XCTAssertTrue(app.staticTexts["home-create-heading"].exists, "the page has no title")
+        shot(app, "home110-new-trip-page")
     }
 
     /// A colour as "#rrggbb" is mostly red (more red than blue and green), false when not,
@@ -10018,6 +10060,7 @@ final class AMSPackingUITests: XCTestCase {
     /// A summer trip from Hiking (and the base template, as every full trip is): its count.
     private func summerTripFromHiking(_ app: XCUIApplication) -> XCUIElement {
         tab(app, "home")
+        openNewTrip(app)
         type("Summer hills", into: app.textFields["trip-name"])
         hideKeyboard(app)
         select(app, app.buttons["trip-activity-0"])               // Hiking
@@ -12577,10 +12620,11 @@ final class AMSPackingUITests: XCTestCase {
 
         // Create new trip, on Home.
         tab(app, "home")
-        for id in ["home-grab-heading", "home-create-heading"] {
+        for id in ["home-grab-heading"] {
             XCTAssertTrue(app.staticTexts[id].waitForExistence(timeout: 5), "Home lost its heading \(id)")
         }
         openMoreChoices(app)                                      // Season and Food fold away (0.76)
+        openNewTrip(app)
         for id in ["trip-activity-title", "trip-transport-title", "trip-season-title", "trip-catering-title"] {
             XCTAssertTrue(app.staticTexts.matching(identifier: id).firstMatch.waitForExistence(timeout: 5),
                           "Create new trip lost its heading \(id)")
@@ -14763,11 +14807,9 @@ final class AMSPackingUITests: XCTestCase {
     /// The Mac (0.67): a header's title sits on the traffic lights' line, in the strip
     /// where the title bar was — and starts clear of the three buttons.
     private func checkOnTheLightsLine(_ app: XCUIApplication, _ what: String, _ title: CGRect) {
+        // 0.110: the window has its normal title bar again — the title stands UNDER it, never on its line.
         guard let lights = windowButtons(app) else { return XCTFail("\(what): the window shows no buttons") }
-        let off = title.midY - lights.midY
-        XCTAssertLessThanOrEqual(abs(off), 2, "\(what): the title sits \(off) pt off the window buttons' line (\(title) vs \(lights))")
-        XCTAssertGreaterThanOrEqual(title.minX, lights.maxX + 6,
-            "\(what): the title starts at \(title.minX), on or too near the window buttons (they end at \(lights.maxX))")
+        XCTAssertGreaterThanOrEqual(title.minY, lights.maxY, "\(what): the title reaches into the title bar (\(title) vs \(lights))")
     }
     #endif
 
@@ -14788,26 +14830,17 @@ final class AMSPackingUITests: XCTestCase {
         continueAfterFailure = true
         let app = launch()
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
-        // Home (0.91): Grab and go leads its own frame, Grab Lists on its centre line — and on
-        // the iPhone the search too; the Mac's search stays in the strip, on the lights' line.
-        let grab = app.staticTexts["home-grab-heading"]
-        XCTAssertTrue(grab.waitForExistence(timeout: 5), "home: no Grab and go")
+        // Home (0.110, B): its big title at the top; Grab Lists on Grab and go's centre line in its frame.
+        let grab = app.staticTexts["home-grab-heading"], home = app.staticTexts["home-heading"]
+        XCTAssertTrue(grab.waitForExistence(timeout: 5) && home.exists, "home: no title or no Grab and go")
         XCTAssertTrue(app.buttons["search-open"].exists, "home: no search")
         shot(app, "header-home")
         #if os(macOS)
-        let homeIcons = ["grab-lists"]
-        if let lights = windowButtons(app) {
-            let off = app.buttons["search-open"].frame.midY - lights.midY
-            XCTAssertLessThanOrEqual(abs(off), 2, "home: the search sits \(off) pt off the window buttons' line")
-        }
-        #else
-        let homeIcons = ["search-open", "grab-lists"]
+        checkOnTheLightsLine(app, "home", home.frame)
         #endif
-        XCTAssertGreaterThanOrEqual(grab.frame.minY, screenTop(app, "home") - 2, "home: Grab and go reaches above the screen's top")
-        for id in homeIcons {
-            let off = app.buttons[id].frame.midY - grab.frame.midY
-            XCTAssertLessThanOrEqual(abs(off), 1.5, "home: \(id) sits \(off) pt off Grab and go's centre line")
-        }
+        XCTAssertGreaterThanOrEqual(home.frame.minY, screenTop(app, "home") - 2, "home: the title reaches above the screen's top")
+        let off = app.buttons["grab-lists"].frame.midY - grab.frame.midY
+        XCTAssertLessThanOrEqual(abs(off), 1.5, "home: grab-lists sits \(off) pt off Grab and go's centre line")
         let tabs: [(name: String, title: String, icons: [String])] = [
             ("events", "events-heading", ["events-map", "search-open", "events-todos"]),
             ("templates", "templates-heading", ["search-open", "templates-new"]),
@@ -14963,19 +14996,17 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(app.buttons["home-ontrip-open"].waitForExistence(timeout: 10))
         let folded = app.buttons["home-create-folded"]
         XCTAssertTrue(folded.waitForExistence(timeout: 5), "no quiet New trip line while away")
-        XCTAssertFalse(app.textFields["trip-name"].exists, "the whole Create new trip form shows while away")
-        XCTAssertFalse(app.staticTexts["home-create-heading"].exists, "the Create new trip heading shows while away")
+        XCTAssertFalse(app.buttons["home-new-trip"].exists, "the full-colour New trip shows while away")
         shot(app, "home109-create-folded")
         tap(app, id: "home-create-folded")
-        XCTAssertTrue(app.textFields["trip-name"].waitForExistence(timeout: 5), "New trip did not open the form")
-        XCTAssertFalse(app.buttons["home-create-folded"].exists)
+        XCTAssertTrue(app.textFields["trip-name"].waitForExistence(timeout: 5), "New trip did not open the page")
         app.terminate()
 
         let back = launch("-uiTestingOnTrip", ["home"])
         XCTAssertTrue(appears(back, "screen-home", timeout: 20))
         XCTAssertTrue(back.buttons["home-ontrip-open"].waitForExistence(timeout: 10))
         XCTAssertFalse(back.buttons["home-create-folded"].exists, "folded once he is home")
-        XCTAssertTrue(back.staticTexts["home-create-heading"].exists, "no Create new trip once he is home")
+        XCTAssertTrue(back.buttons["home-new-trip"].exists, "no full-colour New trip once he is home")
     }
 
     /// 0.108 — the last day (the sample's trip ends tomorrow, "I leave at" 10:00 for home): GOING HOME
@@ -15609,6 +15640,7 @@ final class AMSPackingUITests: XCTestCase {
     private func newHikingTripHeadings(_ app: XCUIApplication) -> [String] {
         tab(app, "home")
         XCTAssertTrue(appears(app, "screen-home", timeout: 10))
+        openNewTrip(app)
         type("Section check", into: app.textFields["trip-name"])
         select(app, app.buttons["trip-activity-0"])               // Hiking
         tapVisible(app, app.buttons["trip-create"])

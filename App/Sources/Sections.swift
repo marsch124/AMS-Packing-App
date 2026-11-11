@@ -9,6 +9,10 @@ enum AppSection: String, CaseIterable, Identifiable {
     case home, events, templates, care, actions, settings
     var id: String { rawValue }
 
+    /// The tabs (0.110, the redesign "B"): five — Settings is the nut on Home, and on the Mac the
+    /// sidebar's last row. `allCases` keeps Settings for the Go menu (⌘6) and the guide.
+    static let tabs: [AppSection] = [.home, .events, .templates, .care, .actions]
+
     var label: String {
         switch self {
         case .home: return "Home"

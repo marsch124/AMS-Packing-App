@@ -19,9 +19,9 @@ struct ScreenHeader<Trailing: View>: View {
     let tint: Color
     /// The title's name for the tests ("events-heading").
     let id: String
-    /// A tab's title is Title 2. Home leads with a section heading instead, Grab and go,
-    /// in Title 3 like Create new trip under it.
-    var font: Font = .system(.title2, weight: .bold)
+    /// A tab's title is Large Title since 0.110 (the redesign "B": a big coloured title on each
+    /// tab's main screen, as in Apple's own apps); Title 2 until then.
+    var font: Font = .system(.largeTitle, weight: .bold)
     /// The line under the title ("5 trips · 1 ready to go"), and its name.
     var line: String? = nil
     var lineId: String = ""
@@ -81,10 +81,10 @@ extension View {
             // 🪤 where it did (Home and To do, whose header is one line), a click on a
             // header button in the strip never arrived (GitHub's Mac run, 6 Oct 2026),
             // while Trips and Templates — a summary line under the title — were fine.
-            header().padding(.horizontal, 16).padding(.bottom, 6)
+            // Since 0.110 the window has its normal title bar again: the header sits under it.
+            header().padding(.horizontal, 16).padding(.top, 6).padding(.bottom, 6)
             self.titleBarSafeScroll()
         }
-        .ignoresSafeArea(.container, edges: .top)
         #else
         self
         #endif

@@ -16,7 +16,7 @@ struct AMSPackingApp: App {
             RootView()
                 .environmentObject(model)
                 #if os(macOS)
-                .frame(minWidth: 480, idealWidth: 760, minHeight: 600, idealHeight: 900)
+                .frame(minWidth: 640, idealWidth: 940, minHeight: 600, idealHeight: 900)
                 .onAppear { AMSPackingApp.useTheRunnersWindowSize() }
                 // A place's label link (0.69) goes to the window that is open: without these
                 // the Mac opens a NEW window for every link that reaches the app.
@@ -24,17 +24,14 @@ struct AMSPackingApp: App {
                 #endif
         }
         #if os(macOS)
-        .defaultSize(width: 760, height: 900)
+        .defaultSize(width: 940, height: 900)
         // Under the UI tests no window comes back from the launch before (0.105's Mac probe, 28 Oct 2026: two windows
         // left open by a test — 0.104's ⌘N, which was New Window — came back at every later launch, and every
         // "tab-…" and "count-things" matched twice). For him the Mac brings his windows back as always.
         .restorationBehavior(AMSPackingApp.testing ? .disabled : .automatic)
-        // No title bar (0.67, his note on 0.63: the strip at the top was "underused"): the
-        // tab's own header sits on the traffic lights' line (`TitleBarStrip`). The window
-        // still moves when the empty parts of that strip are dragged, as by its title bar —
-        // the Mac does that itself (`testTheWindowMovesByItsEmptyStrip`) — but not by the
-        // rest of its background: a drag on a page's empty space should not carry it.
-        .windowStyle(.hiddenTitleBar)
+        // The normal title bar again since 0.110 (the redesign "B": a sidebar and a title bar, as
+        // Apple's own Mac apps); 0.67–0.109 had none, the tab's header on the traffic lights' line.
+        // A drag on a page's empty space still does not carry the window.
         .windowBackgroundDragBehavior(.disabled)
         // A thing's page from the keyboard (0.68): the Thing menu lists its keys, and is
         // on only while a thing's page is open (ThingKeys.swift). Quit (⌘Q) asks first while a
@@ -93,7 +90,7 @@ extension AMSPackingApp {
         DispatchQueue.main.async {
             for w in NSApplication.shared.windows where w.isVisible && w.styleMask.contains(.titled) {
                 let f = w.frame
-                w.setFrame(NSRect(x: f.minX, y: f.maxY - 674, width: 760, height: 674), display: true)
+                w.setFrame(NSRect(x: f.minX, y: f.maxY - 674, width: 940, height: 674), display: true)
             }
         }
     }

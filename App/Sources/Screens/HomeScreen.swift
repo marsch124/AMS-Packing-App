@@ -2,7 +2,7 @@ import SwiftUI
 import PackingCore
 import PackingLibrary
 
-/// Home: build a trip. Name it, add the dates, pick what it is — press Create.
+/// Home: the next trip, Grab and go, the library — and ＋ New trip (0.110, redesign B).
 struct HomeScreen: View {
     /// His own words for the three food answers. The model keeps the web app's
     /// longer labels (the parity check compares them); the chips say what he wrote.
@@ -25,36 +25,10 @@ struct HomeScreen: View {
         }
     }
 
-    @EnvironmentObject var model: LibraryModel
-    @State private var name = ""
-    /// Whether the trip gets dates — set by tapping a day, taken away by Clear dates.
-    @State private var hasDates = false
-    /// The first day is tapped and the last is not yet: Create waits for it.
-    @State private var pickingEnd = false
-    @State private var start = Date()
-    @State private var end = Date().addingTimeInterval(2 * 86400)
-    /// Travelling by (0.76): "Plane", "RV" — or "Car", an ordinary trip, with both off.
-    @State private var transport = Library.ordinaryTransport
-    @State private var season = "Summer"
-    /// Season follows the dates (0.76, `Library.seasonFor`) until he taps a Season pill on this
-    /// form; from then his choice sticks. Create starts the form over.
-    @State private var seasonByHand = false
-    /// More choices (0.76): Season, Food and Laundry folded away — closed to begin with,
-    /// open or closed remembered on this device.
-    @AppStorage(HomeScreen.moreKey) private var moreOpen = false
+    /// More choices on Create new trip, open or closed, remembered on this device (0.76).
     static let moreKey = "ams.create.more"
-    @State private var catering = "mixed"
-    @State private var activities: Set<String> = []
-    /// Indoor / Outdoor / Race PER WORKOUT (0.67): template id → its contexts.
-    @State private var workoutContexts: [String: Set<String>] = [:]
-    @State private var quick = false
-    @State private var laundry = false
-    @State private var laundryNights = LAUNDRY_CAP_NIGHTS
-    /// "I leave at" (0.69, the door check): on the first day, and on the last for home.
-    @State private var leaveOut = ""
-    @State private var leaveHome = ""
-    /// Flights and stay (0.80, spec 07 part 18 B): only on a plane trip; Out and Home to begin with.
-    @State private var travel = TripTravel(flights: [FlightLeg(), FlightLeg()])
+
+    @EnvironmentObject var model: LibraryModel
     @State private var opened: String?
     /// The place a code opened the trip on (0.69): the trip shows only its lines.
     @State private var openedPlace: String?
@@ -69,29 +43,28 @@ struct HomeScreen: View {
     @State private var showingGrabLists = false
     /// "Which grab list?" — the Action button's menu, asked for through the model.
     @State private var menuShown = false
-    /// What Create said was missing, after a press with something missing.
-    @State private var stillNeeded = ""
-    @FocusState private var naming: Bool
-    /// The minute Home was last drawn at (0.108): "On your trip" turns with the clock — the last
-    /// day, the time he leaves, the day after — so Home is drawn again each minute, and whenever
-    /// the app comes back to the front.
+    /// Create new trip, its own page since 0.110 (`CreateTripPage`).
+    @State private var creating = false
+    /// The minute Home was last drawn at (0.108): "On your trip" turns with the clock.
     @State private var minute = Date()
-    /// "New trip" tapped while on a trip (0.109): the Create new trip form shows in full.
-    @State private var createOpen = false
     @Environment(\.scenePhase) private var scenePhase
 
+    /// Home in the redesign "B" (0.110 — his pick, 11 Nov 2026: Apple's order, his own look): the big
+    /// blue title with the nut for Settings; the search; Next trip; Grab and go; Library; and one
+    /// full-colour "＋ New trip" button that opens Create new trip as its own page.
     var body: some View {
-        let choices = model.library.activityChoices()
-        let flat = choices.flatMap(\.lists)
-        let anyWorkout = flat.contains { $0.group == "WET" && activities.contains($0.id) }
-        // On a trip, going home, or just back (0.108, his words, 2 Nov 2026: "I am currently on a
-        // trip, but I can't see it on the home page."). Read at this minute (`minute`).
+        // On a trip, going home, or just back (0.108). Read at this minute (`minute`).
         let _ = (minute, scenePhase)
         let onTrip = model.library.onTripCard(today: Today.local, time: Today.time)
+        let away = onTrip != nil && onTrip?.moment != .backHome
         KeyboardAwayScroll {
-            VStack(alignment: .leading, spacing: 10) {
-                // The trip he is on, first on Home — as in the picture he called "excellent" (2 Nov
-                // 2026): while he is away, going home and back home until the trip is reviewed.
+            VStack(alignment: .leading, spacing: 8) {
+                #if !os(macOS)
+                header
+                #endif
+                searchField
+
+                // The trip he is on, first (0.108, his "excellent"): while away, going home, back home.
                 if let card = onTrip {
                     OnTripCard(card: card,
                                openTrip: { openTrip(card.id, LibraryModel.TripFocus(tripId: card.id, home: false, onSite: true)) },
@@ -100,37 +73,28 @@ struct HomeScreen: View {
                                openToDo: { openTrip(card.id, nil) },
                                openCharge: { openTrip(card.id, LibraryModel.TripFocus(tripId: card.id, home: false, charge: true)) },
                                review: { openTrip(card.id, LibraryModel.TripFocus(tripId: card.id, home: false, review: true)) })
-                        .padding(.top, Metrics.screenTop)
                 }
-                // Home's two parts lead with real headings (field test, 3 Oct 2026: "the
-                // headings … dominant"); they were small and grey, smaller than the
-                // headings inside Create new trip.
-                //
-                // Grab and go is Home's FIRST block, its Grab Lists (and on the iPhone its
-                // search) beside it on one centre line, and the grab lists right under it (his
-                // note on 0.63, 6 Oct 2026: "The area above Grab and go is underused").
-                //
-                // Since 0.91 ONE frame holds the heading and the grab lists, as Create new trip's
-                // card holds its own — his words (19 Oct 2026): "I would like to have all
-                // grab-and-go bags and grab bags within one frame, as the "Create New Trip" is in
-                // a frame. I would like the "Grab and Go" heading to be inside this frame." Until
-                // 0.91 the heading was Home's header line (on the Mac in the title bar strip) and
-                // the tiles sat loose under it.
+
+                // Next trip, counted down (his idea 6) — never the trip on the card itself.
+                if let next = model.library.nextTrip(today: Today.local, time: Today.time),
+                   onTrip == nil || (onTrip?.moment == .backHome && onTrip?.id != next.id) {
+                    sectionHeading("Next trip", id: "home-next-heading")
+                    CountdownCard(next: next) { openedPlace = nil; opened = next.id }
+                }
+
+                // Grab and go: heading and lists in ONE frame (his words, 19 Oct 2026 — kept in B).
                 VStack(alignment: .leading, spacing: 8) {
                     grabHeading
-                    // Home holds eight (4 × 2) — HIS, in his order; a free place takes only a
-                    // list new since he last arranged Home (GrabCollection.swift).
+                    // Home holds eight (4 × 2) — HIS, in his order (GrabCollection.swift).
                     let onHome = model.library.homeGrabLists()
                     GrabButtons(lists: onHome, fill: Theme.bg) { grab = $0 }
                     if onHome.isEmpty {
-                        // Every list taken off Home: the heading is not left over nothing —
-                        // it says where they are, and the line itself leads there (5 Oct 2026).
                         Button { showingGrabLists = true } label: {
                             Text("No grab lists on Home. They wait in Grab Lists \u{2014} tap here to put one back.")
                                 .font(.system(.callout, weight: .semibold)).foregroundStyle(AppSection.home.color)
                                 .multilineTextAlignment(.leading)
                                 .fixedSize(horizontal: false, vertical: true)
-                                .padding(14)
+                                .padding(12)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .background(RoundedRectangle(cornerRadius: 12).fill(Theme.bg))
                                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.home.color.opacity(0.5), lineWidth: 1.5))
@@ -141,37 +105,16 @@ struct HomeScreen: View {
                     }
                 }
                 .homeCard(id: "home-grab-frame")
-                // The first block starts where every tab's first line does (as Settings' first card).
-                .padding(.top, onTrip == nil ? Metrics.screenTop : 0)
 
-                // The trip he leaves on next, counted down (his idea 6) — under the grab
-                // lists, which keep their place at the top. While he is away or going home the
-                // trip card stands in its place (0.108); back home, the next trip is counted down
-                // under it as before — never the trip on the card itself (on its first day, after
-                // he has left, `nextTrip` still names it).
-                if let next = model.library.nextTrip(today: Today.local, time: Today.time),
-                   onTrip == nil || (onTrip?.moment == .backHome && onTrip?.id != next.id) {
-                    CountdownCard(next: next) { openedPlace = nil; opened = next.id }
-                }
+                library
 
-                // This Device, right under the trip (0.91 — his words, 19 Oct 2026: "I would also
-                // like the "This device" area to move up directly under the trip list."): under the
-                // countdown card, or under Grab and go when no trip is ahead; until 0.91 it was
-                // Home's last line, under Create new trip.
-                thisDevice
-
-                // While he is away or going home, Create new trip folds to ONE quiet line (0.109 —
-                // his words, 4 Nov 2026, on a trip: "the "Create new trip" should be … less
-                // prominent, because I am currently on a trip. Creating a new trip could be
-                // possible, but it is not highly sannolikt"). A tap opens the whole form, as before.
-                // Back home the form is open again, as it always was.
-                if onTrip != nil && onTrip?.moment != .backHome && !createOpen {
-                    Button { createOpen = true } label: {
+                // The main button, always in full colour (his rule, 26 Sep 2026). While he is away
+                // or going home it is ONE quiet line instead (0.109, his words: a new trip is "not
+                // highly sannolikt" then) — both open the same page.
+                if away {
+                    Button { creating = true } label: {
                         HStack(spacing: 6) {
-                            SVGPath.path("M12 5v14M5 12h14")
-                                .stroke(style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
-                                .onGrid(Metrics.glyph)
-                                .accessibilityHidden(true)
+                            plusMark
                             Text("New trip").font(.system(.subheadline, weight: .semibold))
                         }
                         .foregroundStyle(Theme.muted)
@@ -182,137 +125,31 @@ struct HomeScreen: View {
                     .accessibilityIdentifier("home-create-folded")
                     .padding(.top, 4)
                 } else {
-                VStack(alignment: .leading, spacing: 10) {
-                    // The heading inside its card, above the name (0.91 — his words: "I would also
-                    // like to have the text "Create New Trip" within the "Name your trip" frame.").
-                    // A tad smaller since 0.92 — his words (19 Oct 2026): "The text "Create new trip" on the
-                    // home page, could we please make it a tad smaller? Not much, but a bit smaller." One
-                    // step down Apple's text styles, Title 3 → Headline, still bold; Grab and go stays Title 3.
-                    // And a tad grey — "Maybe a tad grayish, not so super black.": `Theme.inkGrey`.
-                    let headingTone = Theme.inkGreyPair
-                    Text("Create new trip").font(.system(.headline, weight: .bold))
-                        .foregroundStyle(Color(light: headingTone.light, dark: headingTone.dark))
-                        .accessibilityIdentifier("home-create-heading")
-                        #if DEBUG && os(iOS)
-                        // The colour it is written in, day/night, for the tests (the Mac reports a text's words).
-                        .accessibilityValue(String(format: "#%06x/#%06x", headingTone.light, headingTone.dark))
-                        #endif
-                    TextField("Name your trip", text: $name)
-                        .textFieldStyle(.plain)
-                        .font(.system(.title3, weight: .semibold)).foregroundStyle(Theme.ink)
-                        .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(Theme.bg))
-                        .overlay(RoundedRectangle(cornerRadius: 10)
-                            .stroke(stillNeeded.contains("name") ? AppSection.actions.color : Color.clear, lineWidth: 2))
-                        .focused($naming)
-                        .onChange(of: name) { _, _ in if !stillNeeded.isEmpty { stillNeeded = needs(flat) } }
-                        .accessibilityIdentifier("trip-name")
-
-                    // What KIND of trip, first, under the name — his ask (6 Oct 2026): "the
-                    // Quick check box to be placed somewhere else - more thought through".
-                    // A two-way choice that says what it leaves out, not a lone switch.
-                    TripKindChoice(quick: $quick, note: model.library.quickNote(), id: "trip-kind")
-                    // The month grid itself, always open (0.67) — his words: "I would like the
-                    // date picker to be present all the time, and then take away the Dates
-                    // checkbox", and then "always having the date picker OPEN in Create new
-                    // Trip". First day, then last day, set at once; no day tapped = no dates.
-                    DateRangePicker(start: $start, end: $end, dated: $hasDates, inline: true, grid: "trip-range") { waiting in
-                        pickingEnd = waiting
-                        if !stillNeeded.isEmpty { stillNeeded = needs(flat) }
-                    }
-                    // The door check (0.69): a time on a day needs the days.
-                    if hasDates {
-                        LeaveTimes(out: $leaveOut, home: $leaveHome, id: "trip-leave", tint: AppSection.home.color)
-                    }
-
-                    ForEach(choices, id: \.group.id) { choice in
-                        // Numbered across ALL groups, so "trip-activity-0" names one pill.
-                        // His area's heading (0.89): "GA · Goal Activity", or his own words.
-                        Pills(title: Library.areaWords(ActivityArea(id: choice.group.id, name: choice.group.label)),
-                              options: choice.lists.map { ($0.id, $0.name) },
-                              selected: activities, id: "trip-activity", tint: AppSection.templates.color,
-                              startIndex: flat.firstIndex { $0.id == choice.lists[0].id } ?? 0,
-                              // His colour for a template (0.91), else a workout's own colour.
-                              tones: TemplateTone.byId(choice.lists, workouts: choice.group.id == "WET")) { id in
-                            if activities.contains(id) { activities.remove(id) } else { activities.insert(id) }
-                            if !stillNeeded.isEmpty { stillNeeded = needs(flat) }
+                    Button { creating = true } label: {
+                        HStack(spacing: 6) {
+                            plusMark
+                            Text("New trip").font(.system(.body, weight: .semibold))
                         }
-                        if choice.group.id == "WET" && anyWorkout {
-                            WorkoutContexts(workouts: WorkoutContexts.ticked(choice.lists, activities, flat),
-                                            selected: workoutContexts, id: "trip-context") { workout, context in
-                                workoutContexts[workout, default: []].formSymmetricDifference([context])
-                            }
-                        }
-                    }
-                    // His decision (13 Oct 2026, the Car template deleted — "the car is just go
-                    // and drive"): Plane or RV, both off for an ordinary trip (stored "Car").
-                    TravellingBy(transport: $transport, note: model.library.travelNote(quick: quick), id: "trip-transport")
-                    // The lost-luggage information (0.80, his yes of 13 Oct 2026): on a plane trip only,
-                    // right under the Plane pill that brings it. Optional — never asked for by Create.
-                    if Library.travelLit(transport, "Plane") {
-                        FlightsAndStay(travel: $travel,
-                                       firstDay: hasDates ? HomeScreen.ymd(start) : "",
-                                       lastDay: hasDates ? HomeScreen.ymd(max(start, end)) : "",
-                                       place: "", id: "trip-flights", tint: AppSection.home.color)
-                    }
-                    // His ask (13 Oct 2026): the dates, the templates, Travelling by and "I leave
-                    // at" stay in sight; Season, Food and Laundry fold away, said in one line.
-                    MoreChoices(open: $moreOpen,
-                                summary: HomeScreen.moreSummary(season: season, catering: catering,
-                                                                laundry: laundry, nights: laundryNights),
-                                id: "trip-more") {
-                        Pills(title: "Season", options: SEASONS.map { ($0, $0) }, selected: [season], id: "trip-season",
-                              icons: HomeScreen.seasonIcon) {
-                            season = $0
-                            seasonByHand = true
-                        }
-                        Pills(title: "Food", options: CATERING.map { ($0.id, HomeScreen.shortFood($0.id, $0.label)) },
-                              selected: [catering], id: "trip-catering") { catering = $0 }
-                        LaundrySwitch(on: $laundry, nights: $laundryNights, id: "trip-laundry")
-                    }
-
-                    // The app's main button is ALWAYS in full colour — his words (2026-09-26):
-                    // "The create button is something that is central to the whole app,
-                    // and you make it grayed out." A press with something missing
-                    // creates nothing and says what is missing, right under it.
-                    Button { create(flat) } label: {
-                        Text("Create trip")
-                            .font(.system(.body, weight: .semibold))
-                            .foregroundStyle(Color.white)
-                            .frame(maxWidth: .infinity, minHeight: Metrics.row)
-                            .background(RoundedRectangle(cornerRadius: 12).fill(AppSection.home.color))
-                            .contentShape(Rectangle())
+                        .foregroundStyle(Color.white)
+                        .frame(maxWidth: .infinity, minHeight: Metrics.row)
+                        .background(Capsule().fill(AppSection.home.color))
+                        .contentShape(Capsule())
                     }
                     .buttonStyle(.plain).focusEffectDisabled()
-                    // ⌘S = Create trip (0.103, Mac): a page open over Home is a window of its own, which has the keys.
-                    .commandS { create(flat) }
-                    .accessibilityIdentifier("trip-create")
-                    if !stillNeeded.isEmpty {
-                        Text(stillNeeded)
-                            .font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.actions.color)
-                            .multilineTextAlignment(.center)            // two sentences wrap (0.73): still centred
-                            .frame(maxWidth: .infinity)
-                            .accessibilityIdentifier("trip-create-needs")
-                    }
+                    .accessibilityIdentifier("home-new-trip")
+                    .padding(.top, 4)
                 }
-                .homeCard(id: "home-create-card")
-                // Full trip | Quick, and the answers that rule things in or out, decide
-                // whether Always packed alone has something to pack (0.73): the line follows.
-                .onChange(of: [quick ? "quick" : "trip", transport, season, catering]) { _, _ in
-                    if !stillNeeded.isEmpty { stillNeeded = needs(flat) }
-                }
-                // Season from the trip's first day (0.76): set at the first tap, at a new first
-                // day and at Clear dates — until he picks a season himself.
-                .onChange(of: hasDates) { _, _ in seasonFromDates() }
-                .onChange(of: start) { _, _ in seasonFromDates() }
-                }
-
             }
             .padding(.horizontal, 16).padding(.bottom, 24)
         }
-        // The Mac keeps Home's search in the window's title bar strip, where every tab's search
-        // is; the strip holds nothing else on Home since 0.91 (Grab and go is in its frame).
-        .headerOnTheMac { searchStrip }
+        .headerOnTheMac { header }
+        .sheet(isPresented: $creating) {
+            CreateTripPage { id in
+                // The page goes first; then the made trip opens (one sheet at a time).
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { openedPlace = nil; opened = id }
+            }
+            .environmentObject(model)
+        }
         .sheet(isPresented: $searching) { SearchScreen().environmentObject(model) }
         .sheet(item: Binding(get: { opened.map { Opened(id: $0) } }, set: { opened = $0?.id; if $0 == nil { openedPlace = nil; voiceAsked = nil } })) { o in
             TripScreen(tripId: o.id, place: openedPlace).environmentObject(model)
@@ -326,8 +163,6 @@ struct HomeScreen: View {
             model.placeToOpen = nil
             let o = PlaceOpening.of(code: code, in: model.library, today: Today.local)
             if let trip = o.packingTrip {
-                // Pack by voice starts there by itself (0.71, his yes; off by its switch on
-                // the panel) — asked once this trip screen is up (`startVoiceAsked`).
                 whenFree { openedPlace = o.place; opened = trip; voiceAsked = o.voiceStart }
             }
             else { whenFree { placeShown = o } }
@@ -364,7 +199,7 @@ struct HomeScreen: View {
             model.thingToOpen = nil
             if model.library.items.contains(where: { $0.id == id }) { whenFree { thingShown = Opened(id: id) } }
         }
-        // New Thing under the app icon or in the Dock's menu (0.105): a new, empty thing's page, over whatever was up.
+        // New Thing under the app icon or in the Dock's menu (0.105): a new, empty thing's page.
         .onChange(of: model.newThingToOpen, initial: true) { _, asked in
             guard asked else { return }
             model.newThingToOpen = false
@@ -374,74 +209,136 @@ struct HomeScreen: View {
 
     private struct GrabOpened: Identifiable { let list: GrabDefinition; var id: String { list.id } }
 
-    /// The trip on Home's "On your trip" card, opened (0.108): at its On site step, at Pack to go
-    /// home, at its To charge, or on its review — the focus the trip takes as it opens.
+    /// "Home", big and blue, and at its right the nut that opens Settings (0.110 — Settings is no
+    /// longer a tab), with the version under it, small. On the Mac pinned at the top of the page.
+    private var header: some View {
+        ScreenHeader(title: "Home", tint: AppSection.home.color, id: "home-heading",
+                     font: .system(.largeTitle, weight: .bold)) {
+            VStack(spacing: 0) {
+                Button { model.tabToOpen = .settings } label: {
+                    SectionMark(section: .settings, size: 22, weight: 1.9)
+                        .foregroundStyle(AppSection.settings.color)
+                        .frame(width: Metrics.tap + 4, height: Metrics.tap)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("home-settings")
+                .accessibilityLabel("Settings")
+                Text(AppInfo.version)
+                    .font(.system(.caption2, weight: .semibold))
+                    .foregroundStyle(Theme.muted.opacity(0.7))
+                    .lineLimit(1).fixedSize()
+                    .allowsHitTesting(false)
+                    .accessibilityIdentifier("app-version")
+            }
+        }
+    }
+
+    /// The search, as a field across the page (B): a tap opens the same search as before.
+    private var searchField: some View {
+        Button { searching = true } label: {
+            HStack(spacing: 6) {
+                SVGPath.path("M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14ZM20 20l-4-4")
+                    .stroke(style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                    .onGrid(Metrics.glyph)
+                    .accessibilityHidden(true)
+                Text("Search things and trips").font(.system(.body))
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(Theme.muted)
+            .padding(.horizontal, 10)
+            .frame(maxWidth: .infinity, minHeight: Metrics.tap)
+            .background(RoundedRectangle(cornerRadius: 10).fill(Theme.line.opacity(0.7)))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .accessibilityIdentifier("search-open")
+    }
+
+    /// A part's heading on Home, in Home's blue (B): Next trip, Library.
+    private func sectionHeading(_ title: String, id: String) -> some View {
+        Text(title).font(.system(.headline, weight: .bold)).foregroundStyle(AppSection.home.color)
+            .padding(.top, 4)
+            .accessibilityIdentifier(id)
+    }
+
+    private var plusMark: some View {
+        SVGPath.path("M12 5v14M5 12h14")
+            .stroke(style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
+            .onGrid(Metrics.glyph)
+            .accessibilityHidden(true)
+    }
+
+    /// The trip on Home's "On your trip" card, opened (0.108).
     private func openTrip(_ id: String, _ focus: LibraryModel.TripFocus?) {
         model.tripFocus = focus
         openedPlace = nil
         opened = id
     }
 
-    /// Grab and go's line, the first inside its frame (0.91): the heading, then — on one
-    /// centre line with it — the search (iPhone; the Mac's is in the title bar strip) and
-    /// Grab Lists. Until 0.91 this line was Home's header (`ScreenHeader`), on the Mac pinned
-    /// in the title bar strip.
+    /// Grab and go's line, the first inside its frame (0.91): the heading and Grab Lists.
     private var grabHeading: some View {
         HStack(alignment: .center, spacing: 8) {
-            Text("Grab and go").font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
+            Text("Grab and go").font(.system(.headline, weight: .bold)).foregroundStyle(AppSection.home.color)
                 .lineLimit(1).minimumScaleFactor(0.8)
                 .accessibilityIdentifier("home-grab-heading")
             Spacer(minLength: 8)
-            #if !os(macOS)
-            SearchButton { searching = true }
-            #endif
-            // This door opens the grab lists — not the templates (whose screen
-            // is "Your templates"). His note on the Mac: "Your Grab Lists".
+            // This door opens the grab lists — not the templates. His note on the Mac: "Your Grab Lists".
             Button { showingGrabLists = true } label: {
                 Text("Grab Lists")
                     .font(.system(.footnote, weight: .semibold)).foregroundStyle(AppSection.home.color)
-                    .frame(minHeight: Metrics.tap).contentShape(Rectangle())
+                    .frame(minHeight: Metrics.compact).contentShape(Rectangle())
             }
             .buttonStyle(.plain).focusEffectDisabled()
             .accessibilityIdentifier("grab-lists")
         }
-        .frame(minHeight: Metrics.tap)
     }
 
-    /// The Mac's title bar strip on Home: the search at its right, on the traffic lights'
-    /// line (`headerOnTheMac`); nothing at all on the iPhone, where the search is in Grab
-    /// and go's line.
-    private var searchStrip: some View {
-        HStack(spacing: 8) {
-            Spacer(minLength: 0)
-            SearchButton { searching = true }
-        }
-        .headerLine()
-    }
-
-    /// This Device: how many trips, things and templates. His marks on the Mac: the heading
-    /// struck out and written down the SIDE instead, and Trips and Templates swapped over.
-    /// At the foot of that side heading, the sync dot (0.92, `SyncLight` — his pick B: "put the
-    /// sync dot under the This Device label"): in the same 16-point column, the block no taller.
-    /// The heading is Caption 2 since 0.92 (Caption 1 until then) so the dot fits under it in the
-    /// tiles' 76 points; the column wraps it up the side at its own length (`SideLabel`).
-    private var thisDevice: some View {
-        HStack(spacing: 10) {
-            VStack(spacing: 3) {
-                SideLabel(text: "This Device")
-                    .accessibilityIdentifier("device-heading")
-                SyncLight()
+    /// Library (B, 0.110): Trips, Things and Templates — each with its count and its own mark and
+    /// colour — in one card; a row opens its tab. These replace This Device's three count tiles; the
+    /// sync dot (his pick, 0.92) stays on Home, at the right of the Library heading.
+    private var library: some View {
+        let templates = TemplatesScreen.activityAreas(model.library.templates, model.library).reduce(0) { $0 + $1.lists.count }
+        return VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                sectionHeading("Library", id: "device-heading")
+                Spacer(minLength: 8)
+                SyncLight().padding(.top, 4)
             }
-            .frame(width: 16)
-            CountTile(number: model.library.trips.count, label: "Trips", id: "count-trips", color: AppSection.events.color)
-            CountTile(number: model.library.ownThings().count, label: "Things", id: "count-things", color: AppSection.care.color)
-            // The templates Your templates shows — not the hidden bags list or the
-            // web app's old bin, which made this number the higher one (5 Oct 2026).
-            CountTile(number: TemplatesScreen.activityAreas(model.library.templates, model.library).reduce(0) { $0 + $1.lists.count },
-                      label: "Templates", id: "count-templates", color: AppSection.templates.color)
+            VStack(spacing: 0) {
+                libraryRow(.events, "Trips", model.library.trips.count, id: "count-trips")
+                CardHairline()
+                libraryRow(.care, "Things", model.library.ownThings().count, id: "count-things")
+                CardHairline()
+                libraryRow(.templates, "Templates", templates, id: "count-templates")
+            }
+            .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("home-device")
+    }
+
+    private func libraryRow(_ section: AppSection, _ title: String, _ count: Int, id: String) -> some View {
+        Button { model.tabToOpen = section } label: {
+            HStack(spacing: 10) {
+                SectionMark(section: section, size: 18, weight: 1.9).foregroundStyle(section.color)
+                Text(title).font(.system(.body)).foregroundStyle(Theme.ink)
+                Spacer(minLength: 8)
+                Text("\(count)").font(.system(.body).monospacedDigit()).foregroundStyle(Theme.muted)
+                    .accessibilityIdentifier(id)
+                SVGPath.path("M9 6l6 6-6 6")
+                    .stroke(style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                    .onGrid(12)
+                    .foregroundStyle(Theme.faint)
+                    .accessibilityHidden(true)
+            }
+            .padding(.horizontal, 12)
+            .frame(minHeight: Metrics.row)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .accessibilityIdentifier("home-library-\(section.rawValue)")
     }
 
     /// The code's Pack by voice, asked only now that Home's trip screen is up (spec 07 part
@@ -463,84 +360,18 @@ struct HomeScreen: View {
     private func whenFree(_ open: @escaping () -> Void) {
         // A page the window opened over its tab with ⌘N or Quick open (0.105, `RootPages`) makes way too.
         let busy = searching || showingGrabLists || opened != nil || grab != nil || menuShown || placeShown != nil
-            || thingShown != nil || RootPages.anyOpen
+            || thingShown != nil || creating || RootPages.anyOpen
         guard busy else { open(); return }
         searching = false; showingGrabLists = false; opened = nil; grab = nil; menuShown = false; placeShown = nil
-        thingShown = nil
+        thingShown = nil; creating = false
         RootPages.closeAll()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { open() }
-    }
-
-    /// What is still missing before a trip can be made, in his words — "" when nothing.
-    ///
-    /// No template ticked is fine when Always packed (or the transport kit) puts
-    /// something on a Full trip — his short trip of the small core alone (0.73, his
-    /// must-fix: it said "Pick at least one template."). Only a trip with nothing to
-    /// pack at all is asked for one (`Library.templateMissing`).
-    private func needs(_ flat: [PackList]) -> String {
-        var said: [String] = []
-        if jsTrim(name).isEmpty { said.append("Give the trip a name.") }
-        if let missing = model.library.templateMissing(draft(flat)) { said.append(missing) }
-        // Only the first day tapped: never a day trip by accident (the spec pass, 5 Oct
-        // 2026 — a grid closed on its first day stored one).
-        if pickingEnd { said.append("Tap the trip's last day \u{2014} the same day again for a day trip.") }
-        return said.joined(separator: " ")
-    }
-
-    private func create(_ flat: [PackList]) {
-        let missing = needs(flat)
-        guard missing.isEmpty else {
-            stillNeeded = missing
-            if jsTrim(name).isEmpty { naming = true }
-            return
-        }
-        stillNeeded = ""
-        let made = draft(flat)
-        var stored: TripEvent?
-        model.change { stored = $0.createTrip(made) }
-        name = ""; activities = []; workoutContexts = [:]; hasDates = false; quick = false; laundry = false; laundryNights = LAUNDRY_CAP_NIGHTS
-        leaveOut = ""; leaveHome = ""
-        travel = TripTravel(flights: [FlightLeg(), FlightLeg()])
-        // The form starts over: the next trip's dates choose its season again (0.76).
-        seasonByHand = false
-        seasonFromDates()
-        opened = stored?.id
-    }
-
-    /// Season as the dates say (`Library.seasonFor`: Winter from November to March, Summer
-    /// otherwise and with no dates) — unless he has picked one himself on this form.
-    private func seasonFromDates() {
-        guard !seasonByHand else { return }
-        season = Library.seasonFor(firstDay: hasDates ? HomeScreen.ymd(start) : "")
     }
 
     /// What More choices holds, in one line while it is closed: "Summer · Mix · No laundry".
     static func moreSummary(season: String, catering: String, laundry: Bool, nights: Int) -> String {
         let food = shortFood(catering, CATERING.first { $0.id == catering }?.label ?? catering)
         return [season, food, laundry ? "Laundry, \(nights) nights" : "No laundry"].joined(separator: " \u{00B7} ")
-    }
-
-    /// The trip Create makes from what the screen holds now — also what `needs` asks
-    /// whether it would pack anything.
-    private func draft(_ flat: [PackList]) -> TripEvent {
-        var draft = newEvent(name: jsTrim(name), mode: quick ? "quick" : "trip")
-        draft.transport = transport
-        draft.season = season
-        draft.catering = catering
-        draft.laundry = laundry
-        draft.extra[LAUNDRY_NIGHTS_KEY] = .number(Double(laundryNights))
-        draft.activities = flat.map(\.id).filter { activities.contains($0) }   // in the order offered
-        draft.activityContexts = WorkoutContexts.stored(draft.activities, flat, workoutContexts)
-        draft.contexts = WorkoutContexts.union(draft.activityContexts)
-        if hasDates {
-            draft.startDate = HomeScreen.ymd(start)
-            draft.endDate = HomeScreen.ymd(max(start, end))
-            _ = Library.setLeaveTime(&draft, leaveOut, home: false)
-            _ = Library.setLeaveTime(&draft, leaveHome, home: true)
-        }
-        // Flights and stay: stored only while Plane is lit — what the form shows (cleaned: empty legs go).
-        if Library.travelLit(transport, "Plane") { Library.setFlightsAndStay(&draft, travel) }
-        return draft
     }
 
     static func ymd(_ d: Date) -> String {

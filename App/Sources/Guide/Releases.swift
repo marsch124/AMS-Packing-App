@@ -18,6 +18,20 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.110", date: "11 Nov 2026", title: "A new frame: five tabs, a calmer Home, and the Mac with a sidebar",
+                new: ["Settings opens from a nut button at the top right of Home \u{2014} the same hand-drawn nut, in slate. Settings has a \u{2039} Home button at its top that takes you back.",
+                      "Home has a search field at the top, \u{201C}Search things and trips\u{201D}. Tap it and the same search as before opens.",
+                      "Home has a Library: three rows \u{2014} Trips, Things and Templates \u{2014} each with how many you have. Tap a row and it opens that tab or list.",
+                      "\u{201C}\u{FF0B} New trip\u{201D} is a full-colour button at the foot of Home. It opens Create new trip as a page of its own, with Cancel and Create at the top. On the Mac, Escape is Cancel.",
+                      "The Mac has a sidebar at the left: Home, Trips, Templates, Care, To do and Settings, each with its drawn mark and its colour."],
+                changed: ["Six tabs became five: Home, Trips, Templates, Care and To do. The tab bar now floats above the page in a rounded, glass-style bar. Each tab keeps its hand-drawn mark in its own colour \u{2014} Home blue, Trips green, Templates violet, Care orange, To do red \u{2014} and To do keeps its red count badge.",
+                          "Each tab\u{2019}s main screen opens with a big coloured title at the left, in its part\u{2019}s colour: Home, Trips, Your templates, Care.",
+                          "Home, top to bottom: the title with the nut; the search; Next trip with its countdown card (the days, the name, still to pack, the from date, what is to buy) \u{2014} or On your trip while you are away; Grab and go with your grab lists and Grab Lists to manage them; Library; and \u{201C}\u{FF0B} New trip\u{201D}.",
+                          "The three count tiles under This device are gone from Home \u{2014} the Library rows carry the same counts and open what they count. The sync dot moved with them: it sits at the right of the Library heading.",
+                          "Create new trip no longer sits open on Home: it is its own page, opened from \u{201C}\u{FF0B} New trip\u{201D} \u{2014} the same name, Full trip or Quick, templates and calendar as before. While you are away or going home the button is one quiet line, + New trip, as before.",
+                          "The version number moved: it shows at the foot of Settings and small under the nut on Home \u{2014} no longer under the tab bar.",
+                          "On the Mac the window has its normal title bar again; the header in the title-bar strip of 0.67 is gone. \u{2318}1 to \u{2318}5 still choose Home, Trips, Templates, Care and To do; Settings is \u{2318}6 or \u{2318},."],
+                removed: ["The Settings tab, and the six-button tab bar. Nothing about your things, trips, templates or grab lists changed."]),
         Release(version: "0.109", date: "4 Nov 2026", title: "New trip steps back while you travel",
                 changed: ["While you are away or going home, Create new trip on Home folds to one quiet line, \u{201C}+ New trip\u{201D}, at the bottom \u{2014} tap it and the whole form opens as before. Back home, Create new trip shows in full again."]),
         Release(version: "0.108", date: "2 Nov 2026", title: "Your trip on Home, Still to pack, and grab list icons",
