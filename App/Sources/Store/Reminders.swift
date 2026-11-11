@@ -119,6 +119,11 @@ final class PackingReminders: NSObject, UNUserNotificationCenterDelegate {
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
                                             didReceive response: UNNotificationResponse) async {
         let info = response.notification.request.content.userInfo
+        // A warranty or care reminder (0.120): the Inventory tab.
+        if let thing = info["inventory"] as? String {
+            await MainActor.run { InventoryReminders.shared.open?(thing) }
+            return
+        }
         guard let id = info["tripId"] as? String else { return }
         // A trip message (0.77): Back to packing and Have a good trip open the trip; Welcome
         // home, its review.

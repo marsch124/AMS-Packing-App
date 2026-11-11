@@ -14307,6 +14307,22 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(disappears(app, "things-detail", timeout: 5))
     }
 
+    /// 0.120: reminders switch, No receipt yet list, the insurance PDF says it is ready.
+    func testInventoryInsuranceAndReceipts() {
+        let app = launch()
+        tab(app, "inventory")
+        XCTAssertTrue(app.switches["inventory-remind"].waitForExistence(timeout: 5), "no reminders switch")
+        XCTAssertTrue(app.buttons["inventory-noreceipt"].waitForExistence(timeout: 5), "no No receipt yet row")
+        tap(app, id: "inventory-pdf")
+        let said = app.staticTexts["inventory-pdf-said"]
+        XCTAssertTrue(said.waitForExistence(timeout: 10), "the PDF did not say anything")
+        XCTAssertTrue(said.label.hasPrefix("PDF ready"), "PDF said: \(said.label)")
+        shot(app, "inventory-papers")
+        tap(app, id: "inventory-noreceipt")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        tap(app, id: "things-done")
+    }
+
     /// Papers (0.119): a paper on a thing's page, its kind changed, the manual link, Remove asks first.
     func testThingPapers() {
         let app = launch()

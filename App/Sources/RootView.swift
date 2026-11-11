@@ -86,6 +86,8 @@ struct RootView: View {
                 model.tripToOpen = id
             }
             PackingReminders.shared.start()
+            // A tapped warranty or care reminder (0.120): the Inventory tab.
+            InventoryReminders.shared.open = { _ in section = .inventory }
             #if os(iOS)
             SaveNote.shared.watchKeyboard()    // a failed save's note sits above the keyboard (0.93)
             SystemUndo.shared.use(undoManager, model)            // shake to undo (0.105)
@@ -131,6 +133,7 @@ struct RootView: View {
         #endif
         .onReceive(model.$library.debounce(for: .seconds(2), scheduler: RunLoop.main)) { library in
             Task { await PackingReminders.shared.reschedule(library) }
+            Task { await InventoryReminders.shared.reschedule(library) }
             Task { await DoorChecks.shared.reschedule(library) }
             Task { await TripMessages.shared.reschedule(library) }
             // The grab lists Shortcuts offers by name follow his — and so do the four under
@@ -147,6 +150,7 @@ struct RootView: View {
             // allowed again: put the packing reminders right at once, not at the next
             // change of the library.
             if phase == .active { Task { await PackingReminders.shared.reschedule(model.library) } }
+            if phase == .active { Task { await InventoryReminders.shared.reschedule(model.library) } }
             if phase == .active { Task { await DoorChecks.shared.reschedule(model.library) } }
             if phase == .active { Task { await TripMessages.shared.reschedule(model.library) } }
             // The day alone moves a trip under way on — and so where a thing is, in Spotlight.

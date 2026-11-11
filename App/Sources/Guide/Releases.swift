@@ -18,6 +18,23 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.120", date: "12 Nov 2026", title: "Reminders, an insurance list and \u{201C}No receipt yet\u{201D}",
+                new: ["Warranty and care reminders: a new switch on the Inventory tab, \u{201C}Remind me at 9:00\u{201D}. It is off to begin with. Turning it on asks the device\u{2019}s permission once.",
+                      "Thirty days before a thing\u{2019}s warranty ends you get a notice at 9:00: \u{201C}Warranty ends in 30 days \u{2014} the thing \u{2014} warranty until the date\u{201D}.",
+                      "On the day a thing\u{2019}s care is due (its care schedule on Care) you get a notice at 9:00: \u{201C}Care due today \u{2014} the thing\u{201D}.",
+                      "Things marked \u{201C}not in use\u{201D} never remind. At most 40 reminders wait at a time. Tapping a reminder opens the Inventory tab.",
+                      "A new button on the Inventory tab, \u{201C}Insurance list (PDF)\u{201D}. It makes an A4 PDF that is always light, so it prints well: first a title part with the date and the totals (how many things, what you paid, what it is worth today), then room by room in the Inventory tab\u{2019}s order with \u{201C}No room\u{201D} last, each room with its own totals.",
+                      "Each thing in the PDF shows its photo, its name and the details you have filled in: Brand, Model, Serial, Bought on, Bought at, Price, Value today, Warranty until and Spot. Empty details are left out.",
+                      "At the end of the PDF come the receipt photos (papers of the kind Receipt), each with the thing\u{2019}s name under it.",
+                      "When the PDF is ready, the iPhone opens its share sheet and the Mac its sharing menu, so you can send, print or save it.",
+                      "A new row on the Inventory tab, \u{201C}No receipt yet\u{201D}, with how many things in use have no receipt photo. Tap it and Your things opens with only those things, so you can add the receipts one by one."],
+                changed: ["The \u{201C}Stays at home\u{201D} switch moved out of the folded Details card onto the thing\u{2019}s page itself, a line of its own right under Photos (above Details). Before, it was the last line of Details and hidden while Details was folded; now it is always visible. It works as before: a thing that stays at home is kept off trips, templates and \u{FF0B} Add.",
+                      "The reminder switch is per device: the iPhone and the Mac each have their own, and each asks its own permission.",
+                      "This is the reminders and insurance list that were planned for 0.120. A manual stored as a PDF in the app is still not in.",
+                      "The Inventory tab has three new things on it; everything that was there stays where you placed it.",
+                      "How it works and the written specification say all this. Nothing about your trips, templates, to-dos or grab lists changed."],
+                fixed: [],
+                removed: []),
         Release(version: "0.119", date: "11 Nov 2026", title: "Papers \u{2014} receipts, manuals and warranty cards on each thing",
                 new: ["A thing\u{2019}s page has a new Papers card right under Details, in Care\u{2019}s orange. While the thing has no papers it is folded to one button, \u{201C}\u{FF0B} Add papers \u{2014} receipt, manual, warranty card\u{201D}, so a plain thing stays short.",
                       "To add one: on the iPhone, \u{201C}Take a photo\u{201D} opens the camera at once; \u{201C}Choose a photo\u{201D} (iPhone and Mac) picks one from Photos; \u{201C}Choose a file\u{2026}\u{201D} takes a picture or screenshot from a folder. On the Mac you can also drop a photo on the card.",

@@ -19,7 +19,7 @@ struct ThingDetailsCard: View {
     static func isEmpty(_ it: Item) -> Bool {
         jsTrim(it.manufacturer).isEmpty && jsTrim(it.model).isEmpty && jsTrim(it.serial).isEmpty
             && !isYMD(it.acquired) && Library.shop(it).isEmpty && it.price <= 0 && Library.valueSet(it) == nil
-            && !isYMD(it.warranty) && it.qtyOwned <= 1 && !Library.staysHome(it)
+            && !isYMD(it.warranty) && it.qtyOwned <= 1
     }
 
     var body: some View {
@@ -87,16 +87,10 @@ struct ThingDetailsCard: View {
                      estimate.map { "about \(amountText($0))" } ?? "what it's worth now", "thing-value")
             }
             line("Warranty") { warranty(today: today) }
-            line("How many") {
+            // Stays at home was the last line here until 0.120; it is now on the page itself (`ThingStaysHome`).
+            line("How many", last: true) {
                 text(Binding(get: { countText }, set: { countText = $0
                     draft.qtyOwned = max(1, Int(jsTrim($0)) ?? 1) }), "1", "thing-owned-count")
-            }
-            line("Stays at home", last: true) {
-                Toggle("", isOn: Binding(get: { Library.staysHome(draft) }, set: { Library.setStaysHome(&draft, $0) }))
-                    .labelsHidden().tint(tint)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-                    .accessibilityLabel("Stays at home \u{2014} never offered on trips")
-                    .accessibilityIdentifier("thing-stays-home")
             }
         }
         .bCard()
@@ -239,5 +233,28 @@ struct ThingSpotField: View {
                 }
             }
         }
+    }
+}
+
+/// Stays at home on the thing's page itself (0.120 — his ask of 12 Nov 2026: hidden while Details was
+/// folded, so it moved out of Details to a line of its own under Photos, always in view). Written into
+/// the page's draft, kept on Save.
+struct ThingStaysHome: View {
+    @Binding var draft: Item
+    private var tint: Color { AppSection.care.color }
+
+    var body: some View {
+        Toggle(isOn: Binding(get: { Library.staysHome(draft) }, set: { Library.setStaysHome(&draft, $0) })) {
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Stays at home").font(.system(.body)).foregroundStyle(Theme.ink)
+                Text("Never offered on trips, templates or \u{FF0B} Add").font(.system(.footnote)).foregroundStyle(Theme.muted)
+            }
+        }
+        .tint(tint)
+        .padding(.horizontal, 12).padding(.vertical, 6)
+        .frame(minHeight: Metrics.row)
+        .bCard()
+        .accessibilityLabel("Stays at home \u{2014} never offered on trips")
+        .accessibilityIdentifier("thing-stays-home")
     }
 }

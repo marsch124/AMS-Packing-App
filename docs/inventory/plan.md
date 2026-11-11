@@ -93,7 +93,7 @@ Empty lines are folded under "Add details" so a sparse thing stays short.
 | 16 | Page order | **Details card under the photos, folded when empty**; nothing you placed moves |
 | 17 | Anna | **Shared like today's things**; "Whose it is" tells who owns what |
 | 18 | Privacy | **No hiding** |
-| 19 | Building order | **0.115** Details + rooms + Stays at home + views + totals · **0.116** room walk (BUILT 11 Nov 2026) · **0.117** Inventory tab (his new pick, below) · **0.118** row photos at the start of each thing (11 Nov 2026) · **0.119** Papers (BUILT 11 Nov 2026; a stored PDF manual is not in it yet) · **0.120** reminders + insurance PDF |
+| 19 | Building order | **0.115** Details + rooms + Stays at home + views + totals · **0.116** room walk (BUILT 11 Nov 2026) · **0.117** Inventory tab (his new pick, below) · **0.118** row photos at the start of each thing (11 Nov 2026) · **0.119** Papers (BUILT 11 Nov 2026; a stored PDF manual is not in it yet) · **0.120** reminders + insurance PDF (BUILT 12 Nov 2026) |
 | 20 | Marking "Gone" | **Date + how** (Sold · Given away · Broken · Lost · Stolen), sold-for price if sold |
 
 ## New pick — its own Inventory tab (11 Nov 2026)
@@ -109,3 +109,5 @@ His words: "I cannot find an entry point for the new items perspective — the i
 **Build order since 0.118 (11 Nov 2026):** **0.118** the small photo at the start of each thing's row (his "bigger, at the start") · **0.119** Papers (receipts and manuals) · **0.120** warranty/care reminders + insurance PDF. Read 0.118/0.119 in the older lines above as 0.119/0.120.
 
 **0.119 Papers (BUILT 11 Nov 2026):** photos of receipt, delivery note, warranty card, manual or other on a thing, up to 12, plus a Manual link. A stored PDF manual is NOT built yet.
+
+**0.120 Reminders + insurance PDF + No receipt yet (BUILT 12 Nov 2026):** switch "Remind me at 9:00" (`inventory-remind`, per device, off at first; warranty 30 days before at 9:00, care due today at 9:00; not-in-use never; max 40; tap opens Inventory), button "Insurance list (PDF)" (`inventory-pdf`, A4 light, totals, room by room, details, receipt photos at the end, share sheet/menu; test line `inventory-pdf-said`), row "No receipt yet" (`inventory-noreceipt`, opens Your things filtered). Full detail in docs/spec/05-things-care-table-todo.md.

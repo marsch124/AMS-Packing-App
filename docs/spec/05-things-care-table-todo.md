@@ -3538,3 +3538,17 @@ His picks (plan `docs/inventory/plan.md`): receipts as photos taken as you go; m
 **Everywhere else.** Synced to both devices (iPhone, Mac, Anna's shared things) and kept in backups like every photo. Deleting a thing deletes its papers. Worth a look never offers a paper's photo as left over. Shared templates and trips never carry papers. Inventory tab and Your things rows are unchanged.
 
 **Docs.** What's new 0.119; How it works: the thing's page lines (Papers, Manual link) and the page-order line now lists Papers after Details.
+
+## Reminders, insurance list, No receipt yet (0.120, 12 Nov 2026)
+
+**Reminders.** A switch on the Inventory tab, "Remind me at 9:00" (`inventory-remind`), per device (not synced), off to begin with. Turning it on asks the device's notification permission once; refused = switch goes back off. Rules (Core `Core/Sources/PackingLibrary/InventoryReminders.swift`, `inventoryReminders(today:)`): (1) 30 days before a thing's warranty end date, at 9:00, "Warranty ends in 30 days — <thing> — warranty until <date>"; (2) on the day a thing's care is due (its care schedule on Care), at 9:00, "Care due today — <thing>"; (3) things "not in use" never remind; (4) at most 40 waiting (soonest first). Scheduling: `App/Sources/Store/InventoryReminders.swift`, rebuilt when the switch, the things or the care schedules change. Tapping a reminder opens the Inventory tab.
+
+**Insurance list (PDF).** Button "Insurance list (PDF)" (`inventory-pdf`) on the Inventory tab. Core: `insuranceList(today:)`; drawing: `App/Sources/Screens/InsurancePDF.swift`. A4, always light (not dark). Order: a title part with the date and totals (how many things, paid, worth today); then room by room in the Inventory tab's order, "No room" last, each room with its own totals; each thing with its photo, name and the filled-in details among Brand, Model, Serial, Bought on, Bought at, Price, Value today, Warranty until, Spot (empty ones left out); at the end the receipt photos (papers of kind Receipt), each captioned with the thing's name. Then the share sheet (iPhone) / sharing menu (Mac) to send, print or save. Under the tests a line `inventory-pdf-said` reads "PDF ready — N pages".
+
+**No receipt yet.** A row (`inventory-noreceipt`) on the Inventory tab with the count of things in use that have no receipt photo (Core `noReceiptRows()`). Tap: Your things opens with only those things, to add receipts one by one.
+
+**Stays at home moved.** The switch (`thing-stays-home`) left the folded Details card and is now a line of its own on the thing's page, right under Photos and above Details, always visible (before 0.120 it was the last line of Details, hidden while Details was folded). Same id; it still keeps the thing off trips, templates and ＋ Add. Page order: Photos, Stays at home, Details, Papers.
+
+**Unchanged.** Totals, rooms, Warranty ends soon, room walk, trips, templates, to-dos. A stored PDF manual is still NOT built.
+
+**Docs.** What's new 0.120; How it works: three new lines in the Inventory part. Tests: one data test per rule in Core; one screen test finds `inventory-remind`, `inventory-pdf`, `inventory-pdf-said`, `inventory-noreceipt`.

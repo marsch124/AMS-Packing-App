@@ -10,8 +10,19 @@ struct InventoryScreen: View {
     @EnvironmentObject var model: LibraryModel
     @State private var opening: Opening?
     @State private var walking = false
+    /// Warranty and care reminders on this device (0.120), off until he turns them on.
+    @AppStorage(InventoryReminders.onKey) private var remind = false
+    @State private var refused = false
+    /// Under the tests: what the insurance PDF wrote ("PDF ready — 3 pages").
+    @State private var pdfSaid = ""
+    #if os(iOS)
+    @State private var sharing: SharedFile?
+    struct SharedFile: Identifiable { let id = UUID(); let url: URL }
+    #else
+    @State private var anchor = ShareAnchorBox()
+    #endif
 
-    struct Opening: Identifiable { let id = UUID(); let room: String?; let search: String }
+    struct Opening: Identifiable { let id = UUID(); let room: String?; let search: String; var noReceipt = false }
     private var tint: Color { AppSection.inventory.color }
 
     var body: some View {
@@ -19,6 +30,7 @@ struct InventoryScreen: View {
         let rooms = model.library.inventoryRooms()
         let totals = Library.totals(model.library.ownThings(), today: today)
         let ending = model.library.warrantiesEndingSoon(today: today)
+        let noReceipt = model.library.noReceiptRows().count
         ScrollView {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Inventory").font(.system(.largeTitle, weight: .bold)).foregroundStyle(tint)
@@ -58,6 +70,7 @@ struct InventoryScreen: View {
                     }
                     .bCard()
                 }
+                insurance(noReceipt: noReceipt)
             }
             .padding(.horizontal, 16).padding(.bottom, 140)
         }
@@ -67,9 +80,88 @@ struct InventoryScreen: View {
         }
         .background(Theme.bg.ignoresSafeArea())
         .sheet(item: $opening) { o in
-            ThingsScreen(searching: o.search, room: o.room).environmentObject(model)
+            ThingsScreen(searching: o.search, room: o.room, noReceipt: o.noReceipt).environmentObject(model)
         }
+        #if os(iOS)
+        .sheet(item: $sharing) { f in ShareSheet(url: f.url) }
+        #endif
         .sheet(isPresented: $walking) { RoomWalkScreen().environmentObject(model) }
+    }
+
+    // MARK: Papers, reminders and the insurance list (0.120)
+
+    private func insurance(noReceipt: Int) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            BPartTitle(title: "Papers and reminders", count: nil, tint: tint)
+            VStack(spacing: 0) {
+                Button { opening = Opening(room: nil, search: "", noReceipt: true) } label: {
+                    BRow(title: "No receipt yet", count: "\(noReceipt)")
+                }
+                .buttonStyle(.plain).focusEffectDisabled()
+                .accessibilityIdentifier("inventory-noreceipt")
+                Divider().padding(.leading, 12)
+                Toggle(isOn: Binding(get: { remind }, set: { want in
+                    Task {
+                        let ok = want ? await PackingReminders.shared.askToShow() : false
+                        remind = want && ok
+                        refused = want && !ok
+                        await InventoryReminders.shared.reschedule(model.library)
+                    }
+                })) {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Remind me at 9:00").font(.system(.body)).foregroundStyle(Theme.ink)
+                        Text("30 days before a warranty ends, and when care is due \u{2014} on this device")
+                            .font(.system(.footnote)).foregroundStyle(Theme.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .tint(tint)
+                .padding(.horizontal, 12).padding(.vertical, 6)
+                .accessibilityIdentifier("inventory-remind")
+                if refused {
+                    Text("This device does not allow the app to remind you. Allow it in the device's Settings, under Notifications.")
+                        .font(.system(.footnote, weight: .semibold)).foregroundStyle(AppSection.actions.color)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.horizontal, 12).padding(.bottom, 6)
+                        .accessibilityIdentifier("inventory-remind-refused")
+                }
+            }
+            .bCard()
+            Button { sharePDF() } label: {
+                Text("Insurance list (PDF)").font(.system(.body, weight: .semibold)).foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, minHeight: Metrics.tap)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(tint))
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).focusEffectDisabled()
+            #if os(macOS)
+            .background(ShareAnchor(box: anchor))
+            #endif
+            .padding(.top, 4)
+            .accessibilityIdentifier("inventory-pdf")
+            if !pdfSaid.isEmpty {
+                Text(pdfSaid).font(.system(.footnote, weight: .semibold)).foregroundStyle(tint)
+                    .accessibilityIdentifier("inventory-pdf-said")
+            }
+        }
+    }
+
+    /// Draw the PDF, then hand it to the share sheet (iPhone) or the sharing menu (Mac). Under the UI
+    /// tests no share sheet opens: the page says what was written instead.
+    private func sharePDF() {
+        guard let made = InsurancePDF.write(model.library) else { pdfSaid = "The PDF could not be made."; return }
+        if AMSPackingApp.testing {
+            pdfSaid = "PDF ready \u{2014} \(made.pages) page\(made.pages == 1 ? "" : "s")"
+            return
+        }
+        pdfSaid = ""
+        #if os(iOS)
+        sharing = SharedFile(url: made.url)
+        #else
+        if let view = anchor.view {
+            NSSharingServicePicker(items: [made.url]).show(relativeTo: view.bounds, of: view, preferredEdge: .minY)
+        }
+        #endif
     }
 
     private func totalsCard(_ t: InventoryTotals) -> some View {
