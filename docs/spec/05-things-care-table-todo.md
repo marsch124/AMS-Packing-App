@@ -856,13 +856,12 @@ you add an item, it needs to be on top of the list. Now it is just hidden in the
      "on 2 templates" (a count, not the names) and Choose from your things (a place only) are unchanged; 5 pt vertical padding (until 0.62: the details on a second line, 10 pt padding); a
      1 pt line under it (since 0.69 under the note line when there is one). A just-added row is lit for a moment: a
      rounded (8) orange 18 % background reaching 8 pt past the text on each side.
-   - A thing WITH a photo (0.90): its first photo, small, at the row's END, after the templates and the place
-     (`thing-row-N-photo`, `ThingPhotoThumb` in BagPhoto.swift: 24 pt square on the iPhone, 20 on the Mac, corners 5,
-     a 1 pt `line` edge; an image element "Photo of <name>"). Nothing for a thing without one. At the end, not the
-     start, so the names still line up A–Z (a picture at the start of only some rows set their names at two
-     depths — decided by the build); smaller than the row, so the row is no taller. An element of its own BESIDE the
-     row's button (`HStack(spacing 10)`; the button folds what it holds into itself), and a tap on it opens the thing
-     as the row does. Its first photo that is on this device; none while its photos are still on their way. (Not in
+   - Every thing's row STARTS with a photo square (0.118; 0.90-0.117: a 24/20 pt photo at the row's END, only for things
+     with a photo): its first photo, 40 pt square on the iPhone, 36 on the Mac, corners 8, a 1 pt `line` edge
+     (`thing-row-N-photo`, `ThingPhotoThumb` in BagPhoto.swift; an image element "Photo of <name>"). A thing without
+     a photo gets a faint empty frame of the same size (`thing-row-N-nophoto`) so the names line up at one depth.
+     An element of its own BESIDE the row's button (`HStack(spacing 10)`), and a tap on it opens the thing as the row
+     does. Its first photo that is on this device; none while its photos are still on their way. (Not in
      All your things · table, Choose from your things or a template's rows: Your things and Search are where he
      looks a thing up — keep it calm.)
    - Under a thing found by its NOTES and not by its name (0.69): the note line (`thing-row-N-note`, `NoteHitLine`
@@ -914,7 +913,7 @@ UI `testANewThingWithANameHeHasSaysSo` ("map" → the line says "already", the f
 UI `testAThingTakesAPhotoOrTwoAndShowsItInYourThingsAndSearch` (0.90): no `thing-row-0-photo` before; on the Goggles'
 page the photo pill under Notes and above Kind of thing; two photos, then `thing-photo-full` and no pill; the first
 large ("1 of 2"); Remove asks (`thing-photo-remove-yes`, the photo still there), Keep it keeps it, Remove photo
-removes it, the other stays, the pill is back; after Cancel the row shows `thing-row-0-photo` at its end, row 1
+removes it, the other stays, the pill is back; after Cancel the row shows `thing-row-0-photo` (since 0.118 at its start), row 1
 none, both rows equally tall; a tap on the photo opens the thing; Search "goggles" → `search-things-0-photo`, "map"
 → none. Planted faults seen red: Remove without asking ("Remove did not ask first"), no photo on the row ("Your
 things does not show the thing's photo"), none in Search ("Search does not show the thing's photo"). Model
@@ -935,6 +934,9 @@ up: the Mac kept the moved row's old accessibility name ("thing-row-7" at the to
 test — and VoiceOver — lost it.
 
 ---
+
+### 0.118 — the row photo at the start (his ask, 11 Nov 2026: "add the small photo next to each thing"; he picked "bigger, at the start")
+Your things (Care ▸ Your things, and a room's list opened from the Inventory tab): each row starts with the first photo, 40 pt (36 Mac), rounded; no photo → a faint empty frame of the same size (`thing-row-N-nophoto`). Tap opens the thing as before. Before: 24 pt (20 Mac) at the END, only with a photo. Search keeps its small photo at the end. Test: a UI check finds `thing-row-N-photo` and `thing-row-N-nophoto` by identifier.
 
 ## A thing's page (`ThingEditor`, in ThingsScreen.swift)
 

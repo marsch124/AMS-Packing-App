@@ -18,6 +18,15 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.118", date: "11 Nov 2026", title: "The small photo moves to the start of each thing",
+                new: ["In Your things (Care \u{25B8} Your things, and a room\u{2019}s list opened from the Inventory tab) each thing\u{2019}s line now starts with its first photo, 40 points square on the iPhone and 36 on the Mac, with rounded corners.",
+                      "A thing without a photo gets a faint empty frame of the same size, so the names still line up from top to bottom."],
+                changed: ["You asked for the small photo next to each thing and picked \u{201C}bigger, at the start\u{201D}. Before (since 0.90) it was a tiny photo, 24 points on the iPhone and 20 on the Mac, at the END of the line, and only for things that had a photo. Now it is 40 (36 on the Mac), at the start, and every line has a place for it.",
+                      "Tapping the photo opens the thing\u{2019}s page, as before.",
+                      "The Papers plan (receipts and manuals on a thing) moves from 0.118 to 0.119; reminders and the insurance list move from 0.119 to 0.120.",
+                      "How it works and the written specification say all this. Nothing about your trips, templates, to-dos or grab lists changed."],
+                fixed: [],
+                removed: []),
         Release(version: "0.117", date: "11 Nov 2026", title: "An Inventory tab \u{2014} everything you own, in one place",
                 new: ["A sixth tab, Inventory, in teal with a hand-drawn house, between Care and To do \u{2014} on the iPhone\u{2019}s tab bar and in the Mac\u{2019}s sidebar. On the Mac it is also in the Go menu as \u{2318}7; \u{2318}1 to \u{2318}6 are as they were.",
                       "Its page opens with a big teal title, \u{201C}Inventory\u{201D}, and a totals card: how many things you own, what they cost (the price times how many, in Swedish kronor) and what they are worth today. Worth today is the app\u{2019}s estimate \u{2014} the price less 15 % for each year since you bought it, never below 10 % of the price \u{2014} and a figure you typed yourself wins. Things priced in another currency are left out of the sums, and the card says how many.",

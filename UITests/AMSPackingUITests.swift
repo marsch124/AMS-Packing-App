@@ -2926,7 +2926,8 @@ final class AMSPackingUITests: XCTestCase {
         // Calm: the row is no taller for it.
         let row0 = app.buttons["thing-row-0"].frame, row1 = app.buttons["thing-row-1"].frame
         XCTAssertEqual(row0.height, row1.height, accuracy: 1, "the photo made its row taller")
-        XCTAssertGreaterThan(photoMark(app, "thing-row-0-photo").frame.minX, row0.maxX - 1, "the photo is not at the row's end")
+        // At the row's START since 0.118 (his pick: bigger, at the start); a thing without one gets an empty frame.
+        XCTAssertLessThan(photoMark(app, "thing-row-0-photo").frame.maxX, row0.minX + 1, "the photo is not at the row's start")
         shot(app, "things-row-photo")
         // A tap on it opens the thing, as the row does.
         photoMark(app, "thing-row-0-photo").tap()

@@ -530,30 +530,44 @@ struct ThingPhotos: View {
 struct ThingPhotoThumb: View {
     let item: Item
     let id: String
+    /// Your things' rows (0.118 — his pick of 11 Nov 2026, "bigger, at the start"): 40 points (36 on the Mac),
+    /// at the start of the line, and a faint empty frame for a thing with no photo so the names line up.
+    var big = false
     let open: () -> Void
     @EnvironmentObject var model: LibraryModel
 
     #if os(macOS)
     static let side: CGFloat = 20
+    static let bigSide: CGFloat = 36
     #else
     static let side: CGFloat = 24
+    static let bigSide: CGFloat = 40
     #endif
 
     var body: some View {
         let refs = photoRefs(item)
+        let side = big ? ThingPhotoThumb.bigSide : ThingPhotoThumb.side
+        let corner: CGFloat = big ? 8 : 5
         if !refs.isEmpty,
            let photo = refs.lazy.compactMap({ ref in model.library.photos.first { $0.id == ref } }).first,
-           let small = PhotoThumbs.image(photo, side: ThingPhotoThumb.side) {
+           let small = PhotoThumbs.image(photo, side: side) {
             Image(decorative: small, scale: 1).resizable().scaledToFill()
-                .frame(width: ThingPhotoThumb.side, height: ThingPhotoThumb.side)
-                .clipShape(RoundedRectangle(cornerRadius: 5))
-                .overlay(RoundedRectangle(cornerRadius: 5).stroke(Theme.line, lineWidth: 1))
+                .frame(width: side, height: side)
+                .clipShape(RoundedRectangle(cornerRadius: corner))
+                .overlay(RoundedRectangle(cornerRadius: corner).stroke(Theme.line, lineWidth: 1))
                 .contentShape(Rectangle())
                 .onTapGesture(perform: open)
                 .accessibilityElement()
                 .accessibilityAddTraits(.isImage)
                 .accessibilityLabel("Photo of \(item.name)")
                 .accessibilityIdentifier(id)
+        } else if big {
+            RoundedRectangle(cornerRadius: corner).stroke(Theme.line, lineWidth: 1)
+                .frame(width: side, height: side)
+                .contentShape(Rectangle())
+                .onTapGesture(perform: open)
+                .accessibilityHidden(true)
+                .accessibilityIdentifier(id.replacingOccurrences(of: "-photo", with: "-nophoto"))
         }
     }
 }
