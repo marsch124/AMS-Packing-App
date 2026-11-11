@@ -71,6 +71,7 @@
 		92BFCF1AF636841A4A4B1D51 /* ReviewHealth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4023CCF833EE4F1EA60FEE23 /* ReviewHealth.swift */; };
 		93450604456A29D298763175 /* EditDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECF41033E25321E3361B7F37 /* EditDraft.swift */; };
 		940117517D3A376ADAF5F4CF /* SmallCoreSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9713345B304E68E88C1CFCB0 /* SmallCoreSheet.swift */; };
+		946C82F27FE9DE83A28C89CC /* ThingPapers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AD8D8D4EB6EB9DB3CE5D89F /* ThingPapers.swift */; };
 		993DD5931C9E6CDCDB4605AF /* ThingKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A727717D19724FB903E1AA /* ThingKeys.swift */; };
 		9BFB05A44F3E340F64D53C3E /* Countdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA8E667C951BD91655405B94 /* Countdown.swift */; };
 		9EE318CF900961BD87E38068 /* TripKitLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 395725EE98C38DC3A86648AF /* TripKitLine.swift */; };
@@ -212,6 +213,7 @@
 		84D38B8F1FFBA5FF61854300 /* ReviewScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewScreen.swift; sourceTree = "<group>"; };
 		878AF15AECFDDAD02F227DDD /* TripScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripScreen.swift; sourceTree = "<group>"; };
 		89F516422F22D168B010FF25 /* BLook.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BLook.swift; sourceTree = "<group>"; };
+		8AD8D8D4EB6EB9DB3CE5D89F /* ThingPapers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThingPapers.swift; sourceTree = "<group>"; };
 		8C9CD5E1C4C9E9237755961C /* LibraryUndo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryUndo.swift; sourceTree = "<group>"; };
 		8CB52607947F12194AEDF4B6 /* QuickOpen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickOpen.swift; sourceTree = "<group>"; };
 		8DCA03D292255B391659C37C /* Headings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Headings.swift; sourceTree = "<group>"; };
@@ -480,6 +482,7 @@
 				A3FAC3ADC18A94E28364083E /* ThingDetails.swift */,
 				A1A727717D19724FB903E1AA /* ThingKeys.swift */,
 				A807991F4D3D37B8ECD7F29C /* ThingKitPart.swift */,
+				8AD8D8D4EB6EB9DB3CE5D89F /* ThingPapers.swift */,
 				08FEE110A8EA9F08E8D2E90A /* ThingRemember.swift */,
 				ED9B041225333263C7547689 /* ThingsScreen.swift */,
 				7B24F2617CC7D137784F66F2 /* ThingsTable.swift */,
@@ -704,6 +707,7 @@
 				7D192FA4E3FA277A9375DB5F /* ThingDetails.swift in Sources */,
 				993DD5931C9E6CDCDB4605AF /* ThingKeys.swift in Sources */,
 				192F5DC225468F6FC0E7E870 /* ThingKitPart.swift in Sources */,
+				946C82F27FE9DE83A28C89CC /* ThingPapers.swift in Sources */,
 				1D1B84FF75B3FC8EC5DC52A0 /* ThingRemember.swift in Sources */,
 				1F41F6F92A8B0D398E72CD7C /* ThingsScreen.swift in Sources */,
 				09A4001328DA54940464A34D /* ThingsTable.swift in Sources */,
@@ -866,7 +870,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.118;
+				MARKETING_VERSION = 0.119;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -956,7 +960,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.118;
+				MARKETING_VERSION = 0.119;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

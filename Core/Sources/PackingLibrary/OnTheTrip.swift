@@ -80,7 +80,7 @@ extension Library {
     /// Is a photo still shown anywhere — on a thing, on a trip's line, on a bag (either way a
     /// bag's photos are stored), or as a trip's photo of all its bags (the Packing day, 0.79)?
     func photoInUse(_ id: String) -> Bool {
-        if items.contains(where: { photoRefs($0).contains(id) }) { return true }
+        if items.contains(where: { photoRefs($0).contains(id) || Library.paperIds($0).contains(id) }) { return true }
         return trips.contains { t in
             t.entries.contains { photoRefs($0).contains(id) }
                 || (t.extra[BAG_PHOTOS_KEY]?.objectValue ?? [:]).values.contains { Library.bagPhotoIds($0).contains(id) }
@@ -94,7 +94,7 @@ extension Library {
     /// trip line once PER PHOTO (the spec pass, 5 Oct 2026: the cost grew with photos
     /// times things).
     func photoIdsInUse() -> Set<String> {
-        var used = Set(items.flatMap { photoRefs($0) })
+        var used = Set(items.flatMap { photoRefs($0) + Library.paperIds($0) })   // + its papers (0.119)
         for t in trips {
             for line in t.entries { used.formUnion(photoRefs(line)) }
             for bag in (t.extra[BAG_PHOTOS_KEY]?.objectValue ?? [:]).values { used.formUnion(Library.bagPhotoIds(bag)) }

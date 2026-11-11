@@ -18,6 +18,22 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.119", date: "11 Nov 2026", title: "Papers \u{2014} receipts, manuals and warranty cards on each thing",
+                new: ["A thing\u{2019}s page has a new Papers card right under Details, in Care\u{2019}s orange. While the thing has no papers it is folded to one button, \u{201C}\u{FF0B} Add papers \u{2014} receipt, manual, warranty card\u{201D}, so a plain thing stays short.",
+                      "To add one: on the iPhone, \u{201C}Take a photo\u{201D} opens the camera at once; \u{201C}Choose a photo\u{201D} (iPhone and Mac) picks one from Photos; \u{201C}Choose a file\u{2026}\u{201D} takes a picture or screenshot from a folder. On the Mac you can also drop a photo on the card.",
+                      "Each paper is kept the moment you take it, like the thing\u{2019}s photos \u{2014} you do not have to press Save for it.",
+                      "Each paper has a kind: Receipt, Delivery note, Warranty card, Manual or Other. A new paper starts as Receipt; tap the kind under it to change it.",
+                      "Papers show as small pictures with their kind and the date. Tap one to see it full size, and swipe to the next. Remove asks first (\u{201C}Remove paper 1?\u{201D} \u{2014} Keep it or Remove paper).",
+                      "Up to 12 papers per thing. They are separate from the thing\u{2019}s two photos, which show how it looks.",
+                      "A Manual link line in the Papers card: type or paste the web address of the manual, and the Open button opens it in your browser. The link is kept when you press Save, like the rest of the page.",
+                      "Papers are on both devices (iPhone and Mac, and the things you share with Anna) and are in your backups like every photo."],
+                changed: ["You chose \u{201C}photos as you go\u{201D} for receipts and \u{201C}link first\u{201D} for manuals. So this version has the photos and the link; a manual stored as a PDF in the app is not in it yet.",
+                      "Deleting a thing deletes its papers. Worth a look never offers a paper as a leftover photo. Shared templates and trips never carry papers.",
+                      "Only the thing\u{2019}s page changed. The rows in Your things and the Inventory tab look as they did.",
+                      "Reminders and the insurance list stay planned for 0.120.",
+                      "How it works and the written specification say all this. Nothing about your trips, templates, to-dos or grab lists changed."],
+                fixed: [],
+                removed: []),
         Release(version: "0.118", date: "11 Nov 2026", title: "The small photo moves to the start of each thing",
                 new: ["In Your things (Care \u{25B8} Your things, and a room\u{2019}s list opened from the Inventory tab) each thing\u{2019}s line now starts with its first photo, 40 points square on the iPhone and 36 on the Mac, with rounded corners.",
                       "A thing without a photo gets a faint empty frame of the same size, so the names still line up from top to bottom."],

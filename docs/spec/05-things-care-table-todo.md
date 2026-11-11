@@ -3516,3 +3516,25 @@ the keyboard line adds ⌘7 for Inventory.
 
 Tests: data test `InventoryPageTests` (inventoryRooms counts and puts "No room" last; warrantiesEndingSoon honours the 60 days and
 sorts soonest first); UI test `testInventoryTab` (open the tab, find title, totals, a room row and the walk button by identifier).
+
+## Papers (0.119, 11 Nov 2026)
+
+His picks (plan `docs/inventory/plan.md`): receipts as photos taken as you go; manuals "link first, a stored PDF when wanted". This version has the photos and the link; a stored PDF manual is NOT in it.
+
+**The card.** On a thing's page, right under Details: the Papers card (`thing-papers`), Care's orange. While the thing has no papers it is folded to one button "＋ Add papers — receipt, manual, warranty card" (`thing-papers-open`). Screen: `App/Sources/Screens/ThingPapers.swift`; rules: `Core/Sources/PackingLibrary/Papers.swift`.
+
+**Adding.** On iPhone "Take a photo" (`thing-paper-take`) opens the camera at once; "Choose a photo" (`thing-paper-take-pick`; under the tests a drawn "Photo of a paper" pill `thing-paper-take`, both devices) picks from Photos; "Choose a file…" (`thing-paper-take-file`) a picture from a folder; on the Mac a photo can also be dropped on the card. A paper is kept the moment it is taken (like the thing's photos), not on Save.
+
+**Kinds.** Receipt · Delivery note · Warranty card · Manual · Other. A new paper starts as Receipt. Chips under each paper (`thing-paper-<n>-kind-<kind>`, kind = receipt|deliveryNote|warrantyCard|manual|other) change it.
+
+**Showing.** Each paper is a small picture (`thing-paper-<n>`) with its kind and date. Tap: full size, swipe between them (`thing-papers-full`). Remove (`thing-paper-remove-<n>`) asks "Remove paper 1?" with Keep it (`thing-paper-remove-no`) / Remove paper (`thing-paper-remove-yes`).
+
+**Limit.** `THING_PAPERS_MAX` = 12 per thing. Separate from the thing's two photos (how it looks).
+
+**Manual link.** A line in the Papers card (`thing-manual-link`): type or paste the web address; Open (`thing-manual-open`) opens it in the browser. Kept on Save like the rest of the page (not at once).
+
+**Storage.** Each paper = a photo record in the photos store + an entry in the thing's `extra["papers"]` = [{id, kind, at (ISO)}]. The manual link is `extra["manualLink"]`.
+
+**Everywhere else.** Synced to both devices (iPhone, Mac, Anna's shared things) and kept in backups like every photo. Deleting a thing deletes its papers. Worth a look never offers a paper's photo as left over. Shared templates and trips never carry papers. Inventory tab and Your things rows are unchanged.
+
+**Docs.** What's new 0.119; How it works: the thing's page lines (Papers, Manual link) and the page-order line now lists Papers after Details.

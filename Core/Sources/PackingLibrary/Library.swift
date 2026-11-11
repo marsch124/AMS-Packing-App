@@ -620,7 +620,7 @@ extension Library {
                              out: Set(Library.kitIds(k.extra[KIT_OUT_KEY])))
         }
         items.removeAll { $0.id == id }
-        dropPhotos(of: photoRefs(thing))
+        dropPhotos(of: photoRefs(thing) + Library.paperIds(thing))   // its papers go with it (0.119)
         return true
     }
 

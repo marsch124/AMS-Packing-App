@@ -14307,6 +14307,29 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(disappears(app, "things-detail", timeout: 5))
     }
 
+    /// Papers (0.119): a paper on a thing's page, its kind changed, the manual link, Remove asks first.
+    func testThingPapers() {
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        if app.buttons["thing-papers-open"].waitForExistence(timeout: 3) { tap(app, id: "thing-papers-open") }
+        tap(app, id: "thing-paper-take")
+        XCTAssertTrue(app.buttons["thing-paper-0"].waitForExistence(timeout: 5), "no paper kept")
+        XCTAssertEqual(words(app.staticTexts["thing-paper-0-label"]), "Receipt")
+        tap(app, id: "thing-paper-0-kind-manual")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["thing-paper-0-label"]) == "Manual" }, "the kind did not change")
+        type("sony.com/manual", into: app.textFields["thing-manual-link"])
+        XCTAssertTrue(app.buttons["thing-manual-open"].waitForExistence(timeout: 5), "no Open for the manual link")
+        shot(app, "thing-papers")
+        tap(app, id: "thing-paper-remove-0")
+        XCTAssertTrue(app.staticTexts["thing-paper-remove-ask"].waitForExistence(timeout: 5), "Remove does not ask")
+        tap(app, id: "thing-paper-remove-yes")
+        XCTAssertTrue(disappears(app, "thing-paper-0", timeout: 5), "the paper stayed")
+    }
+
     /// Open a thing's page from Your things, found by its name.
     private func openThing(_ app: XCUIApplication, _ name: String) {
         tab(app, "care")

@@ -581,6 +581,8 @@ struct ThingEditor: View {
                     }
                     // Details (0.115, inventory step 1 — his pick: under the photos, folded while empty).
                     ThingDetailsCard(draft: $draft).environmentObject(model)
+                    // Papers (0.119 — receipts, delivery notes, warranty cards, manuals; the manual's link).
+                    ThingPapersCard(thingId: shown, draft: $draft).environmentObject(model).id(shown ?? "new")
                     // The order is his (6 Oct 2026): what it is and whose, the templates it is on,
                     // where it lives and goes and when, the details, and last what a flight and a
                     // date ask of it.
