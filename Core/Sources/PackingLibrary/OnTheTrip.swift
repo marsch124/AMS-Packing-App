@@ -85,6 +85,7 @@ extension Library {
             t.entries.contains { photoRefs($0).contains(id) }
                 || (t.extra[BAG_PHOTOS_KEY]?.objectValue ?? [:]).values.contains { Library.bagPhotoIds($0).contains(id) }
                 || Library.groupPhotoId(t) == id          // the Packing day's photo of all the bags (0.79)
+                || Library.tripPaperIds(t).contains(id)   // its papers: bookings, boarding passes (0.125)
         }
     }
 
@@ -100,6 +101,7 @@ extension Library {
             for bag in (t.extra[BAG_PHOTOS_KEY]?.objectValue ?? [:]).values { used.formUnion(Library.bagPhotoIds(bag)) }
             let group = Library.groupPhotoId(t)      // the Packing day's photo of all the bags (0.79)
             if !group.isEmpty { used.insert(group) }
+            used.formUnion(Library.tripPaperIds(t))   // its papers (0.125)
         }
         return used
     }

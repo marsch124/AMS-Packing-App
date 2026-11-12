@@ -496,6 +496,14 @@ enum SampleLibrary {
 
     /// The sample library with a photo nothing shows any more, from long ago — what a
     /// trip deleted before 0.59 left behind (`-uiTestingOldPhoto`).
+    /// Look-alikes (0.125): a "Sunglasses" and a "Sun glasses" — one pair.
+    static func lookAlikes() -> Library {
+        var lib = make()
+        lib.items.append(newItem(id: "sunglasses-one", name: "Sunglasses"))
+        lib.items.append(newItem(id: "sunglasses-two", name: "Sun glasses"))
+        return lib
+    }
+
     static func oldPhoto() -> Library {
         var lib = make()
         lib.photos.append(PhotoRecord(id: "left-behind", data: "data:image/jpeg;base64,AQID", createdAt: "2026-01-01T09:00:00.000Z"))

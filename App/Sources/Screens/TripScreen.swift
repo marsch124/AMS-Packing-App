@@ -413,6 +413,9 @@ struct TripScreen: View {
                 // 07 part 15). Under Before you start, as since 0.83.
                 BeforeYouGoCard(tripId: trip.id) { checking = CheckedThing(id: $0) }.environmentObject(model)
                     .padding(.top, Metrics.cardGap).padding(.horizontal, 16)
+                // Trip papers (0.125): bookings, boarding passes, the hotel — on the device, so offline too.
+                TripPapersCard(tripId: trip.id).environmentObject(model).id("papers-\(trip.id)")
+                    .padding(.top, Metrics.cardGap).padding(.horizontal, 16)
                 // On site (their field test, 3 Oct 2026; Pack to go home, his idea 13, is in
                 // it now): once the trip has begun, or something was bought on site.
                 if model.library.onSiteBegun(tripId: trip.id, today: Today.iso(clock), time: Today.time(of: clock)) {

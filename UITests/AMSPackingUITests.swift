@@ -19906,4 +19906,26 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "guide-done")
         XCTAssertTrue(disappears(app, "guide-howitworks", timeout: 5))
     }
+
+    /// Trip papers (0.125): the trip page's "Add trip papers" button opens the Papers card.
+    func testTripPapersCardOpens() {
+        let app = launch()
+        tab(app, "events")
+        tap(app, id: "trip-row-0")
+        XCTAssertTrue(appears(app, "trip-detail", timeout: 5))
+        XCTAssertTrue(app.buttons["trip-papers-open"].waitForExistence(timeout: 5), "no Add trip papers button")
+        tap(app, id: "trip-papers-open")
+        XCTAssertTrue(app.descendants(matching: .any)["trip-papers"].waitForExistence(timeout: 5), "the Papers card did not open")
+    }
+
+    /// Look-alikes (0.125): `-uiTestingLookAlikes` adds a "Sun glasses" thing next to the sample's
+    /// "Sunglasses"; the Inventory tab then has a Look-alikes row, and its page lists the pair.
+    func testLookAlikesRowAndGroup() {
+        let app = launch("-uiTesting", ["-uiTestingLookAlikes"])
+        tab(app, "inventory")
+        XCTAssertTrue(app.staticTexts["inventory-title"].waitForExistence(timeout: 5), "no Inventory page")
+        XCTAssertTrue(app.buttons["inventory-lookalikes"].waitForExistence(timeout: 5), "no Look-alikes row")
+        tap(app, id: "inventory-lookalikes")
+        XCTAssertTrue(app.descendants(matching: .any)["lookalike-group-0"].waitForExistence(timeout: 5), "no look-alike group")
+    }
 }

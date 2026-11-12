@@ -3604,3 +3604,26 @@ Core: `Core/Sources/PackingLibrary/InventoryMore.swift`.
 **Labels.** `ThingLabels.swift`: "Label for P-touch" (`thing-label-open`, `thing-label`, `thing-label-share`) — a 12 mm label with a small square code and the thing's name, as places since 0.69; link `AMSPACKING://T/<code>` opens the thing. Each thing gets a short code kept with it.
 
 **Version.** 0.124. **Docs.** What's new 0.124; How it works: thing's page, Care, Papers, Inventory.
+
+## Look-alikes (0.125, 12 Nov 2026)
+
+**Purpose and his words.** Over the years the same thing gets typed in twice (a "Sunglasses" on one template, a "Sun glasses" on another). He wants the app to find these and let him join them, never merging by itself.
+
+**Storage.** `Core/Sources/PackingLibrary/LookAlikes.swift`.
+
+| Key | Where | Meaning |
+|---|---|---|
+| `notSame` | a thing's `extra` | list of the ids of things he said are not the same as this one; written on both things of the pair by `markNotSame(a,b)` |
+
+**Behaviour.**
+- `lookAlikeGroups()`: two or more of his things belong together when their names are the same once spaces, punctuation, capitals and a trailing plural -s are ignored ("Sunglasses" / "Sun glasses" / "sunglass"), or when they have the same serial number (empty serial never counts). Pairs marked `notSame` are not offered again. Bags are not offered.
+- `markNotSame(a,b)`: "Not the same" on a pair; never asked about that pair again.
+- `mergeThing(keep:from:)`: the kept thing keeps its own name and anything it already has; empty details (brand, model, serial, bought on, price, shop, warranty, notes, ...) are filled from the other; photos and papers are joined; every template, kit, trip line (past and ahead), reminder, lending, spare part and label that pointed to the other thing now points to the kept one; on a trip both were on, the two lines become one (ticked if either was ticked). The other thing is then deleted. It cannot be undone, so the page asks first.
+
+**Screen.** `App/Sources/Screens/LookAlikes.swift`, `LookAlikesPage`. The Inventory tab has a row "Look-alikes" with the number of pairs (`inventory-lookalikes`, `lookAlikePairs()`), shown only when there is one; opens `LookAlikesPage` as a sheet (Back "Inventory", Done = Esc). One card per pair (`lookalike-group-<n>`, the reason "Same name" / "Same serial number" on top): both things side by side (photo, name, brand model · room · serial, the lists it is on) with "Keep this one" under each (`lookalike-merge-<n>-<m>`, m 0/1) which asks "Merge <other> into <kept>?" (Merge `lookalike-merge-yes` / Cancel); test launch argument `-uiTestingLookAlikes` adds "Sun glasses" beside the sample's Sunglasses, or "Not the same". Cancel / Done as on his other pages.
+
+**Ids.** `things-lookalikes` (the row), `lookalike-group-<n>`, `lookalike-merge-<n>-<m>`, `lookalike-notsame-<n>`.
+
+**Tests.** `LookAlikesTests` (names that match, serial match, not-same kept, bags left out, merge fills empty details only, photos and papers joined, templates/kits/trip lines/reminders/lendings/parts/labels repointed, two lines on one trip become one and keep a tick); one screen test finds the row and merges by the ids above.
+
+**Version.** 0.125. **Docs.** What's new 0.125; How it works: Look-alikes.

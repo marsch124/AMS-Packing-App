@@ -24,6 +24,7 @@ struct InventoryScreen: View {
 
     struct Opening: Identifiable { let id = UUID(); let room: String?; let search: String; var noReceipt = false; var gone = false; var lent = false }
     @State private var checking = false
+    @State private var lookingAlike = false
     private var tint: Color { AppSection.inventory.color }
 
     var body: some View {
@@ -80,6 +81,16 @@ struct InventoryScreen: View {
                         .buttonStyle(.plain).focusEffectDisabled()
                         .accessibilityIdentifier("inventory-lent")
                     }
+                    // Look-alikes (0.125): two things that look like the same thing, to merge or keep apart.
+                    let alike = model.library.lookAlikePairs().count
+                    if alike > 0 {
+                        Divider().padding(.leading, 12)
+                        Button { lookingAlike = true } label: {
+                            BRow(title: "Look-alikes", count: "\(alike)")
+                        }
+                        .buttonStyle(.plain).focusEffectDisabled()
+                        .accessibilityIdentifier("inventory-lookalikes")
+                    }
                     // The quarterly check (0.124): "Still have it?" room by room.
                     Divider().padding(.leading, 12)
                     let toCheck = model.library.toCheck(today: today).reduce(0) { $0 + $1.things.count }
@@ -118,6 +129,7 @@ struct InventoryScreen: View {
             ThingsScreen(searching: o.search, room: o.room, noReceipt: o.noReceipt, gone: o.gone, lent: o.lent).environmentObject(model)
         }
         .sheet(isPresented: $checking) { QuarterlyCheckScreen().environmentObject(model) }
+        .sheet(isPresented: $lookingAlike) { LookAlikesPage().environmentObject(model) }
         #if os(iOS)
         .sheet(item: $sharing) { f in ShareSheet(url: f.url) }
         #endif

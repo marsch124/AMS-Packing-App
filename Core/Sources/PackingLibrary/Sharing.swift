@@ -95,6 +95,7 @@ extension Library {
         t.extra[KITS_KEPT_KEY] = nil             // it arrives not reviewed: its kits are theirs now (ThingKits)
         t.extra[BREAK_UNTIL_KEY] = nil           // his break: their phone must not call them back to packing (TakeABreak, 0.77)
         for key in DAY_TRIP_KEYS { t.extra[key] = nil }   // his Packing Stations: bags out, tags, bags added, the photo's id, Weigh offered (0.79, 0.81)
+        t.extra[TRIP_PAPERS_KEY] = nil           // his tickets and bookings stay with him (0.125)
         t.extra[BAG_TAGS_KEY] = nil              // his bags' tag numbers; the flights and stay go along (TripTravel, 0.80)
         t.entries = t.entries.map { line in
             var l = line

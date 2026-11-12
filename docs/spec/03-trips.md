@@ -3740,6 +3740,32 @@ deleted = none). **Not covered:** the real scheduling and a real tap (the system
 
 ---
 
+## Trip papers (0.125, 12 Nov 2026)
+
+**Purpose and his words.** Booking confirmations, boarding passes, hotel details, tickets and insurance on the trip page, kept on the device so they open with no internet.
+
+**Storage.** `Core/Sources/PackingLibrary/TripPapers.swift`.
+
+| Key | Constant | Value | Written by |
+|---|---|---|---|
+| `papers` | trip extra | `[{ "id", "kind", "at", "file" }]` — `id` the photo or file id, `kind` one of boardingPass / booking / hotel / ticket / insurance / other, `at` the day added, `file` the PDF's name (absent for a photo) (0.125) | `addTripPaper`, `addTripPaperPDF`, `setTripPaperKind`, `removeTripPaper` |
+
+`TRIP_PAPERS_MAX` = 20 per trip. Photos are counted in `photoInUse` / `photoIdsInUse`, so a paper's picture is never cleaned away while a trip holds it. `tripPapersLine` gives the one-line summary.
+
+**Behaviour.**
+- On the trip page, under "Before you go", a "Papers" card. Empty: one button "Add trip papers" (hint "boarding pass, booking, hotel"). With papers: one line per paper (thumbnail, kind, date; Remove asks first), kind chips Boarding pass / Booking / Hotel / Ticket / Insurance / Other, and "Take a photo", "Choose a photo", "Add a PDF" (a PDF keeps its file name, e.g. "Booking · Hotel Sol").
+- Tapping a photo opens it big, swipe between them; tapping a PDF opens it full page. Up to 20 per trip. On the Mac a photo dropped on the card is added.
+- They sync between iPhone and Mac and are in the backup.
+- "Start a new trip from this one" copies none. A shared trip sends none (`Sharing.swift` `justTheList` drops them: they are his tickets). Deleting the trip deletes them (`deleteTrip`).
+
+**Ids.** `trip-papers-open`, `trip-papers`, `trip-paper-<n>`, `trip-paper-<n>-kind-<raw>`, `trip-paper-remove-<n>`. Screen: `App/Sources/Screens/TripPapers.swift`, `TripPapersCard`.
+
+**Tests.** `TripPapersTests` (add, PDF keeps its name, kind change, remove, 20 limit, in use for photos, not copied by Start again, dropped in a share, dropped with the trip, in the backup); one screen test finds the card by its ids.
+
+**Version.** 0.125. **Docs.** What's new 0.125; How it works: Packing a trip.
+
+---
+
 ## Other ways into a trip
 
 - **Countdown card on Home** (`CountdownCard`, id `home-countdown`; Home spec): the next trip still to

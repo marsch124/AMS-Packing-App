@@ -26,6 +26,7 @@
 		1D1B84FF75B3FC8EC5DC52A0 /* ThingRemember.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08FEE110A8EA9F08E8D2E90A /* ThingRemember.swift */; };
 		1EE9BE75FCB2D7DAF03FD635 /* InsurancePDF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 456E36CD0B2B93773978808C /* InsurancePDF.swift */; };
 		1F41F6F92A8B0D398E72CD7C /* ThingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED9B041225333263C7547689 /* ThingsScreen.swift */; };
+		1F89ECD0A67B925679B7B09B /* LookAlikes.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA256485C90A0A6B72AF55A7 /* LookAlikes.swift */; };
 		1F964649144F502707139E0C /* Keys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E6040E9224EB629B23E6372 /* Keys.swift */; };
 		21419C900E931B9CBE73B314 /* BuyList.swift in Sources */ = {isa = PBXBuildFile; fileRef = C63D25C9AA00E03651D86114 /* BuyList.swift */; };
 		23460B987C576F673AE6DA2A /* GrabScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E01A9E0DEC947610C0F642D /* GrabScreen.swift */; };
@@ -98,6 +99,7 @@
 		B91D523B507CE19FCAC1D86B /* CloudStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A841D9340C8D1312A6814431 /* CloudStore.swift */; };
 		B9AEE56CFD1235299E878C4B /* InventoryScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1290FD7137BAD0CA1720BE92 /* InventoryScreen.swift */; };
 		BA0412EFC474F7660997C615 /* TakeABreak.swift in Sources */ = {isa = PBXBuildFile; fileRef = 186841C4B47BDD39836B3D9D /* TakeABreak.swift */; };
+		BA1C3E08CF968C357C985806 /* TripPapers.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2F5376E5C1AB5C6AC1F1916 /* TripPapers.swift */; };
 		BB0C23866929DEBDF46E6D5C /* ObjCExceptions.m in Sources */ = {isa = PBXBuildFile; fileRef = 50267DCB9436F2D12C79F8B1 /* ObjCExceptions.m */; };
 		BBF3A1F2A58A269D39B48BFD /* QuickActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61946E344209EE542B58B829 /* QuickActions.swift */; };
 		BF087815D061CD62456DEDDC /* CareScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56F5604CA6875D255BD93251 /* CareScreen.swift */; };
@@ -261,6 +263,7 @@
 		CBD18490EE2F12EF48CF3599 /* GuideScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuideScreen.swift; sourceTree = "<group>"; };
 		CD0CC9973692AB2A31CFC2DE /* TripSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripSettings.swift; sourceTree = "<group>"; };
 		CE240BD38035471259419B81 /* TemplateIcons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateIcons.swift; sourceTree = "<group>"; };
+		D2F5376E5C1AB5C6AC1F1916 /* TripPapers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TripPapers.swift; sourceTree = "<group>"; };
 		D588E84D41CE3E84D62CA76F /* VaultCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VaultCard.swift; sourceTree = "<group>"; };
 		D5D924000868CED3FBCD3602 /* RoomWalkScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomWalkScreen.swift; sourceTree = "<group>"; };
 		D92F0E3A8310A4DC718C68EB /* FirstRunView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstRunView.swift; sourceTree = "<group>"; };
@@ -276,6 +279,7 @@
 		E7ACE49A4569055DEFA56ED8 /* ThingLife.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThingLife.swift; sourceTree = "<group>"; };
 		E85262A8D75E3FFA9A6E252A /* LibraryModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryModel.swift; sourceTree = "<group>"; };
 		E8B838F35360E8BDAF890124 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		EA256485C90A0A6B72AF55A7 /* LookAlikes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LookAlikes.swift; sourceTree = "<group>"; };
 		ECF41033E25321E3361B7F37 /* EditDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditDraft.swift; sourceTree = "<group>"; };
 		ED9B041225333263C7547689 /* ThingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThingsScreen.swift; sourceTree = "<group>"; };
 		EDA67771DAAE27E418C53DDE /* PlaceScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceScreen.swift; sourceTree = "<group>"; };
@@ -463,6 +467,7 @@
 				112E88E5E56E46CAA3F002CE /* KitDashboard.swift */,
 				F4B594AF144EDDECFF9CF7B3 /* Laundry.swift */,
 				258F81799F958E5C5EF112C5 /* ListsScreen.swift */,
+				EA256485C90A0A6B72AF55A7 /* LookAlikes.swift */,
 				AA08386166D3DBA4C2883F24 /* Loop.swift */,
 				710DC970E7CB3720856D7F76 /* LostBag.swift */,
 				2C5987DFEB47FC294A078D4D /* NewList.swift */,
@@ -508,6 +513,7 @@
 				0B8389C70A03647A3E98F6DB /* ToCharge.swift */,
 				AC9F694B5D78B16B402CD363 /* TripChecks.swift */,
 				395725EE98C38DC3A86648AF /* TripKitLine.swift */,
+				D2F5376E5C1AB5C6AC1F1916 /* TripPapers.swift */,
 				878AF15AECFDDAD02F227DDD /* TripScreen.swift */,
 				CD0CC9973692AB2A31CFC2DE /* TripSettings.swift */,
 				D588E84D41CE3E84D62CA76F /* VaultCard.swift */,
@@ -676,6 +682,7 @@
 				B1070E8FEA2D20959B29BA24 /* LibraryModel.swift in Sources */,
 				F67FBF80AD05F354A240BB10 /* LibraryUndo.swift in Sources */,
 				0A6B0C9DBEE6264A11D02837 /* ListsScreen.swift in Sources */,
+				1F89ECD0A67B925679B7B09B /* LookAlikes.swift in Sources */,
 				D105E6CC01A99CC0BE25F875 /* Loop.swift in Sources */,
 				2708A38885C4595DA65F738E /* LostBag.swift in Sources */,
 				CB68D90AEA6B080067EE8BCB /* NewList.swift in Sources */,
@@ -741,6 +748,7 @@
 				55A2BB9EF7E8AA1F601802AC /* TripChecks.swift in Sources */,
 				9EE318CF900961BD87E38068 /* TripKitLine.swift in Sources */,
 				0FC3745712735DDB91945D72 /* TripMessages.swift in Sources */,
+				BA1C3E08CF968C357C985806 /* TripPapers.swift in Sources */,
 				B0146791FB8C81B41DD6DBFE /* TripScreen.swift in Sources */,
 				D38D93BD69C32C56A8997D07 /* TripSettings.swift in Sources */,
 				3F92FF6665ADB7BD4437005C /* Vault.swift in Sources */,
@@ -894,7 +902,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.124;
+				MARKETING_VERSION = 0.125;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -984,7 +992,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.124;
+				MARKETING_VERSION = 0.125;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

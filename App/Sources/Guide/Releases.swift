@@ -18,6 +18,21 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.125", date: "12 Nov 2026", title: "Trip papers and look-alikes",
+                new: ["Trip papers: on a trip\u{2019}s page, under Before you go, there is a new \u{201C}Papers\u{201D} card for booking confirmations, boarding passes, hotel details, tickets and insurance. They are kept on the device, so they open with no internet. While there are none it is one button, \u{201C}Add trip papers\u{201D}, with the hint \u{201C}boarding pass, booking, hotel\u{201D}.",
+                      "Adding: \u{201C}Take a photo\u{201D}, \u{201C}Choose a photo\u{201D} or \u{201C}Add a PDF\u{201D}. A PDF keeps its file name, for example \u{201C}Booking \u{00B7} Hotel Sol\u{201D}. On the Mac you can also drop a photo on the card. Up to 20 papers on a trip.",
+                      "Each paper is one line: a small picture, what it is, and the day you added it. Pick what it is with the chips Boarding pass, Booking, Hotel, Ticket, Insurance or Other. Remove asks first.",
+                      "Tap a photo and it opens big \u{2014} swipe to the next one. Tap a PDF and it opens full page.",
+                      "They sync between the iPhone and the Mac and are in the backup. Start a new trip from this one copies none, a trip you share sends none (they are your tickets), and deleting the trip deletes them.",
+                      "Look-alikes: the Inventory tab has a new row \u{201C}Look-alikes\u{201D}, with how many pairs, when two or more of your things look like the same thing. They count as the same when the name is the same once spaces, punctuation, capitals and a plural s are ignored (\u{201C}Sunglasses\u{201D}, \u{201C}Sun glasses\u{201D}, \u{201C}sunglass\u{201D}), or when they have the same serial number. Bags are not offered.",
+                      "The page lists each group. For each pair you pick which one to keep and tap \u{201C}Keep this one\u{201D}, or \u{201C}Not the same\u{201D} \u{2014} then you are never asked about that pair again.",
+                      "Merging: the one you keep keeps its own name and everything it already has. Empty details (brand, model, serial number, bought on, price, shop, warranty, notes\u{2026}) are filled in from the other. Photos and papers are joined. Every template, kit, trip line (past and ahead), reminder, lending, spare part and label that pointed to the other one now points to the one you kept. On a trip where both were, the two lines become one (ticked if either was ticked). The other one is then gone.",
+                      "Merge asks first: \u{201C}Merge Sun glasses into Sunglasses?\u{201D}"],
+                changed: ["Before, boarding passes and bookings lived in other apps or in your mail; now they are on the trip, with no internet needed.",
+                          "Before, the same thing typed twice stayed twice on your templates and trips; now the app finds them and you decide, pair by pair.",
+                          "How it works and the written specification say all this. Nothing else about your trips, templates or grab lists changed."],
+                fixed: [],
+                removed: []),
         Release(version: "0.124", date: "12 Nov 2026", title: "Lending, spare parts, claim letters, selling, quarterly check and labels",
                 new: ["Lent to: a thing\u{2019}s page has a new line under Stays at home and Gone, \u{201C}Lent to…\u{201D}. It asks who has it and the day (today to begin with). The page then says, for example, \u{201C}Lent to Anna · 1 Nov 2026\u{201D}, with a \u{201C}Back home\u{201D} button. In Your things a lent thing shows a small \u{201C}Lent\u{201D} tag, and the Inventory tab has a \u{201C}Lent out\u{201D} row that lists them all.",
                       "Lent reminder: three weeks after you lend something, at 9:00, you get \u{201C}Ask Anna for the Drill back\u{201D}, and the same every three weeks while it is still out. Back home stops it.",

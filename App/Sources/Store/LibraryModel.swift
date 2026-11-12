@@ -741,6 +741,9 @@ extension LibraryModel {
         if args.contains("-uiTestingLostSection") {
             return LibraryModel(store: MemoryStore(SampleLibrary.lostSection()), usesICloud: false, sky: sky)
         }
+        if args.contains("-uiTestingLookAlikes") {
+            return LibraryModel(store: MemoryStore(SampleLibrary.lookAlikes().records()), usesICloud: false, sky: sky)
+        }
         if args.contains("-uiTestingOldPhoto") {
             return LibraryModel(store: MemoryStore(SampleLibrary.oldPhoto().records()), usesICloud: false, sky: sky)
         }
