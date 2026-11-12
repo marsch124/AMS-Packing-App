@@ -506,9 +506,10 @@ enum SampleLibrary {
 
     /// Unpack and the bag label (`-uiTestingUnpack`, 0.126): a trip to Torremolinos back home two days
     /// ago, four things ticked (two kept in rooms, one with a spot) and Sandals bought on site; and the
-    /// trip ahead with two things ticked into the first bag, so its page shows In it now.
+    /// trip ahead with two things ticked into the first bag, so its page shows In it now; the bag's label code is BAG1.
     static func unpack() -> Library {
         var lib = make()
+        lib.addBag(name: "Carry-on / hand luggage")
         let cal = Calendar(identifier: .gregorian)
         func day(_ n: Int) -> String {
             let c = cal.dateComponents([.year, .month, .day], from: cal.date(byAdding: .day, value: n, to: Date())!)
@@ -530,7 +531,9 @@ enum SampleLibrary {
             }
         }
         _ = lib.addBoughtOnSite(tripId: id, name: "Sandals")
-        if let bag = lib.bags().first?.name, let ahead = lib.trips.firstIndex(where: { $0.name == "Sunny weeks" }) {
+        // Its label already printed: AMSPACKING://T/BAG1 opens the bag's page.
+        if let bagId = lib.bags().first?.id { _ = lib.updateThing(id: bagId) { $0.extra[LABEL_CODE_KEY] = .string("BAG1") } }
+        if let bag = lib.bags().first?.name, let ahead = lib.trips.firstIndex(where: { $0.id != id && isYMD($0.startDate) && $0.startDate >= day(0) }) {
             for k in lib.trips[ahead].entries.indices.filter({ !Library.isReminder(lib.trips[ahead].entries[$0]) }).prefix(2) {
                 lib.trips[ahead].entries[k].checked = true
                 lib.trips[ahead].entries[k].container = bag

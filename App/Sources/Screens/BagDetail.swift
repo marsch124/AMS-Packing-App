@@ -111,6 +111,9 @@ struct BagPage: View {
                     VStack(alignment: .leading, spacing: 12) {
                         // Notes right under the name (0.90, his ask with an arrow at that spot) — the
                         // bag's thing's own Notes, as a thing's page has them under its name.
+                        // In it now (0.126): what the trip under way, or the next, has packed in it —
+                        // first, as a scanned bag label opens this page to answer just that.
+                        inItNow(bag)
                         notes(bag)
                         numbers(bag)
                         cabinSwitch(bag)
@@ -120,8 +123,6 @@ struct BagPage: View {
                         // Its pockets (0.69): named once, offered when a thing is ticked.
                         // Held on the ledger with the rest (0.98): nothing reaches the library before Done.
                         BagPockets(bagId: bag.id, draft: draft).environmentObject(model).id(pocketsFresh)
-                        // In it now (0.126): what the trip under way, or the next, has packed in it.
-                        inItNow(bag)
                         thingsInIt(facts)
                         trips(facts)
                         detailsDoor(bag)

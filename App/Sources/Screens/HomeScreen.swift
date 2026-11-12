@@ -384,7 +384,7 @@ struct HomeScreen: View {
             || thingShown != nil || bagShown != nil || creating || RootPages.anyOpen
         guard busy else { open(); return }
         searching = false; showingGrabLists = false; opened = nil; grab = nil; menuShown = false; placeShown = nil
-        thingShown = nil; creating = false
+        thingShown = nil; bagShown = nil; creating = false
         RootPages.closeAll()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { open() }
     }

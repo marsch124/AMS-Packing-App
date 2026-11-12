@@ -19,8 +19,14 @@ final class LibraryModel: ObservableObject {
     @Published private(set) var library = Library() {
         // The Mac writes the trip pages the library is waiting for (0.70, spec 07 part 8) — never
         // from a page's copy (0.92), which is not his library until its Save.
-        didSet { if !isDraft { VaultShelf.shared.libraryChanged(self) } }
+        didSet {
+            if !isDraft { VaultShelf.shared.libraryChanged(self) }
+            // A label scanned before the things had loaded (a cold start from the Camera): now.
+            if let code = labelWaiting, let it = library.thingWithLabel(code) { labelWaiting = nil; thingToOpen = it.id }
+        }
     }
+    /// A thing's (or bag's) label code read while the library was still loading (0.126).
+    private var labelWaiting: String?
     /// A page's copy of the library (0.92, `PageDraft`): its changes stay in memory — never
     /// stored, never synced — until the page's Save hands them to the real library.
     let isDraft: Bool
@@ -318,7 +324,10 @@ final class LibraryModel: ObservableObject {
     func open(_ url: URL) {
         if let code = PlaceLink.code(in: url) { placeToOpen = code }
         // A thing's printed label (0.124): AMSPACKING://T/<code> opens that thing.
-        if let code = ThingLink.code(in: url), let it = library.thingWithLabel(code) { thingToOpen = it.id }
+        // A label scanned at a cold start can arrive before the things have loaded (0.126): it waits for them.
+        if let code = ThingLink.code(in: url) {
+            if let it = library.thingWithLabel(code) { thingToOpen = it.id } else { labelWaiting = code }
+        }
     }
 
     /// Read a backup file and change NOTHING — not even the live "When" steps and
