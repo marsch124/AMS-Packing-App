@@ -39,6 +39,8 @@ struct HomeScreen: View {
     @State private var grab: GrabDefinition?
     /// A thing's page, opened by its result tapped in Spotlight (0.92, Store/Spotlight.swift).
     @State private var thingShown: Opened?
+    /// A bag's printed label scanned (0.126): the bag's own page, with what is in it now.
+    @State private var bagShown: BagPageId?
     @State private var searching = false
     @State private var showingGrabLists = false
     /// "Which grab list?" — the Action button's menu, asked for through the model.
@@ -73,6 +75,23 @@ struct HomeScreen: View {
                                openToDo: { openTrip(card.id, nil) },
                                openCharge: { openTrip(card.id, LibraryModel.TripFocus(tripId: card.id, home: false, charge: true)) },
                                review: { openTrip(card.id, LibraryModel.TripFocus(tripId: card.id, home: false, review: true)) })
+                }
+
+                // Unpack (0.126): a quiet line while things from a trip are still in the bag.
+                if let nudge = model.library.unpackNudge(today: Today.local) {
+                    Button { openTrip(nudge.tripId, LibraryModel.TripFocus(tripId: nudge.tripId, home: false, unpack: true)) } label: {
+                        HStack(spacing: 8) {
+                            Text(nudge.says).font(.system(.subheadline)).foregroundStyle(Theme.muted)
+                                .multilineTextAlignment(.leading)
+                            Spacer(minLength: 4)
+                            Text("Unpack").font(.system(.subheadline, weight: .semibold)).foregroundStyle(AppSection.events.color)
+                        }
+                        .padding(.horizontal, 12).frame(minHeight: Metrics.tap)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("home-unpack")
                 }
 
                 // Next trip, counted down (his idea 6) — never the trip on the card itself.
@@ -194,10 +213,12 @@ struct HomeScreen: View {
         }
         // A thing's result tapped in Spotlight (0.92): its page, over whatever was up.
         .sheet(item: $thingShown) { ThingEditor(itemId: $0.id).environmentObject(model) }
+        .sheet(item: $bagShown) { BagDetail(bagId: $0.id).environmentObject(model) }
         .onChange(of: model.thingToOpen, initial: true) { _, id in
             guard let id else { return }
             model.thingToOpen = nil
-            if model.library.items.contains(where: { $0.id == id }) { whenFree { thingShown = Opened(id: id) } }
+            if model.library.isBag(id) { whenFree { bagShown = BagPageId(id: id) } }
+            else if model.library.items.contains(where: { $0.id == id }) { whenFree { thingShown = Opened(id: id) } }
         }
         // New Thing under the app icon or in the Dock's menu (0.105): a new, empty thing's page.
         .onChange(of: model.newThingToOpen, initial: true) { _, asked in
@@ -360,7 +381,7 @@ struct HomeScreen: View {
     private func whenFree(_ open: @escaping () -> Void) {
         // A page the window opened over its tab with ⌘N or Quick open (0.105, `RootPages`) makes way too.
         let busy = searching || showingGrabLists || opened != nil || grab != nil || menuShown || placeShown != nil
-            || thingShown != nil || creating || RootPages.anyOpen
+            || thingShown != nil || bagShown != nil || creating || RootPages.anyOpen
         guard busy else { open(); return }
         searching = false; showingGrabLists = false; opened = nil; grab = nil; menuShown = false; placeShown = nil
         thingShown = nil; creating = false

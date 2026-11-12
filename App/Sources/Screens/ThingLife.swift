@@ -497,7 +497,7 @@ private struct SellPage: View {
     }
 }
 
-private struct ThingLabelPage: View {
+struct ThingLabelPage: View {
     let thingId: String
     let name: String
     @EnvironmentObject var model: LibraryModel

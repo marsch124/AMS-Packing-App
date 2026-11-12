@@ -57,6 +57,8 @@ struct TripScreen: View {
     @State private var noteShown: String?
     /// On site is open (their field test, 3 Oct 2026) — Pack to go home is inside it.
     @State private var onSite = false
+    /// Unpack is open (0.126) — from its door, or from Home's "still in the bag" line.
+    @State private var unpacking = false
     /// Kits opened or folded on this visit (0.70); a kit not in here is open only while
     /// it is checked before each trip and not packed yet.
     @State private var kitOpen: [String: Bool] = [:]
@@ -420,6 +422,11 @@ struct TripScreen: View {
                 // it now): once the trip has begun, or something was bought on site.
                 if model.library.onSiteBegun(tripId: trip.id, today: Today.iso(clock), time: Today.time(of: clock)) {
                     onSiteDoor(trip)
+                        .padding(.top, Metrics.cardGap).padding(.horizontal, 16)
+                }
+                // Unpack (0.126, his idea 1): back home, each thing into its room.
+                if model.library.unpackOffered(tripId: trip.id, today: Today.iso(clock), time: Today.time(of: clock)) {
+                    unpackDoor(trip)
                         .padding(.top, Metrics.cardGap).padding(.horizontal, 16)
                 }
                 }
@@ -808,6 +815,7 @@ struct TripScreen: View {
             .animation(.easeInOut(duration: 0.5), value: allPacked)
         }
         .sheet(isPresented: $reviewing) { ReviewScreen(tripId: tripId).environmentObject(model) }
+        .sheet(isPresented: $unpacking) { UnpackScreen(tripId: tripId).environmentObject(model) }
         .sheet(isPresented: $refining) { RefineScreen().environmentObject(model) }
         // On site's page — from its door or from the strip's step (0.112; on the door until then).
         .sheet(isPresented: $onSite, onDismiss: { homeFromDoor = false }) {
@@ -1341,6 +1349,9 @@ struct TripScreen: View {
             homeFromDoor = true
             // After this window has finished arriving: one cannot come up while another still is.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { onSite = true }
+        } else if focus.unpack {
+            // Home's "still in the bag" line (0.126): Unpack.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { unpacking = true }
         } else if focus.onSite {
             // Home's "On your trip" card (0.108): the trip at its On site step, every line kept.
             homeFromDoor = false
@@ -1565,6 +1576,32 @@ struct TripScreen: View {
         }
         .buttonStyle(.plain).focusEffectDisabled()
         .accessibilityIdentifier("trip-onsite")
+        .accessibilityValue(says)
+    }
+
+    /// The door to Unpack (0.126): "3/9 back", or all back.
+    private func unpackDoor(_ trip: TripEvent) -> some View {
+        let p = model.library.unpackProgress(tripId: trip.id)
+        let says = p.done == p.total ? "Everything is back \u{00B7} \(p.total)" : "\(p.done)/\(p.total) back \u{00B7} \(p.total - p.done) still in the bag"
+        return Button { unpacking = true } label: {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Unpack").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
+                    Text(says)
+                        .font(.system(.footnote).monospacedDigit()).foregroundStyle(Theme.muted)
+                        .lineLimit(1).minimumScaleFactor(0.85)
+                }
+                Spacer()
+                SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
+                    .frame(width: 22, height: 22).foregroundStyle(Theme.muted)
+            }
+            .padding(.horizontal, 14).frame(minHeight: 58)
+            .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppSection.events.color, lineWidth: 1.2))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .accessibilityIdentifier("trip-unpack")
         .accessibilityValue(says)
     }
 

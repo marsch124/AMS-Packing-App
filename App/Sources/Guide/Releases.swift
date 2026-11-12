@@ -18,6 +18,21 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.126", date: "12 Nov 2026", title: "Unpack and bag labels",
+                new: ["Unpack: once a trip has set off and has something packed, the trip page shows an \u{201C}Unpack\u{201D} row under On site, with how many are back, for example \u{201C}3/9 back\u{201D}. It opens the Unpack page \u{2014} the way to put things back in their rooms when you are home.",
+                      "What is on it: every thing that went on the trip (ticked on the way out, not set aside, and not a reminder) plus what you bought on site, less what you marked used up. Things are grouped by the room each lives in at home (the Inventory room), in the order of your own rooms, with its spot under the name (for example \u{201C}top shelf\u{201D}). Things with no room yet come last, under \u{201C}No room yet\u{201D}.",
+                      "Tick a thing when it is back in its room. Each room heading has \u{201C}All back\u{201D}. At the top it says \u{201C}Still in the bag \u{00B7} 3\u{201D}, or \u{201C}Everything is back\u{201D} when you are done. The ticks are kept on the trip and sync between the iPhone and the Mac. Done closes the page (Escape on the Mac).",
+                      "Give it a room: a thing you bought on site is not one of your things yet. It has a \u{201C}Give it a room\u{201D} button \u{2014} pick one of your rooms and it becomes one of your things, kept in that room.",
+                      "Unpack is not Pack to go home: that is packing at the hotel, this is unpacking at home. They keep separate ticks.",
+                      "On Home: after the trip\u{2019}s last day a quiet line says, for example, \u{201C}3 things still in the bag from Torremolinos\u{201D}. Tap it and the trip\u{2019}s Unpack page opens. It stays until everything is back, or until you tap \u{201C}Stop reminding me on Home\u{201D} on the Unpack page, or 30 days after the trip.",
+                      "Bag label: a bag\u{2019}s page (Your bags, then a bag) has a new \u{201C}Label for P-touch\u{201D} row. It is the same 12 mm label as things have had since 0.124 \u{2014} a small square code and the bag\u{2019}s name. Share (iPhone) or Save (Mac) it and print it in Brother\u{2019}s app.",
+                      "Point the iPhone camera at a bag\u{2019}s label and the bag\u{2019}s own page opens in the app (not the plain thing page).",
+                      "In it now: the bag\u{2019}s page now starts its list with \u{201C}In it now\u{201D} \u{2014} the things packed in this bag on the trip under way, or else on the next trip, with the trip\u{2019}s name. When no trip has anything in this bag it shows \u{201C}Usually in it\u{201D}, as before."],
+                changed: ["Before, nothing told you what was still in the bag after a trip; now Unpack lists it room by room and Home reminds you quietly.",
+                      "Before, a bag\u{2019}s page only showed what it usually holds; now it shows what is in it right now, with the trip\u{2019}s name. Before, a bag could not have a label; now it can, and the camera opens the bag.",
+                      "How it works and the written specification say all this. Nothing else about your trips, templates or grab lists changed."],
+                fixed: [],
+                removed: []),
         Release(version: "0.125", date: "12 Nov 2026", title: "Trip papers and look-alikes",
                 new: ["Trip papers: on a trip\u{2019}s page, under Before you go, there is a new \u{201C}Papers\u{201D} card for booking confirmations, boarding passes, hotel details, tickets and insurance. They are kept on the device, so they open with no internet. While there are none it is one button, \u{201C}Add trip papers\u{201D}, with the hint \u{201C}boarding pass, booking, hotel\u{201D}.",
                       "Adding: \u{201C}Take a photo\u{201D}, \u{201C}Choose a photo\u{201D} or \u{201C}Add a PDF\u{201D}. A PDF keeps its file name, for example \u{201C}Booking \u{00B7} Hotel Sol\u{201D}. On the Mac you can also drop a photo on the card. Up to 20 papers on a trip.",

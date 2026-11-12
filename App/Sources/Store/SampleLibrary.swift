@@ -504,6 +504,41 @@ enum SampleLibrary {
         return lib
     }
 
+    /// Unpack and the bag label (`-uiTestingUnpack`, 0.126): a trip to Torremolinos back home two days
+    /// ago, four things ticked (two kept in rooms, one with a spot) and Sandals bought on site; and the
+    /// trip ahead with two things ticked into the first bag, so its page shows In it now.
+    static func unpack() -> Library {
+        var lib = make()
+        let cal = Calendar(identifier: .gregorian)
+        func day(_ n: Int) -> String {
+            let c = cal.dateComponents([.year, .month, .day], from: cal.date(byAdding: .day, value: n, to: Date())!)
+            return String(format: "%04d-%02d-%02d", c.year!, c.month!, c.day!)
+        }
+        var away = newEvent(name: "Spain", startDate: day(-6), endDate: day(-2))
+        away.destination = "Torremolinos"
+        away.activities = lib.templates.filter { $0.name == "Hiking" }.map(\.id)
+        let id = lib.createTrip(away).id
+        guard let t = lib.trips.firstIndex(where: { $0.id == id }) else { return lib }
+        let lines = lib.trips[t].entries.filter { !Library.isReminder($0) }.prefix(4).map(\.id)
+        for (n, e) in lines.enumerated() {
+            _ = lib.setChecked(true, tripId: id, entryId: e)
+            if n < 2, let k = lib.trips[t].entries.firstIndex(where: { $0.id == e }), let thing = lib.trips[t].entries[k].sourceItemId {
+                _ = lib.updateThing(id: thing) { it in
+                    it.storage = n == 0 ? "Hall" : "Bedroom"
+                    if n == 0 { Library.setSpot(&it, "Top shelf") }
+                }
+            }
+        }
+        _ = lib.addBoughtOnSite(tripId: id, name: "Sandals")
+        if let bag = lib.bags().first?.name, let ahead = lib.trips.firstIndex(where: { $0.name == "Sunny weeks" }) {
+            for k in lib.trips[ahead].entries.indices.filter({ !Library.isReminder(lib.trips[ahead].entries[$0]) }).prefix(2) {
+                lib.trips[ahead].entries[k].checked = true
+                lib.trips[ahead].entries[k].container = bag
+            }
+        }
+        return lib
+    }
+
     static func oldPhoto() -> Library {
         var lib = make()
         lib.photos.append(PhotoRecord(id: "left-behind", data: "data:image/jpeg;base64,AQID", createdAt: "2026-01-01T09:00:00.000Z"))

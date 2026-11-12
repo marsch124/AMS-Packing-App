@@ -41,7 +41,7 @@ final class LibraryModel: ObservableObject {
     /// `review`: a tapped "Welcome home — review …" (0.77, spec 07 part 16) — the trip opens
     /// on its review. `charge`: a tapped "Charge tonight" (0.87) — the trip opens at its To charge.
     /// `onSite`: Home's "On your trip" card tapped (0.108) — the trip opens at its On site step.
-    struct TripFocus: Equatable { let tripId: String; let home: Bool; var review = false; var charge = false; var onSite = false }
+    struct TripFocus: Equatable { let tripId: String; let home: Bool; var review = false; var charge = false; var onSite = false; var unpack = false }
     /// A grab list asked to open from a Shortcut (the Action button). Home opens it.
     @Published var grabToOpen: String?
     /// The Action button's "Choose a grab list": Home shows the menu of grab lists.
@@ -740,6 +740,9 @@ extension LibraryModel {
         }
         if args.contains("-uiTestingLostSection") {
             return LibraryModel(store: MemoryStore(SampleLibrary.lostSection()), usesICloud: false, sky: sky)
+        }
+        if args.contains("-uiTestingUnpack") {
+            return LibraryModel(store: MemoryStore(SampleLibrary.unpack().records()), usesICloud: false, sky: sky)
         }
         if args.contains("-uiTestingLookAlikes") {
             return LibraryModel(store: MemoryStore(SampleLibrary.lookAlikes().records()), usesICloud: false, sky: sky)

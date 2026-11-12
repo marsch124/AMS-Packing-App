@@ -19928,4 +19928,17 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "inventory-lookalikes")
         XCTAssertTrue(app.descendants(matching: .any)["lookalike-group-0"].waitForExistence(timeout: 5), "no look-alike group")
     }
+
+    /// Unpack (0.126): `-uiTestingUnpack` has a trip back home with things in the bag. Home shows the quiet
+    /// line; it opens the trip's Unpack page, grouped by room; All back ticks a room.
+    func testUnpackFromHome() {
+        let app = launch("-uiTesting", ["-uiTestingUnpack"])
+        XCTAssertTrue(app.buttons["home-unpack"].waitForExistence(timeout: 5), "no still-in-the-bag line on Home")
+        tap(app, id: "home-unpack")
+        XCTAssertTrue(app.descendants(matching: .any)["unpack-screen"].waitForExistence(timeout: 8), "Unpack did not open")
+        XCTAssertTrue(app.descendants(matching: .any)["unpack-room-0"].exists, "no room heading")
+        XCTAssertTrue(app.buttons["unpack-room-0-all"].exists, "no All back")
+        tap(app, id: "unpack-room-0-all")
+        XCTAssertFalse(app.buttons["unpack-room-0-all"].waitForExistence(timeout: 1), "All back did not tick the room")
+    }
 }

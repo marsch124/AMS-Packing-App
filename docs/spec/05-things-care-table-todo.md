@@ -3627,3 +3627,14 @@ Core: `Core/Sources/PackingLibrary/InventoryMore.swift`.
 **Tests.** `LookAlikesTests` (names that match, serial match, not-same kept, bags left out, merge fills empty details only, photos and papers joined, templates/kits/trip lines/reminders/lendings/parts/labels repointed, two lines on one trip become one and keep a tick); one screen test finds the row and merges by the ids above.
 
 **Version.** 0.125. **Docs.** What's new 0.125; How it works: Look-alikes.
+
+
+## Bag label and "In it now" (0.126, 12 Nov 2026)
+
+**Label.** On a bag's page (Your bags, then a bag) a "Label for P-touch" row (`bag-label-open`; the page is the thing label page, `thing-label`, `thing-label-share`): the same 12 mm label as a thing's since 0.124 (`ThingLabels.swift`), a small square code and the bag's name. Share on the iPhone, Save on the Mac, to print in Brother's app. The code is the bag's own thing code (`labelCode`); `LibraryModel.open` finds the thing, and Home opens `BagDetail` when it is one of `bags()`; scanning it with the iPhone camera opens that bag's page (not the plain thing page).
+
+**In it now.** The bag's list starts with "In it now": the things packed in this bag on the trip under way, or else on the next trip, with the trip's name. When no trip has anything in the bag it shows "Usually in it", as before.
+
+**Tests.** One data test (trip under way first, then next trip, else usual); one screen test finds the label row by its id.
+
+**Version.** 0.126. **Docs.** What's new 0.126; How it works: Bag labels.

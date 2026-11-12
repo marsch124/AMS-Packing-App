@@ -3764,6 +3764,31 @@ deleted = none). **Not covered:** the real scheduling and a real tap (the system
 
 **Version.** 0.125. **Docs.** What's new 0.125; How it works: Packing a trip.
 
+## Unpack (0.126, 12 Nov 2026)
+
+**Purpose and his words.** Back home, a bag is not empty until everything is in its room. Unpack lists what went and lets him tick each thing back into the room it lives in. It is unpacking at home; "Pack to go home" is packing at the hotel, and the two keep separate ticks.
+
+**Storage.** Each trip line keeps its own tick (line extra `unpacked`, synced with the trip), and the trip a flag `unpackDone` set by "Stop reminding me on Home". Core: `Unpack.swift` (`unpackLines`, `unpackGroups`, `setRoomUnpacked`, `giveRoom`, `unpackNudge`).
+
+**Which things.** Every thing that went on the trip (ticked on the way out, not set aside, not a reminder) plus what was bought on site, less what was marked used up (left on site).
+
+**Trip page.** Once the trip has set off and has something packed, an "Unpack" row under "On site" with "N/M back" (`trip-unpack`). It opens the Unpack page as a sheet.
+
+**Unpack page.**
+- Grouped by the room each thing lives in at home (the Inventory room), in the order of his own rooms; the spot under the name (e.g. "top shelf"); things without a room under "No room yet", last.
+- Tick a thing when it is back in its room. Each room heading has "All back".
+- The top shows "Still in the bag · N", or "Everything is back" when none is left.
+- A thing bought on site (no thing of his yet) has "Give it a room": pick one of his rooms and it becomes one of his things, kept in that room.
+- "Stop reminding me" turns off the Home line for this trip. Done closes; Escape = Done.
+
+**Home.** After the trip's last day a quiet line: "3 things still in the bag from Torremolinos". Tap opens that trip's Unpack page. It stays until everything is back, or "Stop reminding me" is tapped, or 30 days after the trip's last day.
+
+**Ids.** `trip-unpack`, `unpack-left`, `unpack-room-<n>`, `unpack-room-<n>-all`, `unpack-line-<n>`, `unpack-line-<n>-room`, `unpack-stop`, `unpack-done`, `home-unpack`.
+
+**Tests.** One data test per rule (which things, used up left out, room grouping and order, No room yet last, give a room, 30-day and stop rules); one screen test finds the row and ticks a thing by the ids above.
+
+**Version.** 0.126. **Docs.** What's new 0.126; How it works: On site (Unpack, Still in the bag).
+
 ---
 
 ## Other ways into a trip

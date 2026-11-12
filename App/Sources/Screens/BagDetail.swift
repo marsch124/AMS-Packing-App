@@ -93,8 +93,8 @@ struct BagPage: View {
 
     /// One sheet, several destinations (the Search lesson: several sheets on one view).
     enum Opened: Identifiable {
-        case thing(String)
-        var id: String { switch self { case .thing(let id): return id } }
+        case thing(String), label(String)
+        var id: String { switch self { case .thing(let id): return id; case .label(let id): return "label:\(id)" } }
     }
 
     var body: some View {
@@ -120,9 +120,13 @@ struct BagPage: View {
                         // Its pockets (0.69): named once, offered when a thing is ticked.
                         // Held on the ledger with the rest (0.98): nothing reaches the library before Done.
                         BagPockets(bagId: bag.id, draft: draft).environmentObject(model).id(pocketsFresh)
+                        // In it now (0.126): what the trip under way, or the next, has packed in it.
+                        inItNow(bag)
                         thingsInIt(facts)
                         trips(facts)
                         detailsDoor(bag)
+                        // Its label (0.126): scanned, it opens this page.
+                        labelDoor(bag)
                         // Duplicate (0.90): near the end, calm — the copy opens at once.
                         duplicateBag(bag)
                         deleteBag(bag, facts)
@@ -138,6 +142,7 @@ struct BagPage: View {
         .sheet(item: $opened) { o in
             switch o {
             case .thing(let id): ThingEditor(itemId: id).environmentObject(model)
+            case .label(let id): ThingLabelPage(thingId: id, name: model.library.items.first { $0.id == id }?.name ?? "").environmentObject(model)
             }
         }
         .onAppear {
@@ -500,6 +505,48 @@ struct BagPage: View {
         }
         .buttonStyle(.plain).focusEffectDisabled()
         .accessibilityIdentifier("bag-details")
+    }
+
+    // MARK: In it now and its label (0.126, his idea 6)
+
+    @ViewBuilder private func inItNow(_ bag: Item) -> some View {
+        if let now = model.library.bagNow(name: bag.name, today: Today.local) {
+            VStack(alignment: .leading, spacing: 6) {
+                heading("In it now", count: now.lines.count, id: "bag-now-count")
+                quiet("Packed for \(now.tripName)")
+                    .accessibilityIdentifier("bag-now-trip")
+                ForEach(Array(now.lines.enumerated()), id: \.element.id) { i, line in
+                    HStack {
+                        Text(line.name).font(.system(.callout)).foregroundStyle(Theme.ink).lineLimit(1)
+                        Spacer(minLength: 8)
+                    }
+                    .frame(minHeight: Metrics.chip)
+                    .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
+                    .accessibilityIdentifier("bag-now-\(i)")
+                }
+            }
+        }
+    }
+
+    private func labelDoor(_ bag: Item) -> some View {
+        Button { opened = .label(bag.id) } label: {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Label for P-touch").font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
+                    Text("Scan it to see what is in this bag")
+                        .font(.system(.footnote)).foregroundStyle(Theme.muted).lineLimit(1)
+                }
+                Spacer()
+                SVGPath.path("M9 6l6 6-6 6").stroke(style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
+                    .frame(width: 24, height: 24).foregroundStyle(Theme.muted)
+            }
+            .padding(.horizontal, 14).frame(minHeight: 58)
+            .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).focusEffectDisabled()
+        .accessibilityIdentifier("bag-label-open")
     }
 
     // MARK: Deleting — small, at the side, and it asks where the things go
