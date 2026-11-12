@@ -14326,6 +14326,20 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "things-done")
     }
 
+    /// 0.123: a sample thing wears its "Sample" tag in Your things and says so on its page.
+    func testSampleTag() {
+        let app = launch("-uiTesting", ["-uiTestingSamples"])
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        type("Sofa", into: app.textFields["things-search"])
+        XCTAssertTrue(app.descendants(matching: .any)["thing-row-0-sample"].waitForExistence(timeout: 10), "no Sample tag")
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(app.staticTexts["thing-sample"].waitForExistence(timeout: 5), "the page does not say Sample")
+        shot(app, "sample-thing")
+    }
+
     /// Papers (0.119): a paper on a thing's page, its kind changed, the manual link, Remove asks first.
     func testThingPapers() {
         let app = launch()

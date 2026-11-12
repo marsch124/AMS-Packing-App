@@ -18,6 +18,16 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.123", date: "12 Nov 2026", title: "Gone things in the insurance list and a Sample tag",
+                new: ["Insurance list, Gone this year: the insurance PDF (Inventory tab, the full-colour insurance button) now has a part \u{201C}Gone this year\u{201D}, after the rooms and before the receipts. It starts with the year’s line, for example \u{201C}2026 \u{00B7} 3 gone \u{00B7} 1 sold for 1 200 kr \u{00B7} lost or stolen worth 5 100 kr\u{201D}.",
+                      "Under it comes each thing that went this calendar year, newest first, in full like the room lines: photo, brand, model, serial, bought on, shop and price. Each also says how it went (\u{201C}Went\u{201D}, for example \u{201C}Stolen 3 Mar 2026\u{201D}) and, for lost or stolen things, \u{201C}Worth when it went\u{201D}.",
+                      "Their receipt photos are added to the Receipts pages at the end too, each with the thing’s name. The part only appears when something went this year.",
+                      "Sample tag: the five sample things now show a small \u{201C}Sample\u{201D} tag after the name in Your things. On a sample thing’s own page a quiet line under the name says \u{201C}Sample thing \u{2014} Settings \u{25B8} Remove the sample things takes it away.\u{201D} In the insurance PDF their names end with \u{201C}(sample)\u{201D}."],
+                changed: ["Before, things you had marked gone were left out of the insurance PDF entirely; now the ones that went this year are listed in their own part, so you can send one file for a claim.",
+                          "Before, the sample things looked exactly like your own; now they are marked in Your things, on their page and in the PDF, so you cannot mix them up.",
+                          "How it works and the written specification say all this. Nothing about your trips, templates, to-dos or grab lists changed."],
+                fixed: [],
+                removed: []),
         Release(version: "0.122", date: "12 Nov 2026", title: "Gone year by year, serial numbers on the room walk and sample things",
                 new: ["Gone, year by year: the Gone view in Your things (Inventory tab, then Gone) now has one line for each year, newest first. For example: \u{201C}2026 \u{00B7} 3 gone \u{00B7} 1 sold for 1 200 kr \u{00B7} lost or stolen worth 5 100 kr\u{201D}. It is made for an insurance claim.",
                       "\u{201C}Worth\u{201D} is what the thing was worth on the day it went: your own \u{201C}value today\u{201D} if you set one, otherwise the price less 15 % for each year since you bought it, never below 10 % of the price. It is counted for every one of that thing (three chairs count three times), in kronor; other currencies are converted.",

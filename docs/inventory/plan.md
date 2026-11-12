@@ -115,3 +115,4 @@ His words: "I cannot find an entry point for the new items perspective — the i
 **0.121 (BUILT 12 Nov 2026):** serial scan (iPhone, `thing-serial-scan`), Gone (Mark as gone, Gone view, `inventory-gone`), other currencies in totals at today's ECB rates, and a PDF manual in Papers (`thing-paper-pdf`). Full detail in docs/spec/05-things-care-table-todo.md.
 
 **0.122 (BUILT 12 Nov 2026):** Gone by year (`things-gone-year-<yyyy>`), serial read on the room walk (`walk-serial`), five sample things + Settings "Remove the sample things". Detail in docs/spec/05-things-care-table-todo.md.
+**0.123 (BUILT 12 Nov 2026):** "Gone this year" part in the insurance PDF (`InsuranceList.gone`, `goneYear`, receipts included), "Sample" tag on the sample things (`thing-row-<n>-sample`, `thing-sample`, "(sample)" in the PDF). Detail in docs/spec/05-things-care-table-todo.md.

@@ -3578,3 +3578,11 @@ Core: `Core/Sources/PackingLibrary/InventoryMore.swift`.
 **Sample things.** Added once on the iPhone when 0.122 first opens (a one-time flag; the Mac receives them through iCloud sync): Sofa (IKEA Söderhamn, Living room, 8 995 kr), Fridge (Bosch, Kitchen, 10 990 kr), Cordless drill (Makita, Storage, 2 495 kr), Robot vacuum (Roborock, Living room, 5 990 kr, warranty ends 20 Dec 2026 so it shows under "Warranty ends soon"), Espresso machine (Sage, Kitchen, EUR 549 bought in Vienna, shows the kronor conversion). All "Stays at home", each with a drawn picture, brand, model, serial, room + spot, bought date, shop, price, warranty. Each carries a sample mark in its extra data; Settings > "Remove the sample things" asks first and removes only items with that mark.
 
 **Version.** 0.122 build 1. **Docs.** What's new 0.122; How it works: room walk, Your things, Inventory.
+
+## Gone this year in the insurance PDF, Sample tag (0.123, 12 Nov 2026)
+
+**Gone this year.** `InsuranceList.gone` returns the things whose gone date is in `goneYear` (the current calendar year), newest first; `InsuranceList.goneYear` is the year line, same format as the Gone view ("2026 · 3 gone · 1 sold for 1 200 kr · lost or stolen worth 5 100 kr"). In the PDF the part "Gone this year" comes after the rooms and before the receipts: heading, year line, then each gone thing in full like the room lines (photo, brand, model, serial, bought on, shop, price) plus "Went" (e.g. "Stolen 3 Mar 2026") and, for Lost/Stolen, "Worth when it went" (same rule as 0.122). Their receipt photos are appended to the Receipts pages. Shown only when something went this year. Before 0.123 gone things were excluded from the PDF entirely; room totals still exclude them.
+
+**Sample tag.** Sample things (0.122 sample mark) show a small "Sample" tag after the name in Your things rows, id `thing-row-<n>-sample`; the thing's page shows a quiet line under the name, id `thing-sample`: "Sample thing — Settings ▸ Remove the sample things takes it away." In the insurance PDF their names read "<name> (sample)".
+
+**Version.** 0.123. **Docs.** What's new 0.123; How it works: Insurance list, Sample things.

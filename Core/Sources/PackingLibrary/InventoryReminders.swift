@@ -57,8 +57,13 @@ public struct InsuranceList: Equatable, Sendable {
     public var totals: InventoryTotals
     /// "12 Nov 2026".
     public var madeOn: String
+    /// What went this calendar year, newest first (0.123 — for an insurance claim), and its year line.
+    public var gone: [InsuranceLine] = []
+    public var goneYear: GoneYear?
     /// How many receipt photos it carries in all.
-    public var receipts: Int { rooms.reduce(0) { $0 + $1.lines.reduce(0) { $0 + $1.receiptIds.count } } }
+    public var receipts: Int {
+        rooms.reduce(0) { $0 + $1.lines.reduce(0) { $0 + $1.receiptIds.count } } + gone.reduce(0) { $0 + $1.receiptIds.count }
+    }
 }
 
 extension Library {
@@ -120,8 +125,16 @@ extension Library {
             rooms.append(InsuranceRoom(room: r.room, lines: mine.map { insuranceLine($0, today: today) },
                                        totals: Library.totals(mine, today: today)))
         }
-        return InsuranceList(rooms: rooms, totals: Library.totals(things, today: today),
-                             madeOn: isYMD(today) ? Library.dayWords(today) : today)
+        var list = InsuranceList(rooms: rooms, totals: Library.totals(things, today: today),
+                                 madeOn: isYMD(today) ? Library.dayWords(today) : today)
+        // Gone this year (0.123): what went since 1 Jan, in full, with how and what it was worth then.
+        let year = String(today.prefix(4))
+        let went = goneThings().filter { (Library.gone($0)?.on ?? "").hasPrefix(year + "-") }
+        if isYMD(today), !went.isEmpty {
+            list.gone = went.map { insuranceGoneLine($0) }
+            list.goneYear = Library.goneByYear(went).first
+        }
+        return list
     }
 
     func insuranceLine(_ it: Item, today: String) -> InsuranceLine {
@@ -149,6 +162,22 @@ extension Library {
         add("Spot", spot)
         let photo = thingPhotoIds(id: it.id).first ?? ""
         let receipts = Library.papers(it).filter { $0.kind == .receipt }.map(\.id)
-        return InsuranceLine(itemId: it.id, name: it.name, facts: facts, photoId: photo, receiptIds: receipts)
+        // A sample thing says so (0.123).
+        let name = Library.isSample(it) ? it.name + " (sample)" : it.name
+        return InsuranceLine(itemId: it.id, name: name, facts: facts, photoId: photo, receiptIds: receipts)
+    }
+
+    /// A gone thing's line: "Went" first, then its facts, then (lost or stolen) what it was worth that day.
+    func insuranceGoneLine(_ it: Item) -> InsuranceLine {
+        guard let g = Library.gone(it) else { return insuranceLine(it, today: it.acquired) }
+        let day = isYMD(g.on) ? g.on : it.acquired
+        var line = insuranceLine(it, today: day)
+        line.facts.removeAll { $0.label == "Value today" || $0.label == "Spot" }
+        line.facts.insert(InsuranceFact(label: "Went", value: Library.goneLine(it)), at: 0)
+        if g.how == .lost || g.how == .stolen, let v = Library.valueToday(it, today: day) {
+            let n = max(1, it.qtyOwned), each = Library.moneyWords(v, currency: it.currency)
+            line.facts.append(InsuranceFact(label: "Worth when it went", value: n > 1 ? "\(n) \u{00D7} \(each)" : each))
+        }
+        return line
     }
 }

@@ -18,6 +18,8 @@ enum InsurancePDF {
     enum Block {
         case head(InsuranceList)
         case roomHead(InsuranceRoom, more: Bool)
+        /// "Gone this year" and its year line (0.123).
+        case goneHead(GoneYear?, more: Bool)
         case thing(InsuranceLine)
         case receipts([(image: CGImage, caption: String)])
 
@@ -26,6 +28,7 @@ enum InsurancePDF {
             switch self {
             case .head: return 86
             case .roomHead: return 34
+            case .goneHead: return 48
             case .thing(let l):
                 let rows = CGFloat((l.facts.count + 1) / 2)
                 return max(InsurancePDF.photo, 18 + rows * 14) + 12
@@ -57,6 +60,19 @@ enum InsurancePDF {
                 put(.thing(l))
             }
         }
+        // Gone this year (0.123), after the rooms.
+        if let first = list.gone.first {
+            if used + Block.goneHead(list.goneYear, more: false).height + Block.thing(first).height > room {
+                pages.append(page); page = []; used = 0
+            }
+            put(.goneHead(list.goneYear, more: false))
+            for l in list.gone {
+                if used + Block.thing(l).height > room {
+                    pages.append(page); page = [.goneHead(list.goneYear, more: true)]; used = Block.goneHead(list.goneYear, more: true).height
+                }
+                put(.thing(l))
+            }
+        }
         if !page.isEmpty { pages.append(page) }
         // The receipts, four to a page.
         var k = 0
@@ -72,8 +88,8 @@ enum InsurancePDF {
         let list = library.insuranceList(today: Today.local)
         var images: [String: CGImage] = [:]
         var receipts: [(image: CGImage, caption: String)] = []
-        for r in list.rooms {
-            for l in r.lines {
+        for lines in list.rooms.map(\.lines) + [list.gone] {
+            for l in lines {
                 if !l.photoId.isEmpty, let p = library.photos.first(where: { $0.id == l.photoId }),
                    let img = PhotoThumbs.image(p, side: photo) { images[l.photoId] = img }
                 let mine = l.receiptIds.compactMap { id in library.photos.first { $0.id == id }.flatMap { PhotoThumbs.image($0, side: 320) } }
@@ -148,6 +164,16 @@ private struct InsurancePDFPage: View {
                     .font(.system(size: 15, weight: .bold)).foregroundStyle(teal)
                 Spacer()
                 Text(totalsWords(r.totals)).font(.system(size: 9.5, weight: .semibold)).foregroundStyle(grey)
+            }
+            .padding(.top, 10)
+            .frame(height: b.height, alignment: .topLeading)
+        case .goneHead(let y, let more):
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Gone this year" + (more ? " (continued)" : ""))
+                    .font(.system(size: 15, weight: .bold)).foregroundStyle(teal)
+                if let y {
+                    Text(y.words).font(.system(size: 9.5, weight: .semibold)).foregroundStyle(grey)
+                }
             }
             .padding(.top, 10)
             .frame(height: b.height, alignment: .topLeading)

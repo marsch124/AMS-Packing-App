@@ -8,6 +8,15 @@ enum SampleThingsSeed {
     static let key = "ams.sampleThings.0122"
 
     @MainActor static func addOnceIfDue(_ model: LibraryModel) async {
+        // Under the UI tests, on ask only (0.123): the samples at once, for their tag.
+        if AMSPackingApp.testing {
+            guard ProcessInfo.processInfo.arguments.contains("-uiTestingSamples") else { return }
+            for _ in 0..<20 where model.state != .ready { try? await Task.sleep(for: .milliseconds(250)) }
+            model.change(named: "Add the sample things", undoable: false) { lib in
+                _ = lib.addSampleThings(pictures: SamplePictures.all)
+            }
+            return
+        }
         #if os(iOS)
         guard !AMSPackingApp.testing, !UserDefaults.standard.bool(forKey: key) else { return }
         // Wait (up to two minutes) for his library to open and iCloud's first exchange to settle.
@@ -52,5 +61,17 @@ struct RemoveSampleThings: View {
                 Text("Sofa, Fridge, Cordless drill, Robot vacuum and Espresso machine, with their pictures. Your own things stay.")
             }
         }
+    }
+}
+
+/// The small "Sample" tag after a sample thing's name (0.123).
+struct SampleTag: View {
+    let id: String
+    var body: some View {
+        Text("Sample").font(.caption.weight(.semibold)).foregroundStyle(AppSection.care.color)
+            .padding(.horizontal, 6).padding(.vertical, 1)
+            .overlay(Capsule().stroke(AppSection.care.color, lineWidth: 1))
+            .fixedSize()
+            .accessibilityIdentifier(id)
     }
 }

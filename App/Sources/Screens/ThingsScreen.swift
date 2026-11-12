@@ -298,6 +298,7 @@ struct ThingsScreen: View {
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Text(row.item.name).font(.body).foregroundStyle(Theme.ink)
                     .lineLimit(1).layoutPriority(1)
+                if Library.isSample(row.item) { SampleTag(id: "thing-row-\(n)-sample") }
                 Spacer(minLength: 6)
                 ThingDetailLine(templates: row.templates, place: row.item.storage)
             }
@@ -592,6 +593,13 @@ struct ThingEditor: View {
                         #if os(iOS)
                         .id(ThingEditor.nameKey)                // Duplicate brings the copy's name into sight (0.92)
                         #endif
+                    // A sample thing says so (0.123).
+                    if Library.isSample(draft) {
+                        Text("Sample thing \u{2014} Settings \u{25B8} Remove the sample things takes it away.")
+                            .font(.subheadline).foregroundStyle(Theme.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilityIdentifier("thing-sample")
+                    }
                     // Notes right under the name — his ask (4 Oct 2026): "please put the
                     // notes field immediately under the name".
                     labelled("Notes") {

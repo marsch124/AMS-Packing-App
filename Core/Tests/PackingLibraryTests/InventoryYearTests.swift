@@ -47,4 +47,19 @@ final class InventoryYearTests: XCTestCase {
         XCTAssertEqual(lib.removeSampleThings(), 5)
         XCTAssertTrue(lib.sampleThings().isEmpty); XCTAssertTrue(lib.photos.isEmpty)
     }
+
+    func testTheInsuranceListCarriesGoneThisYearAndNamesSamples() {
+        var lib = Library()
+        lib.addSampleThings()
+        let drill = lib.sampleThings().first { $0.name == "Cordless drill" }!
+        _ = lib.updateThing(id: drill.id) { Library.setGone(&$0, GoneMark(on: "2026-06-01", how: .stolen)) }
+        let sofa = lib.sampleThings().first { $0.name == "Sofa" }!
+        _ = lib.updateThing(id: sofa.id) { Library.setGone(&$0, GoneMark(on: "2025-06-01", how: .lost)) }
+        let list = lib.insuranceList(today: "2026-11-12")
+        XCTAssertEqual(list.gone.map(\.name), ["Cordless drill (sample)"], "only this year's")
+        XCTAssertEqual(list.gone[0].facts.first?.label, "Went")
+        XCTAssertTrue(list.gone[0].facts.contains { $0.label == "Worth when it went" })
+        XCTAssertEqual(list.goneYear?.lostOrStolen, 1)
+        XCTAssertTrue(list.rooms.flatMap(\.lines).allSatisfy { $0.name.hasSuffix("(sample)") })
+    }
 }
