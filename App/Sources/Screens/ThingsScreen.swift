@@ -14,6 +14,8 @@ struct ThingsScreen: View {
     var noReceipt = false
     /// Opened from "Gone" on the Inventory tab (0.121): start on the Gone view.
     var gone = false
+    /// Opened from "Lent out" on the Inventory tab (0.124): only the things lent out.
+    var lent = false
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
     @State private var query = ""
@@ -48,6 +50,7 @@ struct ThingsScreen: View {
         // Its notes count too (0.69): its own Notes and the notes its templates keep for it.
         let hits = model.library.noteHits(query)
         let shown = all.filter { (!noListOnly || $0.templates.isEmpty) && (!batteryOnly || Library.hasBattery($0.item))
+            && (!lent || Library.lent($0.item) != nil)
             && (shelf == "gone" ? Library.isGone($0.item)
                 : !Library.isGone($0.item) && (shelf == "all" || (shelf == "home") == Library.staysHome($0.item)))
             && (q.isEmpty || normName($0.item.name).contains(q) || hits[$0.item.id] != nil || Library.detailsMatch($0.item, query)) }
@@ -299,6 +302,7 @@ struct ThingsScreen: View {
                 Text(row.item.name).font(.body).foregroundStyle(Theme.ink)
                     .lineLimit(1).layoutPriority(1)
                 if Library.isSample(row.item) { SampleTag(id: "thing-row-\(n)-sample") }
+                if Library.lent(row.item) != nil { NameTag(text: "Lent", id: "thing-row-\(n)-lent") }
                 Spacer(minLength: 6)
                 ThingDetailLine(templates: row.templates, place: row.item.storage)
             }
@@ -621,10 +625,17 @@ struct ThingEditor: View {
                     ThingStaysHome(draft: $draft)
                     // Gone (0.121 — date, how, sold for): under Stays at home, kept on Save.
                     ThingGoneLine(draft: $draft)
+                    // Lent to… (0.124): who has it, since when; kept on Save.
+                    ThingLentLine(draft: $draft).environmentObject(model)
                     // Details (0.115, inventory step 1 — his pick: under the photos, folded while empty).
                     ThingDetailsCard(draft: $draft).environmentObject(model)
                     // Papers (0.119 — receipts, delivery notes, warranty cards, manuals; the manual's link).
                     ThingPapersCard(thingId: shown, draft: $draft).environmentObject(model).id(shown ?? "new")
+                    // 0.124: spare parts and refills; claim letter, Sell it…, label.
+                    if let id = shown {
+                        ThingPartsCard(thingId: id).environmentObject(model).id("parts-\(id)")
+                        ThingMoreActions(thingId: id, draft: $draft).environmentObject(model)
+                    }
                     // The order is his (6 Oct 2026): what it is and whose, the templates it is on,
                     // where it lives and goes and when, the details, and last what a flight and a
                     // date ask of it.
@@ -1232,13 +1243,15 @@ struct ThingEditor: View {
     /// records that came from the web app — nothing in this app could make one (the
     /// spec pass, 5 Oct 2026). "Done today" on Care moves the next date on.
     @ViewBuilder private var careFields: some View {
-        let standard = MAINTENANCE_INTERVALS.map { ($0.days, $0.days == 0 ? "None" : $0.label) }
+        // A week and two weeks too (0.124 — a printer that wants a page printed so the ink keeps flowing).
+        let presets = MAINTENANCE_INTERVALS.map { ($0.days, $0.days == 0 ? "None" : $0.label) }
+        let standard = Array(presets.prefix(1)) + [(7, "Every week"), (14, "Every 2 weeks")] + Array(presets.dropFirst())
         let options = standard + (standard.contains { $0.0 == careEvery } ? [] : [(careEvery, "Every \(careEvery) days")])
         VStack(alignment: .leading, spacing: 6) {
             DropDown(title: "Care", options: options.map { (String($0.0), $0.1) }, selected: String(careEvery),
                      id: "thing-care", ring: ring(.care)) { careEvery = Int($0) ?? 0 }
                 .keyed(.care)
-            TextField("What to do, e.g. Wax the leather", text: $careNotes, axis: .vertical)
+            TextField("What to do, e.g. Print a test page", text: $careNotes, axis: .vertical)
                 .lineLimit(1...6)
                 .textFieldStyle(.plain)
                 .font(.system(.body)).foregroundStyle(Theme.ink)

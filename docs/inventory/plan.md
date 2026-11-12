@@ -116,3 +116,4 @@ His words: "I cannot find an entry point for the new items perspective — the i
 
 **0.122 (BUILT 12 Nov 2026):** Gone by year (`things-gone-year-<yyyy>`), serial read on the room walk (`walk-serial`), five sample things + Settings "Remove the sample things". Detail in docs/spec/05-things-care-table-todo.md.
 **0.123 (BUILT 12 Nov 2026):** "Gone this year" part in the insurance PDF (`InsuranceList.gone`, `goneYear`, receipts included), "Sample" tag on the sample things (`thing-row-<n>-sample`, `thing-sample`, "(sample)" in the PDF). Detail in docs/spec/05-things-care-table-todo.md.
+**0.124 (BUILT 12 Nov 2026):** Lent to (`LentOut`), spare parts and refills (`SpareParts`, Care every week / 2 weeks), claim letter (`ClaimLetter`), sell ad (`SellAd`), quarterly check (`QuarterlyCheck`), one receipt for several things (`sharePaper`), thing labels (`ThingLabels`). Detail in docs/spec/05-things-care-table-todo.md.

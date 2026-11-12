@@ -59,7 +59,12 @@ public enum PlaceLabel {
 
     /// The label as a picture: `height` dots tall, as wide as the name needs.
     public static func image(code: String, name: String) -> CGImage? {
-        guard let grid = squares(PlaceLink.text(code: code)) else { return nil }
+        image(link: PlaceLink.text(code: code), name: name)
+    }
+
+    /// The label for any link (a place's, or a thing's — 0.124).
+    public static func image(link: String, name: String) -> CGImage? {
+        guard let grid = squares(link) else { return nil }
         let n = grid.count
         let m = dotsPerSquare(n)
         let codeSide = n * m
@@ -121,7 +126,11 @@ public enum PlaceLabel {
 
     /// The label as PNG bytes, marked 180 dots to the inch.
     public static func png(code: String, name: String) -> Data? {
-        guard let image = image(code: code, name: name) else { return nil }
+        image(code: code, name: name).flatMap { png(image: $0) }
+    }
+
+    /// Any label picture as a PNG at the printer's dots to the inch (0.124).
+    public static func png(image: CGImage) -> Data? {
         let data = NSMutableData()
         guard let out = CGImageDestinationCreateWithData(data, UTType.png.identifier as CFString, 1, nil) else { return nil }
         CGImageDestinationAddImage(out, image, [kCGImagePropertyDPIWidth: dpi, kCGImagePropertyDPIHeight: dpi] as CFDictionary)

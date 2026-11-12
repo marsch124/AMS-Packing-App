@@ -3586,3 +3586,21 @@ Core: `Core/Sources/PackingLibrary/InventoryMore.swift`.
 **Sample tag.** Sample things (0.122 sample mark) show a small "Sample" tag after the name in Your things rows, id `thing-row-<n>-sample`; the thing's page shows a quiet line under the name, id `thing-sample`: "Sample thing — Settings ▸ Remove the sample things takes it away." In the insurance PDF their names read "<name> (sample)".
 
 **Version.** 0.123. **Docs.** What's new 0.123; How it works: Insurance list, Sample things.
+
+## Lending, spare parts, claim letter, sell ad, quarterly check, shared receipts, labels (0.124, 12 Nov 2026)
+
+**Lent to.** `LentOut.swift`: `extra["lent"]` = {to, on}; `lentThings` lists them; reminder kind `lent` at 9:00 three weeks after `on`, repeating every three weeks while lent ("Ask Anna for the Drill back"). Thing page: "Lent to…" (asks who and the day, today by default) under Stays at home / Gone, then "Lent to Anna · 1 Nov 2026" with "Back home". Ids `thing-lent-open`, `thing-lent-to`, `thing-lent-save`, `thing-lent-back`, `thing-row-<n>-lent` (the "Lent" tag in Your things), `inventory-lent` (Inventory row "Lent out").
+
+**Spare parts and refills.** `SpareParts.swift`: `extra["parts"]` = list of {name, every (3/6/12 months), last bought}. `syncPartsToBuy(today:)` runs when the app opens and comes to the front and adds a To buy line "<part> for <thing>" for each due part; ticking that line bought sets the part's last bought to that day; "Bought today" does the same by hand. Card folded when empty. Ids `thing-parts-open`, `thing-part-name`, `thing-part-every-<months>`, `thing-part-add`, `thing-part-<n>`, `thing-part-<n>-bought`, `thing-part-<n>-remove`. **Maintenance:** the Care choice now also offers Every week and Every 2 weeks (before a month was the shortest); hint "What to do, e.g. Print a test page". Care reminders at 9:00 as since 0.120.
+
+**Claim letter.** `ClaimLetter.swift`: for a thing inside its 3-year complaint right (reklamationsrätt) or its warranty, "Write a claim letter" (`thing-claim-open`); the user types the fault (`claim-problem`); a Swedish letter to the shop (`claim-letter`) with what, brand, model, serial, bought where/when, price, the fault, complaint right/warranty, request for repair or replacement, receipt attached. Copy (`claim-copy`), Share (`claim-share`), plus Share the receipt photo.
+
+**Sell ad.** `SellAd.swift`: "Sell it…" (`thing-sell-open`) writes a Swedish Blocket ad: title (`sell-title`, brand + model or name), price (`sell-price`, today's value rounded to 50 kr, editable), text (`sell-text`: bought when/where, new price, receipt there, warranty left). Copy (`sell-copy`), Share with photos, Open Blocket (`sell-blocket`); "Mark as gone" one tap after a sale.
+
+**Quarterly check.** `QuarterlyCheck.swift`: `extra["checked"]` holds the quarter a thing was last looked at; things added this quarter count as checked. Quarters start 1 Jan, 1 Apr, 1 Jul, 1 Oct; reminder at 9:00 on those days. `QuarterlyCheckScreen`: room by room, "Still have it?"; "Still here" keeps, "All still here" a whole room, "Gone…" marks gone today with how. Inventory row "Quarterly check · N to look at". Ids `inventory-check`, `check-room-<n>`, `check-keep-<n>`, `check-gone-<n>`, `check-room-all-<n>`, `check-done`.
+
+**One receipt for several things.** `sharePaper`, `receiptsElsewhere`: in the Papers card "Use a receipt you already have" lists receipts on other things; tapping one attaches the same paper (one picture, no copy). Removing it from one thing keeps it on the others. Ids `thing-paper-reuse`, `reuse-receipt-<n>`.
+
+**Labels.** `ThingLabels.swift`: "Label for P-touch" (`thing-label-open`, `thing-label`, `thing-label-share`) — a 12 mm label with a small square code and the thing's name, as places since 0.69; link `AMSPACKING://T/<code>` opens the thing. Each thing gets a short code kept with it.
+
+**Version.** 0.124. **Docs.** What's new 0.124; How it works: thing's page, Care, Papers, Inventory.

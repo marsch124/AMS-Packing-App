@@ -22,7 +22,8 @@ struct InventoryScreen: View {
     @State private var anchor = ShareAnchorBox()
     #endif
 
-    struct Opening: Identifiable { let id = UUID(); let room: String?; let search: String; var noReceipt = false; var gone = false }
+    struct Opening: Identifiable { let id = UUID(); let room: String?; let search: String; var noReceipt = false; var gone = false; var lent = false }
+    @State private var checking = false
     private var tint: Color { AppSection.inventory.color }
 
     var body: some View {
@@ -69,6 +70,24 @@ struct InventoryScreen: View {
                         .buttonStyle(.plain).focusEffectDisabled()
                         .accessibilityIdentifier("inventory-gone")
                     }
+                    // Lent out (0.124).
+                    let lent = model.library.lentThings().count
+                    if lent > 0 {
+                        Divider().padding(.leading, 12)
+                        Button { opening = Opening(room: nil, search: "", lent: true) } label: {
+                            BRow(title: "Lent out", count: "\(lent)")
+                        }
+                        .buttonStyle(.plain).focusEffectDisabled()
+                        .accessibilityIdentifier("inventory-lent")
+                    }
+                    // The quarterly check (0.124): "Still have it?" room by room.
+                    Divider().padding(.leading, 12)
+                    let toCheck = model.library.toCheck(today: today).reduce(0) { $0 + $1.things.count }
+                    Button { checking = true } label: {
+                        BRow(title: "Quarterly check", detail: toCheck == 0 ? "all looked at" : "\(toCheck) to look at")
+                    }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityIdentifier("inventory-check")
                 }
                 .bCard()
                 if !ending.isEmpty {
@@ -96,8 +115,9 @@ struct InventoryScreen: View {
         }
         .background(Theme.bg.ignoresSafeArea())
         .sheet(item: $opening) { o in
-            ThingsScreen(searching: o.search, room: o.room, noReceipt: o.noReceipt, gone: o.gone).environmentObject(model)
+            ThingsScreen(searching: o.search, room: o.room, noReceipt: o.noReceipt, gone: o.gone, lent: o.lent).environmentObject(model)
         }
+        .sheet(isPresented: $checking) { QuarterlyCheckScreen().environmentObject(model) }
         #if os(iOS)
         .sheet(item: $sharing) { f in ShareSheet(url: f.url) }
         #endif

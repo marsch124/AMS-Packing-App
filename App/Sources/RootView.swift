@@ -177,13 +177,18 @@ struct RootView: View {
         .task { await RatesWatch.refreshIfDue(model) }
         // The five sample things, once, on the iPhone (0.122).
         .task { await SampleThingsSeed.addOnceIfDue(model) }
+        // Spare parts that are due go onto To buy (0.124) — as the app opens and comes to the front.
+        .task {
+            for _ in 0..<60 where model.state != .ready { try? await Task.sleep(for: .seconds(1)) }
+            PartsWatch.sync(model)
+        }
         .task {
             while !Task.isCancelled {
                 SyncWatch.checkInIfDue(model)
                 try? await Task.sleep(for: .seconds(60))
             }
         }
-        .onChange(of: scenePhase) { _, phase in if phase == .active { SyncWatch.checkInIfDue(model) } }
+        .onChange(of: scenePhase) { _, phase in if phase == .active { SyncWatch.checkInIfDue(model); PartsWatch.sync(model) } }
         // A place's printed code, read by the iPhone's Camera (0.69): it opens on Home.
         .onOpenURL { model.open($0) }
         // A thing's result tapped in Spotlight (0.92) — at a cold start or while the app runs, on

@@ -14,6 +14,8 @@ struct ThingPapersCard: View {
     @EnvironmentObject var model: LibraryModel
     @Environment(\.openURL) private var openURL
     @State private var open = false
+    /// "Use a receipt you already have" (0.124).
+    @State private var reusing = false
     @State private var large: Int?
     @State private var removing: String?
     /// The PDF open full page (0.121), by its row.
@@ -73,6 +75,17 @@ struct ThingPapersCard: View {
                     // A manual kept as a PDF (0.121 — "a stored PDF when wanted").
                     AddPDFButton(tint: tint) { pdf, name in
                         model.change { _ = $0.addPaperPDF(id: id, pdf: pdf, name: name) }
+                    }
+                    // One receipt for several things (0.124).
+                    if !model.library.receiptsElsewhere(for: id).isEmpty {
+                        Button { reusing = true } label: {
+                            Text("Use a receipt you already have").font(.system(.body, weight: .semibold)).foregroundStyle(tint)
+                                .frame(maxWidth: .infinity, alignment: .leading).frame(minHeight: Metrics.tap)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain).focusEffectDisabled()
+                        .accessibilityIdentifier("thing-paper-reuse")
+                        .sheet(isPresented: $reusing) { ReuseReceiptPage(thingId: id).environmentObject(model) }
                     }
                 }
             } else {

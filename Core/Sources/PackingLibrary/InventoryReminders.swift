@@ -15,7 +15,7 @@ public let INVENTORY_REMINDERS_MAX = 40
 
 /// One reminder about a thing he owns, at 9:00 on `day`.
 public struct InventoryReminder: Equatable, Sendable, Identifiable {
-    public enum Kind: String, Sendable { case warranty, care }
+    public enum Kind: String, Sendable { case warranty, care, lent, check }
     /// "inv-warranty-<item id>-<day>" / "inv-care-<item id>-<day>" — also the device's identifier.
     public var id: String
     public var kind: Kind
@@ -88,6 +88,8 @@ extension Library {
             out.append(InventoryReminder(id: "inv-care-\(it.id)-\(day)", kind: .care, itemId: it.id, day: day,
                                          title: "Care due today", body: it.name))
         }
+        out += lentReminders(today: today)       // 0.124
+        if let q = quarterlyCheckReminder(today: today) { out.append(q) }
         return Array(out.sorted { ($0.day, $0.id) < ($1.day, $1.id) }.prefix(INVENTORY_REMINDERS_MAX))
     }
 

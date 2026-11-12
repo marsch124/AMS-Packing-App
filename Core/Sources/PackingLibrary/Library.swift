@@ -581,6 +581,7 @@ extension Library {
         guard !clean.isEmpty, !items.contains(where: { normName($0.name) == normName(clean) }) else { return nil }
         var cat = catalogItemFromResolved(newItem(name: clean))
         cat.id = PackingEnv.makeId()
+        cat.extra[CHECKED_KEY] = .string(String(nowISO().prefix(10)))   // new = looked at this quarter (0.124)
         items.append(cat)
         return cat
     }

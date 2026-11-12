@@ -145,3 +145,43 @@ extension Library {
         }.joined(separator: " · ")
     }
 }
+
+// MARK: - One receipt for several things (0.124)
+
+extension Library {
+    /// Receipts on his OTHER things that this one does not have yet — each picture once, newest first.
+    public func receiptsElsewhere(for id: String) -> [(thing: Item, paper: Paper)] {
+        let mine = Set(Library.paperIds(items.first { $0.id == id }))
+        var seen = Set<String>(), out: [(thing: Item, paper: Paper)] = []
+        for it in ownThings() where it.id != id {
+            for p in Library.papers(it) where p.kind == .receipt && !mine.contains(p.id) && seen.insert(p.id).inserted {
+                out.append((it, p))
+            }
+        }
+        return out.sorted { $0.paper.at > $1.paper.at }
+    }
+
+    /// Put a receipt that is already on another thing on this one too — the same picture, no copy.
+    @discardableResult
+    public mutating func sharePaper(_ paper: Paper, to id: String) -> Bool {
+        guard takesPaper(id: id), !Library.paperIds(items.first { $0.id == id }).contains(paper.id),
+              photos.contains(where: { $0.id == paper.id }) else { return false }
+        return updateThing(id: id) { t in
+            var l = Library.papers(t); l.append(Paper(id: paper.id, kind: .receipt, at: nowISO(), file: paper.file))
+            Library.setPapers(&t, l)
+        }
+    }
+
+    /// The other things that show the same paper ("Also on Sofa, Table").
+    public func paperAlsoOn(_ paperId: String, besides id: String) -> [String] {
+        items.filter { $0.id != id && Library.paperIds($0).contains(paperId) }.map(\.name)
+    }
+}
+
+extension Library {
+    /// A photo record's bytes (JPEG or PDF), for sharing (0.124).
+    public static func photoBytes(_ p: PhotoRecord?) -> Data? {
+        guard let p else { return nil }
+        return bytes(fromDataURL: p.data).0
+    }
+}

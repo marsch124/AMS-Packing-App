@@ -30,5 +30,6 @@ extension Item {
         putExtra(MANUAL_LINK_KEY)
         // Gone (0.121): the mark, and Not in use that goes with it.
         putExtra(GONE_KEY); put(\.retired)
+        putExtra(LENT_KEY)   // 0.124
     }
 }

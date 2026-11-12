@@ -317,6 +317,8 @@ final class LibraryModel: ObservableObject {
     /// (AMSPACKING://P/<code>, 0.69). Anything else is left alone.
     func open(_ url: URL) {
         if let code = PlaceLink.code(in: url) { placeToOpen = code }
+        // A thing's printed label (0.124): AMSPACKING://T/<code> opens that thing.
+        if let code = ThingLink.code(in: url), let it = library.thingWithLabel(code) { thingToOpen = it.id }
     }
 
     /// Read a backup file and change NOTHING — not even the live "When" steps and

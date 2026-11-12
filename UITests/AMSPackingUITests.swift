@@ -14326,6 +14326,59 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "things-done")
     }
 
+    /// 0.124 on a thing's page: Lent to…, a spare part, the claim letter, Sell it…, the label.
+    func testLentPartsClaimSellAndLabel() {
+        let app = launch("-uiTesting", ["-uiTestingSamples"])
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        type("Cordless drill", into: app.textFields["things-search"])
+        XCTAssertTrue(app.buttons["thing-row-0"].waitForExistence(timeout: 10))
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        tap(app, id: "thing-lent-open")
+        type("Anna", into: app.textFields["thing-lent-to"])
+        tap(app, id: "thing-lent-save")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["thing-lent-says"]).hasPrefix("Lent to Anna") }, "not lent")
+        if app.buttons["thing-parts-open"].waitForExistence(timeout: 3) { tap(app, id: "thing-parts-open") }
+        type("Battery", into: app.textFields["thing-part-name"])
+        tap(app, id: "thing-part-every-12")
+        tap(app, id: "thing-part-add")
+        XCTAssertTrue(app.descendants(matching: .any)["thing-part-0"].waitForExistence(timeout: 5), "no part")
+        tap(app, id: "thing-claim-open")
+        XCTAssertTrue(app.staticTexts["claim-letter"].waitForExistence(timeout: 5), "no claim letter")
+        XCTAssertTrue(words(app.staticTexts["claim-letter"]).contains("Makita"))
+        shot(app, "claim-letter")
+        tap(app, id: "claim-done")
+        tap(app, id: "thing-sell-open")
+        let price = app.textFields["sell-price"]
+        XCTAssertTrue(price.waitForExistence(timeout: 5), "no Sell page")
+        XCTAssertFalse((price.value as? String ?? "").isEmpty, "no price suggested")
+        shot(app, "sell-it")
+        tap(app, id: "sell-done")
+        tap(app, id: "thing-label-open")
+        XCTAssertTrue(app.descendants(matching: .any)["thing-label"].waitForExistence(timeout: 5), "no label")
+        tap(app, id: "thing-label-done")
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        XCTAssertTrue(app.descendants(matching: .any)["thing-row-0-lent"].waitForExistence(timeout: 5), "no Lent tag")
+    }
+
+    /// 0.124: the quarterly check opens from the Inventory tab and "Still here" takes a thing off it.
+    func testQuarterlyCheck() {
+        let app = launch()
+        tab(app, "inventory")
+        tap(app, id: "inventory-check")
+        XCTAssertTrue(app.staticTexts["check-left"].waitForExistence(timeout: 5), "no check page")
+        let before = words(app.staticTexts["check-left"])
+        if app.buttons["check-keep-0"].waitForExistence(timeout: 3) {
+            shot(app, "quarterly-check")
+            tap(app, id: "check-keep-0")
+            XCTAssertTrue(waitUntil { self.words(app.staticTexts["check-left"]) != before }, "nothing changed")
+        }
+        tap(app, id: "check-done")
+    }
+
     /// 0.123: a sample thing wears its "Sample" tag in Your things and says so on its page.
     func testSampleTag() {
         let app = launch("-uiTesting", ["-uiTestingSamples"])
