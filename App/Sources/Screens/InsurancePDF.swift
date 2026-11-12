@@ -198,7 +198,8 @@ private struct InsurancePDFPage: View {
 
     private func totalsWords(_ t: InventoryTotals) -> String {
         var s = "\(t.things) thing\(t.things == 1 ? "" : "s") \u{00B7} paid \(Library.moneyWords(t.paid)) \u{00B7} worth today \(Library.moneyWords(t.today))"
-        if t.otherCurrency > 0 { s += " \u{00B7} \(t.otherCurrency) in another currency not counted" }
+        if t.otherCurrency > 0 { s += " \u{00B7} \(t.otherCurrency) in an unknown currency not counted" }
+        if t.converted > 0 { s += " \u{00B7} \(t.converted) counted at the rates of \(isYMD(CurrencyRates.current.day) ? Library.dayWords(CurrencyRates.current.day) : "today")" }
         return s
     }
 }

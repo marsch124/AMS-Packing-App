@@ -40,7 +40,7 @@
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.travel</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Photos of a packed bag to repack from, and of your things on a room walk.</string>
+	<string>Photos of a packed bag to repack from, of your things on a room walk, and reading a thing's serial number.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>AMS Packing reads your workouts during a trip to suggest what you used. It never writes to Apple Health.</string>
 	<key>NSHealthUpdateUsageDescription</key>

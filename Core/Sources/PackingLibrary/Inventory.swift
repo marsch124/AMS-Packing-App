@@ -30,8 +30,11 @@ public struct InventoryTotals: Equatable, Sendable {
     public var paid = 0.0
     /// Worth today, in kronor — SEK things only.
     public var today = 0.0
-    /// Things with a price in another currency, left out of the sums.
+    /// Things with a price in a currency the rates do not know, left out of the sums (0.121: a known
+    /// foreign currency is counted at today's rate).
     public var otherCurrency = 0
+    /// Things with a price in another currency that WERE counted, at today's rates (0.121).
+    public var converted = 0
     public init() {}
 }
 
@@ -151,17 +154,19 @@ extension Library {
 
     // MARK: Totals and views
 
-    /// Counted things, what they cost and what they are worth today — pieces × count.
-    public static func totals(_ things: [Item], today: String) -> InventoryTotals {
+    /// Counted things, what they cost and what they are worth today — pieces × count, in kronor. A price
+    /// in another currency counts at the rates' value (0.121); one in a currency they do not know is
+    /// left out (`otherCurrency`). Gone things are never counted (0.121).
+    public static func totals(_ things: [Item], today: String, rates: CurrencyRates = .current) -> InventoryTotals {
         var t = InventoryTotals()
-        for it in things {
+        for it in things where !isGone(it) {
             t.things += 1
             guard it.price > 0 || valueSet(it) != nil else { continue }
-            let cur = jsTrim(it.currency).uppercased()
-            guard cur.isEmpty || cur == "SEK" || cur == "KR" else { t.otherCurrency += 1; continue }
+            guard let one = rates.inKronor(1, it.currency) else { t.otherCurrency += 1; continue }
+            if CurrencyRates.code(it.currency) != "SEK" { t.converted += 1 }
             let n = Double(max(1, it.qtyOwned))
-            t.paid += it.price * n
-            t.today += (valueToday(it, today: today) ?? 0) * n
+            t.paid += it.price * one * n
+            t.today += (valueToday(it, today: today) ?? 0) * one * n
         }
         return t
     }

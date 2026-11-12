@@ -56,8 +56,9 @@ final class InventoryTests: XCTestCase {
         XCTAssertEqual(Library.timeLeft(until: "2026-03-01", today: "2026-03-03"), "Ended")
 
         var glass = newItem(name: "Wine glass"); glass.price = 100; glass.qtyOwned = 6; glass.acquired = "2026-01-01"
-        var euro = newItem(name: "Lamp"); euro.price = 50; euro.currency = "EUR"
-        let t = Library.totals([tv, glass, euro, newItem(name: "Socks")], today: "2026-01-01")
+        // 0.121: a currency the rates do not know is left out (a known one counts — InventoryMoreTests).
+        var odd = newItem(name: "Lamp"); odd.price = 50; odd.currency = "XYZ"
+        let t = Library.totals([tv, glass, odd, newItem(name: "Socks")], today: "2026-01-01")
         XCTAssertEqual(t.things, 4)
         XCTAssertEqual(t.paid, 10_600)
         XCTAssertEqual(t.today, 5_600)

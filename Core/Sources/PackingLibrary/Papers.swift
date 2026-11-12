@@ -41,9 +41,17 @@ public struct Paper: Equatable, Sendable {
     public var kind: PaperKind
     /// When it was kept (ISO).
     public var at: String
-    public init(id: String, kind: PaperKind, at: String) { self.id = id; self.kind = kind; self.at = at }
+    /// A kept PDF's name, as the file was called ("" for a photo) — 0.121.
+    public var file: String
+    public init(id: String, kind: PaperKind, at: String, file: String = "") {
+        self.id = id; self.kind = kind; self.at = at; self.file = file
+    }
 
-    var json: JSONValue { ["id": .string(id), "kind": .string(kind.rawValue), "at": .string(at)] }
+    var json: JSONValue {
+        var o: [String: JSONValue] = ["id": .string(id), "kind": .string(kind.rawValue), "at": .string(at)]
+        if !file.isEmpty { o["file"] = .string(file) }
+        return .object(o)
+    }
 }
 
 extension Library {
@@ -53,7 +61,8 @@ extension Library {
         return rows.compactMap { row in
             let id = jsStringOr(row["id"])
             guard !id.isEmpty else { return nil }
-            return Paper(id: id, kind: PaperKind(rawValue: jsStringOr(row["kind"])) ?? .other, at: jsStringOr(row["at"]))
+            return Paper(id: id, kind: PaperKind(rawValue: jsStringOr(row["kind"])) ?? .other, at: jsStringOr(row["at"]),
+                         file: jsStringOr(row["file"]))
         }
     }
 

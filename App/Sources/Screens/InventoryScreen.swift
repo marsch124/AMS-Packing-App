@@ -22,7 +22,7 @@ struct InventoryScreen: View {
     @State private var anchor = ShareAnchorBox()
     #endif
 
-    struct Opening: Identifiable { let id = UUID(); let room: String?; let search: String; var noReceipt = false }
+    struct Opening: Identifiable { let id = UUID(); let room: String?; let search: String; var noReceipt = false; var gone = false }
     private var tint: Color { AppSection.inventory.color }
 
     var body: some View {
@@ -38,6 +38,12 @@ struct InventoryScreen: View {
                     .padding(.top, 8)
                     .accessibilityIdentifier("inventory-title")
                 totalsCard(totals)
+                if totals.converted > 0 || totals.otherCurrency > 0 {
+                    // 0.121: prices in other currencies count at today's rates.
+                    Text(RatesWatch.words + (totals.otherCurrency > 0 ? " \u{00B7} \(totals.otherCurrency) in an unknown currency not counted" : ""))
+                        .font(.system(.footnote)).foregroundStyle(Theme.muted)
+                        .accessibilityIdentifier("inventory-rates")
+                }
                 BPartTitle(title: "Rooms", count: rooms.count, tint: tint)
                 VStack(spacing: 0) {
                     ForEach(Array(rooms.enumerated()), id: \.offset) { n, r in
@@ -53,6 +59,16 @@ struct InventoryScreen: View {
                     }
                     .buttonStyle(.plain).focusEffectDisabled()
                     .accessibilityIdentifier("inventory-all")
+                    // Gone (0.121): sold, given away, broken, lost or stolen — kept, never counted.
+                    let gone = model.library.goneThings().count
+                    if gone > 0 {
+                        Divider().padding(.leading, 12)
+                        Button { opening = Opening(room: nil, search: "", gone: true) } label: {
+                            BRow(title: "Gone", count: "\(gone)")
+                        }
+                        .buttonStyle(.plain).focusEffectDisabled()
+                        .accessibilityIdentifier("inventory-gone")
+                    }
                 }
                 .bCard()
                 if !ending.isEmpty {
@@ -80,7 +96,7 @@ struct InventoryScreen: View {
         }
         .background(Theme.bg.ignoresSafeArea())
         .sheet(item: $opening) { o in
-            ThingsScreen(searching: o.search, room: o.room, noReceipt: o.noReceipt).environmentObject(model)
+            ThingsScreen(searching: o.search, room: o.room, noReceipt: o.noReceipt, gone: o.gone).environmentObject(model)
         }
         #if os(iOS)
         .sheet(item: $sharing) { f in ShareSheet(url: f.url) }

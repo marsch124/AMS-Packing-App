@@ -14346,6 +14346,45 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(disappears(app, "thing-paper-0", timeout: 5), "the paper stayed")
     }
 
+    /// 0.121: a serial scanned, a manual kept as a PDF, a thing marked Gone (sold) and found under Gone.
+    func testGoneSerialScanAndManualPDF() {
+        let app = launch()
+        tab(app, "care")
+        tap(app, id: "care-things")
+        XCTAssertTrue(appears(app, "things-detail", timeout: 5))
+        tap(app, id: "thing-row-0")
+        XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
+        if app.buttons["thing-details-open"].waitForExistence(timeout: 3) { tap(app, id: "thing-details-open") }
+        tap(app, id: "thing-serial-scan")
+        let serial = app.textFields["thing-serial"]
+        XCTAssertTrue(serial.waitForExistence(timeout: 5), "no Serial field")
+        XCTAssertTrue(waitUntil { (serial.value as? String) == "TEST-4512 0877" },
+                      "the scan left \(String(describing: serial.value))")
+
+        if app.buttons["thing-papers-open"].waitForExistence(timeout: 3) { tap(app, id: "thing-papers-open") }
+        tap(app, id: "thing-paper-pdf")
+        XCTAssertTrue(app.buttons["thing-paper-0"].waitForExistence(timeout: 5), "no PDF kept")
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["thing-paper-0-label"]).contains("Test manual") },
+                      "the PDF's name is not on its row")
+        tap(app, id: "thing-paper-0")
+        XCTAssertTrue(appears(app, "pdf-view", timeout: 10), "the PDF did not open")
+        tap(app, id: "pdf-done")
+        XCTAssertTrue(disappears(app, "pdf-view", timeout: 5))
+
+        tap(app, id: "thing-gone-open")
+        tap(app, id: "gone-how-sold")
+        type("500", into: app.textFields["gone-sold-for"])
+        tap(app, id: "gone-save")
+        let says = app.staticTexts["thing-gone-says"]
+        XCTAssertTrue(says.waitForExistence(timeout: 5), "the thing does not say it is gone")
+        XCTAssertTrue(words(says).contains("Sold"), "Gone said: \(words(says))")
+        tap(app, id: "thing-save")
+        XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        tap(app, id: "things-view-gone")
+        XCTAssertTrue(app.buttons["thing-row-0"].waitForExistence(timeout: 5), "the thing is not under Gone")
+        tap(app, id: "things-done")
+    }
+
     /// Open a thing's page from Your things, found by its name.
     private func openThing(_ app: XCUIApplication, _ name: String) {
         tab(app, "care")

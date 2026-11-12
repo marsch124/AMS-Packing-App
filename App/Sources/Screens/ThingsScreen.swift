@@ -12,6 +12,8 @@ struct ThingsScreen: View {
     /// Opened from "No receipt yet" on the Inventory tab (0.120): only things in use with no receipt; one leaves
     /// the list once a receipt is kept on it.
     var noReceipt = false
+    /// Opened from "Gone" on the Inventory tab (0.121): start on the Gone view.
+    var gone = false
     @EnvironmentObject var model: LibraryModel
     @Environment(\.dismiss) private var dismiss
     @State private var query = ""
@@ -46,7 +48,8 @@ struct ThingsScreen: View {
         // Its notes count too (0.69): its own Notes and the notes its templates keep for it.
         let hits = model.library.noteHits(query)
         let shown = all.filter { (!noListOnly || $0.templates.isEmpty) && (!batteryOnly || Library.hasBattery($0.item))
-            && (shelf == "all" || (shelf == "home") == Library.staysHome($0.item))
+            && (shelf == "gone" ? Library.isGone($0.item)
+                : !Library.isGone($0.item) && (shelf == "all" || (shelf == "home") == Library.staysHome($0.item)))
             && (q.isEmpty || normName($0.item.name).contains(q) || hits[$0.item.id] != nil || Library.detailsMatch($0.item, query)) }
         // The note line shows only under a thing found by its notes, not by its name.
         let note: ((item: Item, templates: [String])) -> NoteHit? = { row in
@@ -82,7 +85,7 @@ struct ThingsScreen: View {
                 .padding(.horizontal, 16).padding(.bottom, 6)
                 .accessibilityIdentifier("things-title")
             BSegmented(options: [("all", "All", "things-view-all"), ("travel", "Travel", "things-view-travel"),
-                                 ("home", "At home", "things-view-home")],
+                                 ("home", "At home", "things-view-home"), ("gone", "Gone", "things-view-gone")],
                        chosen: shelf, tint: AppSection.care.color) { shelf = $0 }
                 .accessibilityElement(children: .contain)
                 .accessibilityIdentifier("things-view")
@@ -130,7 +133,7 @@ struct ThingsScreen: View {
                             }
                             if !rest.isEmpty { listHeading("A–Z", id: "things-rest") }
                         }
-                        thingsTotal(totals)
+                        if shelf == "gone" { goneTotal(shown.map(\.item)) } else { thingsTotal(totals) }
                         // All, grouped by room (0.115 — his pick), things with no room last; one stable list of groups
                         // (an if/else between a grouped and a flat list left an old copy of a row behind in the lazy stack).
                         // ONE list of headings and rows, so a row keeps its place in the lazy stack whichever way it is grouped.
@@ -218,7 +221,7 @@ struct ThingsScreen: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("things-detail")
-        .onAppear { if query.isEmpty, !searching.isEmpty { query = searching } }
+        .onAppear { if query.isEmpty, !searching.isEmpty { query = searching }; if gone { shelf = "gone" } }
         #if os(macOS)
         .frame(minWidth: 520, minHeight: 600)
         #endif
@@ -331,11 +334,24 @@ struct ThingsScreen: View {
                 return (f.string(from: NSNumber(value: v)) ?? "\(Int(v))") + " kr"
             }
             let parts = ["\(t.things) \(t.things == 1 ? "thing" : "things")", "\(kr(t.paid)) paid", "\(kr(t.today)) today"]
-                + (t.otherCurrency > 0 ? ["+ \(t.otherCurrency) in other currencies"] : [])
+                + (t.converted > 0 ? ["\(t.converted) counted at today\u{2019}s rates"] : [])
+                + (t.otherCurrency > 0 ? ["+ \(t.otherCurrency) in an unknown currency"] : [])
             Text(parts.joined(separator: " \u{00B7} "))
                 .font(.system(.subheadline, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
                 .padding(.top, 8)
                 .accessibilityIdentifier("things-total")
+        }
+    }
+
+    /// "3 gone · 2 sold for 4 300 kr" on the Gone view (0.121).
+    @ViewBuilder private func goneTotal(_ things: [Item]) -> some View {
+        let g = Library.goneTotals(things)
+        if g.things > 0 {
+            Text((["\(g.things) gone"] + (g.sold > 0 ? ["\(g.sold) sold for \(Library.moneyWords(g.soldFor))"] : []))
+                .joined(separator: " \u{00B7} "))
+                .font(.system(.subheadline, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
+                .padding(.top, 8)
+                .accessibilityIdentifier("things-gone-total")
         }
     }
 
@@ -585,6 +601,8 @@ struct ThingEditor: View {
                     }
                     // Stays at home (0.120 — his ask: always in view, no longer inside the folded Details).
                     ThingStaysHome(draft: $draft)
+                    // Gone (0.121 — date, how, sold for): under Stays at home, kept on Save.
+                    ThingGoneLine(draft: $draft)
                     // Details (0.115, inventory step 1 — his pick: under the photos, folded while empty).
                     ThingDetailsCard(draft: $draft).environmentObject(model)
                     // Papers (0.119 — receipts, delivery notes, warranty cards, manuals; the manual's link).

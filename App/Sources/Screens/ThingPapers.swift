@@ -16,6 +16,8 @@ struct ThingPapersCard: View {
     @State private var open = false
     @State private var large: Int?
     @State private var removing: String?
+    /// The PDF open full page (0.121), by its row.
+    @State private var pdfShown: Int?
 
     private var tint: Color { AppSection.care.color }
     private static let side: CGFloat = 56
@@ -68,6 +70,10 @@ struct ThingPapersCard: View {
                         guard let jpeg else { return }
                         model.change { _ = $0.addPaper(id: id, jpeg: jpeg) }
                     }
+                    // A manual kept as a PDF (0.121 — "a stored PDF when wanted").
+                    AddPDFButton(tint: tint) { pdf, name in
+                        model.change { _ = $0.addPaperPDF(id: id, pdf: pdf, name: name) }
+                    }
                 }
             } else {
                 Text("Save the thing first to add papers")
@@ -82,8 +88,14 @@ struct ThingPapersCard: View {
             model.change { _ = $0.addPaper(id: id, jpeg: jpeg) }
         }
         .sheet(item: Binding(get: { large.map(Shown.init) }, set: { large = $0?.start })) { shown in
-            let shots = papers.compactMap { p in p.photo.flatMap { JPEG.image(dataURL: $0.data) }.map { ($0, p.paper.kind.label) } }
+            let shots = papers.filter { !Library.isPDF($0.photo) }
+                .compactMap { p in p.photo.flatMap { JPEG.image(dataURL: $0.data) }.map { ($0, p.paper.kind.label) } }
             BigPhoto(images: shots.map(\.0), captions: shots.map(\.1), start: min(shown.start, max(0, shots.count - 1)), tint: tint)
+        }
+        .sheet(item: Binding(get: { pdfShown.map(Shown.init) }, set: { pdfShown = $0?.start })) { shown in
+            if shown.start < papers.count, let bytes = Library.pdfBytes(papers[shown.start].photo) {
+                PDFPage(title: papers[shown.start].paper.file.isEmpty ? "Manual" : papers[shown.start].paper.file, data: bytes)
+            }
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("thing-papers")
@@ -91,9 +103,16 @@ struct ThingPapersCard: View {
 
     private func row(_ n: Int, _ paper: Paper, _ photo: PhotoRecord?) -> some View {
         HStack(alignment: .top, spacing: 10) {
-            Button { large = n } label: {
+            Button {
+                if Library.isPDF(photo) { pdfShown = n; return }
+                // The big view holds the photos only: count the photo papers before this one.
+                let papersNow = thingId.map { model.library.thingPapers(id: $0) } ?? []
+                large = papersNow.prefix(n).filter { !Library.isPDF($0.photo) }.count
+            } label: {
                 Group {
-                    if let photo, let small = PhotoThumbs.image(photo, side: ThingPapersCard.side) {
+                    if Library.isPDF(photo) {
+                        PDFTile(side: ThingPapersCard.side)
+                    } else if let photo, let small = PhotoThumbs.image(photo, side: ThingPapersCard.side) {
                         Image(decorative: small, scale: 1).resizable().scaledToFill()
                     } else {
                         Theme.line.opacity(0.3)               // still on its way from the other device
@@ -108,7 +127,8 @@ struct ThingPapersCard: View {
             .accessibilityLabel("\(paper.kind.label), paper \(n + 1)")
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
-                    Text(paper.kind.label).font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink)
+                    Text(paper.file.isEmpty ? paper.kind.label : "\(paper.kind.label) \u{00B7} \(paper.file)")
+                        .font(.system(.body, weight: .semibold)).foregroundStyle(Theme.ink).lineLimit(1)
                         .accessibilityIdentifier("thing-paper-\(n)-label")
                     Text(ThingPapersCard.day(paper.at)).font(.system(.subheadline)).foregroundStyle(Theme.muted)
                     Spacer(minLength: 0)

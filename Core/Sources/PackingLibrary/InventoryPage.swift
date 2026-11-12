@@ -10,7 +10,7 @@ extension Library {
     /// many things it holds; things with no room last, as "".
     public func inventoryRooms() -> [(room: String, count: Int)] {
         var counts: [String: Int] = [:], spelled: [String: String] = [:]
-        for it in ownThings() {
+        for it in ownThings() where !Library.isGone(it) {
             let k = normName(it.storage)
             counts[k, default: 0] += 1
             if spelled[k] == nil { spelled[k] = jsTrim(it.storage) }
@@ -33,7 +33,7 @@ extension Library {
     public func warrantiesEndingSoon(today: String, days: Int = 60) -> [Item] {
         guard isYMD(today) else { return [] }
         let last = addDays(today, days)
-        return ownThings().filter { isYMD($0.warranty) && $0.warranty >= today && $0.warranty <= last }
+        return ownThings().filter { !Library.isGone($0) && isYMD($0.warranty) && $0.warranty >= today && $0.warranty <= last }
             .sorted { $0.warranty < $1.warranty }
     }
 }

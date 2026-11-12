@@ -26,5 +26,9 @@ extension Item {
         // Details (0.115, inventory step 1).
         put(\.model); put(\.serial); put(\.acquired); put(\.price); put(\.currency); put(\.warranty); put(\.qtyOwned)
         putExtra(STAYS_HOME_KEY); putExtra(SPOT_KEY); putExtra(SHOP_KEY); putExtra(VALUE_NOW_KEY)
+        // The manual's link (0.119 — it was typed on the page but never written by Save until 0.121).
+        putExtra(MANUAL_LINK_KEY)
+        // Gone (0.121): the mark, and Not in use that goes with it.
+        putExtra(GONE_KEY); put(\.retired)
     }
 }

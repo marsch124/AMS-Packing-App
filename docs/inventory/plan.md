@@ -111,3 +111,5 @@ His words: "I cannot find an entry point for the new items perspective — the i
 **0.119 Papers (BUILT 11 Nov 2026):** photos of receipt, delivery note, warranty card, manual or other on a thing, up to 12, plus a Manual link. A stored PDF manual is NOT built yet.
 
 **0.120 Reminders + insurance PDF + No receipt yet (BUILT 12 Nov 2026):** switch "Remind me at 9:00" (`inventory-remind`, per device, off at first; warranty 30 days before at 9:00, care due today at 9:00; not-in-use never; max 40; tap opens Inventory), button "Insurance list (PDF)" (`inventory-pdf`, A4 light, totals, room by room, details, receipt photos at the end, share sheet/menu; test line `inventory-pdf-said`), row "No receipt yet" (`inventory-noreceipt`, opens Your things filtered). Full detail in docs/spec/05-things-care-table-todo.md.
+
+**0.121 (BUILT 12 Nov 2026):** serial scan (iPhone, `thing-serial-scan`), Gone (Mark as gone, Gone view, `inventory-gone`), other currencies in totals at today's ECB rates, and a PDF manual in Papers (`thing-paper-pdf`). Full detail in docs/spec/05-things-care-table-todo.md.

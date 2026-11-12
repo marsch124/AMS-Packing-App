@@ -173,6 +173,8 @@ struct RootView: View {
         #endif
         // This device checks in by itself while it syncs (0.101, `SyncWatch.checkInIfDue`): as the app
         // opens, every minute while it runs (a quarter of an hour apart at most), and back in front.
+        // Today's currency rates (0.121), once a day, for the totals.
+        .task { await RatesWatch.refreshIfDue(model) }
         .task {
             while !Task.isCancelled {
                 SyncWatch.checkInIfDue(model)

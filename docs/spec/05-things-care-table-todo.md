@@ -3552,3 +3552,19 @@ His picks (plan `docs/inventory/plan.md`): receipts as photos taken as you go; m
 **Unchanged.** Totals, rooms, Warranty ends soon, room walk, trips, templates, to-dos. A stored PDF manual is still NOT built.
 
 **Docs.** What's new 0.120; How it works: three new lines in the Inventory part. Tests: one data test per rule in Core; one screen test finds `inventory-remind`, `inventory-pdf`, `inventory-pdf-said`, `inventory-noreceipt`.
+
+## Serial scan, Gone, currencies, PDF manuals (0.121, 12 Nov 2026)
+
+Core: `Core/Sources/PackingLibrary/InventoryMore.swift`.
+
+**Serial scan (iPhone only).** A small scan button (`thing-serial-scan`) beside Serial in the thing's Details card opens the camera with Apple's live text/barcode scanner; tapping the number or barcode it outlines fills Serial. `Library.cleanSerial` drops a label in front ("S/N:", "Serial No.", "SN", "Seriennummer", "Serienummer", "Ser. Nr" and similar), spaces and a stray colon/dash/#/.; the number stays as printed (inner spaces kept); "SN" and "No." count as labels only when no letter follows (never "SNOW1"). Mac: no scan button, type it.
+
+**Gone.** A line "Mark as gone…" (`thing-gone-open`) on a thing's page opens a page with Cancel (`gone-cancel`) and Save (`gone-save`): the day (`gone-date`, today by default); how (`gone-how-sold`, `gone-how-givenAway`, `gone-how-broken`, `gone-how-lost`, `gone-how-stolen`; `GoneHow`); when Sold, what it sold for (`gone-sold-for`, kronor unless another currency is typed). Stored as `GoneMark` under the item's extra key `gone` (`GONE_KEY`) via `Library.setGone`; a gone thing is also retired ("Not in use"): never on trips, templates, ＋ Add, reminders, totals or the insurance list; photos, papers and price kept. Its page shows `Library.goneLine`, e.g. "Sold 3 Mar 2027 · 1 200 kr" (`thing-gone-says`), with "Back in use" (`thing-gone-undo`), which clears the mark and un-retires it. Your things has a fourth view "Gone" (`things-view-gone`), `goneThings()`, latest first, with "N gone · sold for X kr" at the top (`Library.goneTotals`). The Inventory tab has a row "Gone" (`inventory-gone`) with the count; it opens that view.
+
+**Other currencies in totals.** `CurrencyRates` (kronor per unit): a price in EUR, USD, GBP, NOK, DKK and about 20 more (CHF, ISK, PLN, CZK, HUF, JPY, CNY, CAD, AUD, NZD, THB, TRY, HKD, SGD, KRW, INR, MXN, BRL, ZAR …) counts at today's rate (`inKronor`). Rates are fetched once a day from the European Central Bank's published rates via frankfurter.app (no account, nothing about the owner sent), stored on the device (`fromStored`, `parse`); until the first fetch rough `builtIn` rates apply (day empty). `CurrencyRates.code` understands "€", "$", "£", "euro", "kr". Under a foreign price the Details card says "≈ 1 234 kr" (`thing-price-sek`). Totals say "N counted at today's rates" when some were converted; only an unknown currency is still left out. The Inventory tab says which day's rates (`inventory-rates`).
+
+**Manual as PDF.** In the Papers card the button "Add a PDF" (`thing-paper-pdf`) picks a PDF from Files (iPhone) or Finder (Mac). Up to 25 MB (`PAPER_PDF_MAX_BYTES`), must start with %PDF; kept by `addPaperPDF` as a Manual paper (a PhotoRecord holding a `data:application/pdf` URL), named after the file (".pdf" dropped; "Manual" if empty); synced to the other device and in backups like photos; the 12-paper limit still applies. Its row shows a PDF tile and the file name; tapping opens the PDF full screen (`pdf-view`, Done `pdf-done`, Share). The Manual link is unchanged.
+
+**Version.** 0.121 build 1.
+
+**Docs.** What's new 0.121; How it works: Details, Papers, Your things and Inventory parts. Tests: one data test per rule in Core (cleanSerial, gone, rates, PDF); screen tests find the identifiers above.

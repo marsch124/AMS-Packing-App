@@ -59,7 +59,12 @@ struct ThingDetailsCard: View {
         return VStack(alignment: .leading, spacing: 0) {
             line("Brand") { text($draft.manufacturer, "e.g. Sony", "thing-brand") }
             line("Model") { text($draft.model, "e.g. WH-1000XM5", "thing-model") }
-            line("Serial") { text($draft.serial, "Number on the label", "thing-serial") }
+            line("Serial") {
+                HStack(spacing: 4) {
+                    text($draft.serial, "Number on the label", "thing-serial")
+                    SerialScanButton(serial: $draft.serial)           // 0.121: scan it with the camera (iPhone)
+                }
+            }
             line("Bought on") { boughtOn }
             line("Bought at") {
                 VStack(alignment: .leading, spacing: 4) {
@@ -79,6 +84,9 @@ struct ThingDetailsCard: View {
                         .multilineTextAlignment(.trailing).frame(width: 48)
                         .accessibilityIdentifier("thing-currency")
                 }
+            }
+            if CurrencyRates.code(draft.currency) != "SEK", draft.price > 0 {
+                line("In kronor") { PriceInKronor(draft: draft) }       // 0.121: counted in the totals at today's rate
             }
             line("Value today") {
                 text(Binding(get: { valueText }, set: { valueText = $0
