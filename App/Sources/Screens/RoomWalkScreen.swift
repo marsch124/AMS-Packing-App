@@ -22,6 +22,8 @@ struct RoomWalkScreen: View {
     @State private var staysHome = false
     @State private var photo: Data?
     @State private var guesses: [String] = []
+    /// A serial read off the photo (0.122); "" = none or dropped.
+    @State private var serial = ""
     @State private var needs = ""
     @State private var camera = false
     @FocusState private var nameFocus: Bool
@@ -136,6 +138,23 @@ struct RoomWalkScreen: View {
                     }
                 }
             }
+            if !serial.isEmpty {
+                HStack(spacing: 10) {
+                    Text("Serial").font(.body).foregroundStyle(Theme.ink)
+                    Text(serial).font(.body.monospaced()).foregroundStyle(tint).lineLimit(1).truncationMode(.middle)
+                        .accessibilityIdentifier("walk-serial")
+                    Spacer()
+                    Button { serial = "" } label: {
+                        Text("\u{2715}").font(.body.weight(.semibold)).foregroundStyle(Theme.muted)
+                            .frame(width: Metrics.tap, height: Metrics.tap).contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain).focusEffectDisabled()
+                    .accessibilityLabel("Drop the serial")
+                    .accessibilityIdentifier("walk-serial-clear")
+                }
+                .padding(.leading, 12)
+                .background(RoundedRectangle(cornerRadius: 10).fill(Theme.card))
+            }
             HStack(spacing: 10) {
                 Text("How many").font(.body).foregroundStyle(Theme.ink)
                 Spacer()
@@ -188,7 +207,7 @@ struct RoomWalkScreen: View {
     }
 
     private func fresh() {
-        name = ""; count = 1; photo = nil; guesses = []; needs = ""
+        name = ""; count = 1; photo = nil; guesses = []; serial = ""; needs = ""
     }
 
     /// The camera straight away (his pick) — on an iPhone with a camera, never under the tests.
@@ -200,13 +219,16 @@ struct RoomWalkScreen: View {
 
     private func took(_ jpeg: Data) {
         photo = jpeg
+        serial = ""
         let have = Set(model.library.items.map { normName($0.name) })
         if PhotoTakers.drawn {
             guesses = Library.nameGuesses([("teapot", 0.8), ("coffee_mug", 0.5)], have: have)
+            serial = Library.serialGuess(["Model X200", "S/N: TEST-4512 0877"]) ?? ""
         } else {
             Task.detached {
                 let labels = RoomWalkScreen.labels(jpeg)
-                await MainActor.run { guesses = Library.nameGuesses(labels, have: have) }
+                let sn = Library.serialGuess(RoomWalkScreen.textLines(jpeg)) ?? ""
+                await MainActor.run { guesses = Library.nameGuesses(labels, have: have); serial = sn }
             }
         }
     }
@@ -217,9 +239,9 @@ struct RoomWalkScreen: View {
         if model.library.items.contains(where: { normName($0.name) == normName(clean) }) {
             needs = "You already have \(clean) — give it another name."; return
         }
-        let shot = photo, n = count, home = staysHome
+        let shot = photo, n = count, home = staysHome, sn = serial
         model.change(named: "Add \(clean)") { lib in
-            guard let it = lib.walkAdd(name: clean, room: room, count: n, staysHome: home) else { return }
+            guard let it = lib.walkAdd(name: clean, room: room, count: n, staysHome: home, serial: sn) else { return }
             if let shot { _ = lib.addThingPhoto(id: it.id, jpeg: shot) }
         }
         added[room, default: 0] += 1
@@ -234,6 +256,20 @@ struct RoomWalkScreen: View {
         let handler = VNImageRequestHandler(data: jpeg)
         guard (try? handler.perform([request])) != nil, let seen = request.results else { return [] }
         return seen.prefix(30).map { ($0.identifier, Double($0.confidence)) }
+        #else
+        return []
+        #endif
+    }
+
+    /// The text Apple's on-device reader finds in the photo, line by line (0.122 — for a serial).
+    nonisolated static func textLines(_ jpeg: Data) -> [String] {
+        #if canImport(Vision)
+        let request = VNRecognizeTextRequest()
+        request.recognitionLevel = .accurate
+        request.usesLanguageCorrection = false
+        let handler = VNImageRequestHandler(data: jpeg)
+        guard (try? handler.perform([request])) != nil, let seen = request.results else { return [] }
+        return seen.compactMap { $0.topCandidates(1).first?.string }
         #else
         return []
         #endif

@@ -14279,6 +14279,9 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "walk-photo")
         XCTAssertTrue(app.buttons["walk-guess-0"].waitForExistence(timeout: 5), "no name guessed from the photo")
         tap(app, id: "walk-guess-0")
+        // 0.122: a serial read off the photo, shown with a ✕.
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["walk-serial"]) == "TEST-4512 0877" }, "no serial read off the photo")
+        XCTAssertTrue(app.buttons["walk-serial-clear"].exists)
         tap(app, id: "walk-qty-plus")
         XCTAssertEqual(words(app.staticTexts["walk-qty"]), "2")
         shot(app, "room-walk")

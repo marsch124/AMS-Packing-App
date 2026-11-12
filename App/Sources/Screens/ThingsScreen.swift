@@ -352,6 +352,16 @@ struct ThingsScreen: View {
                 .font(.system(.subheadline, weight: .semibold).monospacedDigit()).foregroundStyle(Theme.muted)
                 .padding(.top, 8)
                 .accessibilityIdentifier("things-gone-total")
+            // Year by year (0.122 — for an insurance claim): sold for, lost or stolen worth.
+            VStack(alignment: .leading, spacing: 2) {
+                ForEach(Library.goneByYear(things), id: \.year) { y in
+                    Text(y.words)
+                        .font(.subheadline.monospacedDigit()).foregroundStyle(Theme.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("things-gone-year-\(y.year)")
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 

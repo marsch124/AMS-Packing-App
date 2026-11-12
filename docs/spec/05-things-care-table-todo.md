@@ -3568,3 +3568,13 @@ Core: `Core/Sources/PackingLibrary/InventoryMore.swift`.
 **Version.** 0.121 build 1.
 
 **Docs.** What's new 0.121; How it works: Details, Papers, Your things and Inventory parts. Tests: one data test per rule in Core (cleanSerial, gone, rates, PDF); screen tests find the identifiers above.
+
+## Gone by year, serial on the room walk, sample things (0.122, 12 Nov 2026)
+
+**Gone by year.** `Library.goneByYear` returns one summary per year (newest first) of the gone things; the Gone view shows one line each, id `things-gone-year-<yyyy>`, e.g. "2026 · 3 gone · 1 sold for 1 200 kr · lost or stolen worth 5 100 kr" (replaces the single all-years line of 0.121). "Worth" = the value on the day it went: the item's own "value today" if set, else price reduced 15 % a year from the bought date, floor 10 % of the price; times the count; in kronor (other currencies through `CurrencyRates.inKronor`).
+
+**Serial on the room walk.** After the photo, Vision text recognition (on device, nothing sent) reads the lines; `Library.serialGuess(lines)` picks a labelled serial ("S/N:", "Serial No.", "SN", "Seriennummer" ...; cleaned like `cleanSerial`). The walk shows "Serial  <number>" (`walk-serial`) with a clear button (`walk-serial-clear`); "Save · next" calls `walkAdd(..., serial:)`, which stores it as the new item's Serial. iPhone and Mac. No label found: nothing shown.
+
+**Sample things.** Added once on the iPhone when 0.122 first opens (a one-time flag; the Mac receives them through iCloud sync): Sofa (IKEA Söderhamn, Living room, 8 995 kr), Fridge (Bosch, Kitchen, 10 990 kr), Cordless drill (Makita, Storage, 2 495 kr), Robot vacuum (Roborock, Living room, 5 990 kr, warranty ends 20 Dec 2026 so it shows under "Warranty ends soon"), Espresso machine (Sage, Kitchen, EUR 549 bought in Vienna, shows the kronor conversion). All "Stays at home", each with a drawn picture, brand, model, serial, room + spot, bought date, shop, price, warranty. Each carries a sample mark in its extra data; Settings > "Remove the sample things" asks first and removes only items with that mark.
+
+**Version.** 0.122 build 1. **Docs.** What's new 0.122; How it works: room walk, Your things, Inventory.

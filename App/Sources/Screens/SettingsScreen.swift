@@ -203,6 +203,8 @@ struct SettingsScreen: View {
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
                 }
 
+                RemoveSampleThings().environmentObject(model)
+
                 Text("This device holds").font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted).padding(.top, 10)
                 VStack(spacing: 0) {
                     ForEach(model.library.counts, id: \.table) { row in

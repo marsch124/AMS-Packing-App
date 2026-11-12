@@ -175,6 +175,8 @@ struct RootView: View {
         // opens, every minute while it runs (a quarter of an hour apart at most), and back in front.
         // Today's currency rates (0.121), once a day, for the totals.
         .task { await RatesWatch.refreshIfDue(model) }
+        // The five sample things, once, on the iPhone (0.122).
+        .task { await SampleThingsSeed.addOnceIfDue(model) }
         .task {
             while !Task.isCancelled {
                 SyncWatch.checkInIfDue(model)

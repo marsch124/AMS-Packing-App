@@ -18,6 +18,20 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.122", date: "12 Nov 2026", title: "Gone year by year, serial numbers on the room walk and sample things",
+                new: ["Gone, year by year: the Gone view in Your things (Inventory tab, then Gone) now has one line for each year, newest first. For example: \u{201C}2026 \u{00B7} 3 gone \u{00B7} 1 sold for 1 200 kr \u{00B7} lost or stolen worth 5 100 kr\u{201D}. It is made for an insurance claim.",
+                      "\u{201C}Worth\u{201D} is what the thing was worth on the day it went: your own \u{201C}value today\u{201D} if you set one, otherwise the price less 15 % for each year since you bought it, never below 10 % of the price. It is counted for every one of that thing (three chairs count three times), in kronor; other currencies are converted.",
+                      "Room walk reads serial numbers (iPhone and Mac): after the photo, the app reads the text in it on the phone itself \u{2014} Apple\u{2019}s text recognition, nothing leaves the device. When it finds a labelled serial number (\u{201C}S/N:\u{201D}, \u{201C}Serial No.\u{201D}, \u{201C}SN\u{201D}, \u{201C}Seriennummer\u{201D} and the like), it shows \u{201C}Serial\u{201D} and the number, with a \u{2715} to drop it.",
+                      "\u{201C}Save \u{00B7} next\u{201D} keeps that number on the new thing, in the Serial field of its Details card.",
+                      "Five sample things, to try the app with: a Sofa (IKEA S\u{00F6}derhamn, Living room, 8 995 kr), a Fridge (Bosch, Kitchen, 10 990 kr), a Cordless drill (Makita, Storage, 2 495 kr), a Robot vacuum (Roborock, Living room, 5 990 kr) and an Espresso machine (Sage, Kitchen, \u{20AC}549 bought in Vienna, so you see the kronor conversion).",
+                      "Each has a drawn picture, brand, model, serial number, room and spot, buy date, shop, price and warranty, and each is marked \u{201C}Stays at home\u{201D}. The Robot vacuum\u{2019}s warranty ends on 20 Dec 2026, so it shows under \u{201C}Warranty ends soon\u{201D}.",
+                      "They are added once, on the iPhone, the first time 0.122 opens; the Mac gets them through iCloud.",
+                      "Settings has a new line, \u{201C}Remove the sample things\u{201D}. It asks first, then takes away all five and only those \u{2014} nothing you added yourself."],
+                changed: ["Before, the Gone view had a single line for all years (\u{201C}3 gone \u{00B7} 2 sold for 4 300 kr\u{201D}); now it has one line per year, and lost or stolen things show what they were worth.",
+                          "Before, the room walk saved only name, room, how many, Stays at home and the photo, and a serial number had to be typed or scanned later on the thing\u{2019}s page. Now it can come with the photo.",
+                          "How it works and the written specification say all this. Nothing about your trips, templates, to-dos or grab lists changed."],
+                fixed: [],
+                removed: []),
         Release(version: "0.121", date: "12 Nov 2026", title: "Scan a serial, mark things gone, foreign prices and PDF manuals",
                 new: ["Scan a serial number (iPhone): in a thing\u{2019}s Details card there is a small scan button beside Serial. It opens the camera with Apple\u{2019}s live text scanner; tap the number or barcode it outlines and it fills Serial.",
                       "A label printed in front of the number is dropped for you: \u{201C}S/N:\u{201D}, \u{201C}Serial No.\u{201D}, \u{201C}SN\u{201D}, \u{201C}Seriennummer\u{201D} and the like. The number itself stays as printed. On the Mac there is no scan button; you type it.",

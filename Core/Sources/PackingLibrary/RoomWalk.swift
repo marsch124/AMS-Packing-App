@@ -18,7 +18,8 @@ extension Library {
     /// A thing found on the walk: kept in `room` (which joins his rooms), `count` pieces, and — when
     /// he says so — staying at home. Refused (nil) for a blank name or one he already has.
     @discardableResult
-    public mutating func walkAdd(name: String, room: String, count: Int = 1, staysHome: Bool = false) -> Item? {
+    public mutating func walkAdd(name: String, room: String, count: Int = 1, staysHome: Bool = false,
+                                 serial: String = "") -> Item? {
         guard let made = addThing(name: name), let n = items.firstIndex(where: { $0.id == made.id }) else { return nil }
         let typed = jsTrim(room)
         let r = roomChoices().first { normName($0) == normName(typed) } ?? typed
@@ -28,6 +29,8 @@ extension Library {
         }
         items[n].qtyOwned = max(1, count)
         Library.setStaysHome(&items[n], staysHome)
+        let sn = jsTrim(serial)
+        if !sn.isEmpty { items[n].serial = sn }   // read off the photo (0.122)
         return items[n]
     }
 
