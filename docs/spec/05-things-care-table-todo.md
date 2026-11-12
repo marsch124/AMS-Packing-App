@@ -3633,7 +3633,7 @@ Core: `Core/Sources/PackingLibrary/InventoryMore.swift`.
 
 **Label.** On a bag's page (Your bags, then a bag) a "Label for P-touch" row (`bag-label-open`; the page is the thing label page, `thing-label`, `thing-label-share`): the same 12 mm label as a thing's since 0.124 (`ThingLabels.swift`), a small square code and the bag's name. Share on the iPhone, Save on the Mac, to print in Brother's app. The code is the bag's own thing code (`labelCode`); `LibraryModel.open` finds the thing, and Home opens `BagDetail` when it is one of `bags()`; scanning it with the iPhone camera opens that bag's page (not the plain thing page).
 
-**In it now.** The bag's list starts with "In it now": the things packed in this bag on the trip under way, or else on the next trip, with the trip's name. When no trip has anything in the bag it shows "Usually in it", as before.
+**In it now.** The first thing on the bag's page, right under its name (build 151 moved it up from above "Usually in it"), is "In it now": the things packed in this bag on the trip under way, or else on the next trip, with the trip's name. When no trip has anything in the bag it shows "Usually in it", as before.
 
 **Tests.** One data test (trip under way first, then next trip, else usual); one screen test finds the label row by its id.
 
