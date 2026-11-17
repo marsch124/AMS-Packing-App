@@ -1,0 +1,1057 @@
+<title>Packing Tour</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Packing Tour: chapter rail on the left, coach card + a pretend iPhone on the right. Same engine as the other AMS tours.
+   Based on AMS Packing 0.126 (build 151). Update this tour in the release that changes a taught screen. */
+:root {
+  --bg: #F8F4F1; --panel: #FFFFFF; --fg: #2A1D17; --muted: #75635A; --line: #E8DDD6;
+  --accent: #B8401A; --accent-soft: #F8E6DE; --good: #2F7D32; --good-soft: #E6F3E6; --warn: #A8431A;
+  --shadow: 0 18px 40px rgba(42,29,23,.2);
+  --c-home:#2F6FE0; --c-trips:#2F9E63; --c-tpl:#7C5CD6; --c-care:#DD7324; --c-inv:#0F8B8D; --c-todo:#DC3D43; --c-set:#64748B;
+  --pbg:#F2F2F7; --pcard:#FFFFFF; --pink:#1C1C1E; --pmuted:#6C6C70; --pline:#E0E0E5; --pglass:rgba(255,255,255,.88); --pfield:rgba(120,120,128,.14);
+  --f-display: "Avenir Next", "Helvetica Neue", system-ui, sans-serif;
+  --f-body: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --f-phone: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg:#1A1412; --panel:#251D1A; --fg:#F5ECE7; --muted:#B5A49B; --line:#3B2F2A;
+  --accent:#F58F6B; --accent-soft:#3A241B; --good:#8FD18F; --good-soft:#1D3320; --warn:#F2A47F;
+  --shadow: 0 18px 40px rgba(0,0,0,.55);
+  --c-home:#6C9BF2; --c-trips:#52C08A; --c-tpl:#A58BF0; --c-care:#F09A5A; --c-inv:#3FBFC1; --c-todo:#F0787D; --c-set:#94A3B8;
+  --pbg:#0E0E10; --pcard:#1C1C1F; --pink:#F2F2F7; --pmuted:#9A9AA0; --pline:#333338; --pglass:rgba(40,40,44,.88); --pfield:rgba(120,120,128,.3);
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg:#1A1412; --panel:#251D1A; --fg:#F5ECE7; --muted:#B5A49B; --line:#3B2F2A;
+  --accent:#F58F6B; --accent-soft:#3A241B; --good:#8FD18F; --good-soft:#1D3320; --warn:#F2A47F;
+  --shadow: 0 18px 40px rgba(0,0,0,.55);
+  --c-home:#6C9BF2; --c-trips:#52C08A; --c-tpl:#A58BF0; --c-care:#F09A5A; --c-inv:#3FBFC1; --c-todo:#F0787D; --c-set:#94A3B8;
+  --pbg:#0E0E10; --pcard:#1C1C1F; --pink:#F2F2F7; --pmuted:#9A9AA0; --pline:#333338; --pglass:rgba(40,40,44,.88); --pfield:rgba(120,120,128,.3);
+  color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 15px; line-height: 1.45; margin: 0 }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 20px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; grid-template-columns: 230px minmax(0,1fr); gap: 22px; }
+svg.i { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; flex: none }
+svg.g { fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; flex: none }
+
+/* Rail */
+.rail { display: flex; flex-direction: column; gap: 4px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); align-self: start; }
+.brand { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.brand h1 { font-family: var(--f-display); font-size: 19px; line-height: 1.1; margin: 0; text-wrap: balance }
+.brand small { color: var(--muted); font-size: 12px }
+.logo { width: 40px; height: 40px; border-radius: 10px; background: var(--c-home); color: #fff; display: grid; place-items: center; flex: none }
+.chap { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 9px; border: 0; background: none; color: var(--fg); font: inherit; text-align: left; cursor: pointer; }
+.chap:hover { background: var(--accent-soft) }
+.chap:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+.chap .n { color: var(--muted); font-size: 12px; margin-left: auto; font-variant-numeric: tabular-nums; white-space: nowrap }
+.chap.cur { background: var(--accent-soft); color: var(--accent); font-weight: 600 }
+.chap.done .n { color: var(--good) }
+.bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; margin: 10px 2px 2px }
+.bar i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .4s }
+.railnote { color: var(--muted); font-size: 12px; margin: 4px 2px }
+
+/* Coach */
+.main { display: grid; grid-template-columns: minmax(0,1fr); gap: 14px; min-width: 0; align-content: start }
+.topnote { margin: 0; padding: 8px 12px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); font-weight: 600; font-size: 13.5px }
+.coach { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px 16px; align-items: center; }
+.coach .eyebrow { grid-column: 1 / -1; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); font-weight: 600; display: flex; gap: 8px; align-items: center }
+.coach .eyebrow .kind { color: var(--muted); font-weight: 500 }
+.coach h2 { font-family: var(--f-display); font-size: 23px; line-height: 1.2; margin: 0; text-wrap: balance }
+.coach p { margin: 4px 0 0; color: var(--fg); max-width: 62ch }
+.coach .btns { display: flex; gap: 8px; align-items: center }
+.btn { font: inherit; font-weight: 600; border-radius: 9px; padding: 8px 16px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); cursor: pointer }
+.btn.main-b { background: #C44A21; border-color: #C44A21; color: #fff }
+.btn.main-b:disabled { opacity: .45; cursor: default }
+.btn.ghost { border-color: transparent; color: var(--muted) }
+.answers { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px }
+.ans { font: inherit; padding: 8px 14px; border-radius: 9px; border: 1.5px solid var(--line); background: var(--panel); color: var(--fg); cursor: pointer; text-align: left }
+.ans:hover { border-color: var(--accent) }
+.ans.right { border-color: var(--good); background: var(--good-soft); color: var(--good); font-weight: 600 }
+.ans.wrong { border-color: var(--warn); color: var(--warn); text-decoration: line-through }
+.feedback { grid-column: 1 / -1; font-weight: 600; color: var(--good); min-height: 1.4em; margin: 0 }
+.feedback.no { color: var(--warn) }
+
+/* Stage = pretend iPhone, 390 x 760, scaled to fit */
+.stagebox { position: relative; width: min(100%, 390px); aspect-ratio: 390 / 760; border-radius: 40px; overflow: hidden; box-shadow: 0 0 0 6px #1f1f23, var(--shadow); justify-self: center; background: var(--pbg) }
+.stage { position: absolute; left: 0; top: 0; width: 390px; height: 760px; transform-origin: 0 0; font-family: var(--f-phone); font-size: 15px; line-height: 1.3; color: var(--pink); background: var(--pbg); overflow: hidden; -webkit-user-select: none; user-select: none }
+.stage button { font: inherit; color: inherit }
+.stage input { font: inherit; color: var(--pink); -webkit-user-select: text; user-select: text }
+.sbar { position: absolute; left: 0; right: 0; top: 0; height: 44px; display: flex; align-items: flex-end; justify-content: space-between; padding: 0 30px 6px 34px; font-weight: 600; font-size: 15px; z-index: 40; pointer-events: none; background: linear-gradient(var(--pbg) 70%, transparent) }
+.sbar .bat { width: 25px; height: 12px; border: 1.5px solid var(--pink); border-radius: 4px; position: relative; opacity: .8 }
+.sbar .bat::after { content: ""; position: absolute; left: 1.5px; top: 1.5px; bottom: 1.5px; width: 70%; background: var(--pink); border-radius: 2px }
+.scr { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; padding: 46px 16px 96px; scrollbar-width: none }
+.scr::-webkit-scrollbar { display: none }
+.scr.nobar { padding-bottom: 150px }
+.hd { display: flex; align-items: center; gap: 8px; min-height: 44px }
+.hd h1 { margin: 0; font-size: 31px; line-height: 1.1; font-weight: 700; flex: 1; min-width: 0 }
+.sub { color: var(--pmuted); font-size: 13px }
+.nut { border: 0; background: none; color: var(--c-set); padding: 6px; border-radius: 10px; cursor: pointer; display: grid; place-items: center }
+.nut svg { width: 26px; height: 26px }
+.search { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: var(--pfield); color: var(--pmuted); border-radius: 10px; padding: 0 10px; min-height: 40px; cursor: pointer; text-align: left; margin: 2px 0 8px }
+.search svg { width: 18px; height: 18px }
+.sec { margin: 12px 0 4px; font-weight: 700; font-size: 17px; display: flex; align-items: center; gap: 8px }
+.card { background: var(--pcard); border-radius: 12px; border: 1px solid var(--pline) }
+.row { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 0 12px; border: 0; background: none; text-align: left; cursor: pointer }
+.row + .row, .card > .row + * { border-top: 1px solid var(--pline) }
+.row .sp, .sp { flex: 1 }
+.cd { display: flex; align-items: center; gap: 12px; width: 100%; border: 1.2px solid var(--c-trips); background: var(--pcard); border-radius: 12px; padding: 12px 14px; cursor: pointer; text-align: left }
+.cd .big { font-size: 34px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; text-align: center; min-width: 44px }
+.cd small { display: block; color: var(--pmuted); font-size: 11.5px; text-align: center }
+.cd b { display: block; font-size: 16px }
+.frame { background: var(--pcard); border-radius: 14px; border: 1px solid var(--pline); padding: 10px 12px 12px; margin-top: 12px }
+.frame .fh { display: flex; align-items: center; margin-bottom: 8px }
+.frame .fh b { font-size: 17px; color: var(--c-home); flex: 1 }
+.linkb { border: 0; background: none; color: var(--c-home); font-weight: 600; font-size: 13px; cursor: pointer; padding: 6px 0 }
+.tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px }
+.tile { border: 0; background: var(--pbg); border-radius: 12px; padding: 8px 2px 6px; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; font-size: 12px; font-weight: 600; position: relative }
+.tile svg { width: 28px; height: 28px }
+.tile .sunb { position: absolute; right: 6px; top: 5px; width: 11px; height: 11px }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: #2FA35A; display: inline-block; flex: none }
+.bubble { position: absolute; right: 16px; background: var(--pink); color: var(--pbg); border-radius: 9px; padding: 6px 10px; font-size: 12.5px; z-index: 20; box-shadow: 0 4px 14px rgba(0,0,0,.3) }
+.mainb { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; min-height: 48px; border: 0; color: #fff; font-weight: 600; font-size: 16px; cursor: pointer }
+.mainb svg { width: 18px; height: 18px; stroke-width: 2.3 }
+.quiet { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; min-height: 36px; border: 0; background: none; color: var(--pmuted); font-weight: 600; cursor: pointer; margin-top: 6px }
+.nudge { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; border: 0; background: var(--pcard); border-radius: 10px; padding: 0 12px; margin: 4px 0; cursor: pointer; text-align: left; color: var(--pmuted) }
+.nudge b { color: var(--c-trips); font-size: 14px; margin-left: auto; white-space: nowrap }
+
+/* Tab bar */
+.tabs { position: absolute; left: 12px; right: 12px; bottom: 14px; height: 58px; border-radius: 29px; background: var(--pglass); backdrop-filter: blur(14px); box-shadow: 0 6px 24px rgba(0,0,0,.18); display: flex; align-items: center; justify-content: space-around; z-index: 30; padding: 0 6px; border: 1px solid var(--pline) }
+.tabs button { border: 0; background: none; display: flex; flex-direction: column; align-items: center; gap: 1px; font-size: 9.5px; font-weight: 600; color: var(--pmuted); cursor: pointer; padding: 3px 4px; border-radius: 14px; min-width: 50px; position: relative }
+.tabs button svg { width: 22px; height: 22px }
+.tabs button.on { background: rgba(120,120,128,.16) }
+.tabs .badge { position: absolute; right: 6px; top: 0; background: var(--c-todo); color: #fff; border-radius: 8px; font-size: 9px; padding: 0 4px; min-width: 15px; text-align: center }
+
+/* Pages and sheets */
+.dim { position: absolute; inset: 0; background: rgba(0,0,0,.35); z-index: 50 }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; top: 34px; border-radius: 22px 22px 0 0; background: var(--pbg); z-index: 55; overflow: hidden; box-shadow: 0 -8px 30px rgba(0,0,0,.3) }
+.sheet .scr { padding-top: 12px; padding-bottom: 40px }
+.top { display: flex; align-items: center; gap: 8px; min-height: 44px }
+.top .t { flex: 1; text-align: center; font-weight: 700; font-size: 17px }
+.hb { border: 0; background: none; font-weight: 600; font-size: 16px; cursor: pointer; padding: 6px 4px; border-radius: 8px }
+.hb.fill { color: #fff; padding: 6px 14px; border-radius: 16px }
+.hb.out { border: 1.4px solid; padding: 4px 12px; border-radius: 16px }
+.back { display: flex; align-items: center; gap: 0; font-size: 16px }
+.back svg { width: 20px; height: 20px }
+.big { font-size: 31px; font-weight: 700; line-height: 1.1; margin: 2px 0 2px; overflow-wrap: anywhere }
+.field { width: 100%; min-height: 44px; border-radius: 10px; border: 1px solid var(--pline); background: var(--pcard); padding: 0 12px; font-size: 17px }
+.field.bad { border: 2px solid var(--c-todo) }
+.seg { display: flex; padding: 2px; border: 1.2px solid var(--c-home); border-radius: 18px; max-width: 280px }
+.seg button { flex: 1; border: 0; background: none; border-radius: 16px; min-height: 28px; font-weight: 600; font-size: 14px; color: var(--c-home); cursor: pointer }
+.seg button.on { background: var(--c-home); color: #fff }
+.note { color: var(--pmuted); font-size: 12.5px; margin: 4px 0 }
+.hd2 { font-weight: 700; font-size: 15px; margin: 12px 0 5px }
+.pills { display: flex; flex-wrap: wrap; gap: 6px }
+.pill { display: inline-flex; align-items: center; gap: 5px; border: 1.3px solid var(--c-tpl); color: var(--c-tpl); background: none; border-radius: 16px; min-height: 30px; padding: 0 12px; font-size: 14px; font-weight: 500; cursor: pointer }
+.pill svg { width: 16px; height: 16px }
+.pill.on { background: var(--c-tpl); color: #fff; font-weight: 600 }
+.pill.home { border-color: var(--c-home); color: var(--c-home) }
+.pill.home.on { background: var(--c-home); color: #fff }
+.cal { margin: 6px 0 }
+.cal .mt { text-align: center; font-weight: 600; margin-bottom: 4px }
+.cal .g { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 2px }
+.cal .wd { text-align: center; font-size: 11px; font-weight: 600; color: var(--pmuted) }
+.cal button { border: 0; background: none; height: 32px; font-size: 14px; cursor: pointer; border-radius: 16px; position: relative }
+.cal button.band { background: rgba(47,111,224,.18); border-radius: 0 }
+.cal button.end { background: var(--c-home); color: #fff }
+.cal button.e1 { border-radius: 16px 0 0 16px } .cal button.e2 { border-radius: 0 16px 16px 0 }
+.cal button.end.solo { border-radius: 16px }
+.calsum { display: flex; align-items: baseline; gap: 10px; min-height: 30px; font-weight: 600; font-size: 14px }
+.need { color: var(--c-todo); font-weight: 600; font-size: 14px; text-align: center; margin-bottom: 8px }
+.foot { position: absolute; left: 0; right: 0; bottom: 0; background: var(--pbg); border-top: 1px solid var(--pline); padding: 10px 16px 14px; z-index: 5 }
+.sw { position: relative; width: 44px; height: 26px; border-radius: 13px; border: 0; background: rgba(120,120,128,.4); cursor: pointer; flex: none }
+.sw::after { content: ""; position: absolute; left: 2px; top: 2px; width: 22px; height: 22px; border-radius: 50%; background: #fff; transition: left .15s }
+.sw.on { background: var(--c-trips) } .sw.on::after { left: 20px }
+
+/* Grab */
+.cnt { font-weight: 600; margin: 4px 0 6px; font-variant-numeric: tabular-nums }
+.gl { display: flex; align-items: center; min-height: 44px; gap: 10px; border-bottom: 1px solid var(--pline); cursor: pointer; border: 0; background: none; width: 100%; text-align: left; padding: 0 2px }
+.gl + .gl { border-top: 1px solid var(--pline) }
+.gl.skip .nm { text-decoration: line-through; color: var(--pmuted) }
+.tk { width: 22px; height: 22px; border-radius: 50%; border: 1.8px solid var(--pmuted); display: inline-grid; place-items: center; flex: none; color: #fff }
+.tk svg { width: 14px; height: 14px; stroke-width: 2.6 }
+.tk.on { background: var(--c-trips); border-color: var(--c-trips) }
+.tk.round { width: 28px; height: 28px; border-color: var(--c-trips); color: var(--c-trips); cursor: pointer; background: none; padding: 0 }
+.tk.round svg { width: 16px; height: 16px }
+.tk.round.on { color: #fff; background: var(--c-trips) }
+.skipb { border: 0; background: none; color: var(--pmuted); padding: 6px; cursor: pointer; display: grid }
+.skipb svg { width: 18px; height: 18px }
+.overlay { position: absolute; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(0,0,0,.45); padding: 24px }
+.overlay .box { background: var(--pcard); border-radius: 18px; padding: 18px; text-align: center; width: 100%; max-width: 300px }
+.overlay .ex { width: 44px; height: 44px; border-radius: 50%; background: var(--c-todo); color: #fff; font-weight: 700; font-size: 26px; display: grid; place-items: center; margin: 0 auto 8px }
+.overlay h4 { margin: 0 0 4px; font-size: 20px }
+.help { color: var(--pmuted); font-size: 12.5px; margin-top: 10px }
+
+/* Trip */
+.status { display: flex; align-items: center; gap: 8px; margin: 2px 0 8px }
+.status .st { flex: 1; font-size: 13px; color: var(--pmuted); font-variant-numeric: tabular-nums }
+.status .st.all { color: var(--c-trips); font-weight: 600 }
+.cup { border: 0; background: none; color: var(--c-trips); padding: 2px; display: grid; cursor: pointer }
+.cup svg { width: 22px; height: 22px }
+.loop { display: flex; border-radius: 16px; background: rgba(120,120,128,.16); padding: 2px; margin-bottom: 8px }
+.loop button { flex: 1; border: 0; background: none; font-size: 12.5px; font-weight: 600; border-radius: 14px; min-height: 28px; color: var(--pmuted); cursor: pointer; white-space: nowrap }
+.loop button.dn { color: var(--c-trips) }
+.loop button.on { background: var(--c-trips); color: #fff }
+.stn { display: flex; align-items: center; gap: 5px; margin-bottom: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px 1px }
+.stn::-webkit-scrollbar { display: none }
+.stn small { font-weight: 600; font-size: 12px; margin-right: 2px }
+.chip { flex: none; border: 1.2px solid var(--c-trips); background: var(--pcard); color: var(--c-trips); border-radius: 11px; height: 22px; padding: 0 9px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px }
+.chip.done { background: var(--c-trips); color: #fff }
+.chip.here { background: rgba(47,158,99,.16); border-width: 2px }
+.chip.cant { border-style: dashed; border-color: var(--pline); color: var(--pmuted) }
+.gr { border-radius: 12px; background: var(--pcard); border: 1px solid var(--pline); margin-bottom: 8px; overflow: hidden }
+.gr .row { min-height: 42px }
+.gr > .row:not(:first-child), .gr > div + div, .gr > .row + div { border-top: 1px solid var(--pline) }
+.gr .bp { padding: 0 12px 10px }
+.door { display: flex; align-items: center; width: 100%; border: 1.2px solid var(--c-trips); background: var(--pcard); border-radius: 12px; padding: 0 14px; min-height: 58px; cursor: pointer; text-align: left; margin-bottom: 8px }
+.door b { display: block; font-size: 16px }
+.door small { color: var(--pmuted); font-size: 12px; font-variant-numeric: tabular-nums }
+.segb { display: flex; align-items: center; gap: 8px; margin: 6px 0 4px }
+.segb .s2 { display: flex; padding: 2px; border: 1.2px solid var(--c-trips); border-radius: 18px; flex: 1; max-width: 300px }
+.segb .s2 button { flex: 1; border: 0; background: none; color: var(--c-trips); font-weight: 600; font-size: 13px; border-radius: 16px; min-height: 26px; cursor: pointer; white-space: nowrap }
+.segb .s2 button.on { background: var(--c-trips); color: #fff }
+.gh { display: flex; align-items: center; gap: 6px; margin: 12px 0 4px; min-height: 30px }
+.gh .fold { border: 0; background: none; display: flex; align-items: center; gap: 4px; font-weight: 700; font-size: 15px; cursor: pointer; padding: 0 }
+.gh .fold svg { width: 16px; height: 16px; transition: transform .15s }
+.gh .fold.open svg { transform: rotate(90deg) }
+.gh .ct { color: var(--pmuted); font-size: 13px; font-variant-numeric: tabular-nums }
+.gh.dn .fold { color: var(--c-trips) }
+.ln { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 36px; border: 0; background: none; text-align: left; cursor: pointer; padding: 0 12px; border-top: 1px solid var(--pline) }
+.lines { background: var(--pcard); border-radius: 12px; border: 1px solid var(--pline); overflow: hidden }
+.lines .ln:first-child { border-top: 0 }
+.ln .nm { flex: 1; min-width: 0; overflow-wrap: anywhere }
+.ln.dn .nm { color: var(--pmuted) }
+.ln.as .nm { color: var(--pmuted); text-decoration: line-through }
+.ln small { color: var(--pmuted); font-size: 12px; white-space: nowrap }
+.ln .bt { color: var(--c-trips); font-size: 12px; font-weight: 600 }
+.ln .tm { color: var(--c-tpl); width: 15px; height: 15px }
+.no { width: 20px; height: 20px; color: var(--pmuted); opacity: .6; flex: none }
+.bar2 { position: absolute; left: 12px; right: 12px; bottom: 16px; display: flex; gap: 8px; align-items: center; z-index: 30 }
+.glass { flex: 1; display: flex; align-items: center; gap: 4px; min-height: 52px; border-radius: 26px; background: var(--pglass); backdrop-filter: blur(14px); border: 1px solid var(--pline); box-shadow: 0 6px 24px rgba(0,0,0,.18); padding: 0 8px }
+.glass button { border: 0; background: none; color: var(--c-trips); display: grid; place-items: center; width: 40px; height: 40px; cursor: pointer; border-radius: 20px }
+.glass button.gb { width: auto; flex: 1; font-weight: 600; font-size: 14px; display: flex; gap: 3px; justify-content: flex-end }
+.glass svg { width: 22px; height: 22px }
+.addb { border: 0; border-radius: 26px; background: var(--c-trips); color: #fff; font-weight: 600; min-height: 52px; padding: 0 18px; font-size: 16px; display: flex; align-items: center; gap: 5px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,.2) }
+.addb svg { width: 18px; height: 18px; stroke-width: 2.4 }
+.undo, .addrow { position: absolute; left: 12px; right: 12px; bottom: 78px; background: var(--pcard); border: 1px solid var(--pline); border-radius: 12px; padding: 8px 10px; z-index: 31; box-shadow: 0 4px 14px rgba(0,0,0,.15) }
+.undo { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px }
+.undo button { border: 0; background: none; color: var(--c-trips); font-weight: 700; cursor: pointer; padding: 4px 6px }
+.addrow .r { display: flex; gap: 6px; align-items: center }
+.addrow .field { font-size: 15px; min-height: 40px }
+.sbtn { border: 0; border-radius: 10px; color: #fff; font-weight: 600; min-height: 40px; padding: 0 12px; font-size: 14px; cursor: pointer; white-space: nowrap }
+.xb { border: 0; background: none; color: var(--pmuted); padding: 6px; cursor: pointer; display: grid }
+.xb svg { width: 18px; height: 18px }
+.menu { position: absolute; z-index: 70; background: var(--pcard); border: 1px solid var(--pline); border-radius: 12px; box-shadow: 0 8px 28px rgba(0,0,0,.3); min-width: 200px; overflow: hidden }
+.menu button { display: block; width: 100%; border: 0; background: none; text-align: left; padding: 11px 14px; font-size: 15px; cursor: pointer }
+.menu button + button { border-top: 1px solid var(--pline) }
+.menu button:disabled { color: var(--pmuted); opacity: .6; cursor: default }
+.menu hr { border: 0; border-top: 6px solid var(--pbg); margin: 0 }
+.drop { position: absolute; right: 12px; bottom: 78px; z-index: 70; background: var(--pcard); border: 1px solid var(--pline); border-radius: 12px; box-shadow: 0 8px 28px rgba(0,0,0,.3); overflow: hidden; min-width: 170px }
+.drop button { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: none; text-align: left; padding: 9px 14px; font-size: 15px; cursor: pointer }
+.drop button + button { border-top: 1px solid var(--pline) }
+.drop button.on { font-weight: 700; color: var(--c-trips) }
+.bagrow { padding: 8px 12px }
+.bagrow .l1 { display: flex; gap: 8px; align-items: baseline; font-size: 13.5px }
+.bagrow .l1 b { flex: 1 }
+.bagrow .l1 span { font-size: 12px; font-weight: 600; color: var(--pmuted); font-variant-numeric: tabular-nums }
+.bagrow .l1 span.over { color: var(--c-todo) }
+.meter { height: 14px; border-radius: 7px; background: var(--pline); margin: 6px 0 2px; overflow: hidden }
+.meter i { display: block; height: 100%; border-radius: 7px }
+.wrow { display: flex; gap: 8px; align-items: center; padding: 0 12px 10px }
+.wrow .field { min-height: 38px; font-size: 16px; font-weight: 600 }
+.overb { background: var(--c-todo); color: #fff; border-radius: 10px; font-size: 12px; font-weight: 600; padding: 1px 8px }
+.krow { display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding: 2px 0 }
+.krow i { width: 22px; height: 8px; border-radius: 4px; display: block; flex: none }
+.ask { background: var(--pcard); border: 1.5px solid var(--c-todo); border-radius: 12px; padding: 12px; margin: 8px 12px 12px; text-align: center }
+.ask b { display: block; margin-bottom: 4px }
+.ask .ab { display: flex; gap: 8px; justify-content: center; margin-top: 10px }
+.pp { display: flex; align-items: center; gap: 10px; padding: 8px 12px }
+.pp .th { width: 40px; height: 40px; border-radius: 8px; background: var(--pbg); border: 1px solid var(--pline); display: grid; place-items: center; color: var(--c-trips); flex: none }
+.pp .th svg { width: 22px; height: 22px }
+.pp b { display: block; font-size: 14.5px }
+.pp small { color: var(--pmuted); font-size: 12px }
+.stbtn { display: flex; align-items: center; gap: 6px; border: 1.2px solid var(--c-trips); color: var(--c-trips); background: none; border-radius: 10px; padding: 0 12px; min-height: 38px; font-weight: 600; cursor: pointer; margin: 6px 12px 0 0 }
+.stbtn svg { width: 16px; height: 16px }
+.lead { font-size: 14px; margin: 6px 0 8px }
+.tr { display: flex; align-items: center; gap: 10px; min-height: 44px; border-bottom: 1px solid var(--pline) }
+.tr .nm { flex: 1 }
+.tr small { color: var(--pmuted); font-size: 12px }
+.green { color: var(--c-trips); font-weight: 600 }
+.toast { position: absolute; left: 50%; bottom: 120px; transform: translateX(-50%); background: #2F6F4C; color: #fff; font-weight: 600; font-size: 13px; padding: 7px 14px; border-radius: 18px; z-index: 90; animation: pop .3s; max-width: 330px; text-align: center }
+.piles .sec small { color: var(--pmuted); font-weight: 600 }
+.empty { border: 1.4px dashed var(--c-trips); border-radius: 12px; min-height: 44px; display: grid; place-items: center; color: var(--pmuted); font-size: 14px }
+.badge2 { font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 8px; background: rgba(47,111,224,.16); color: var(--c-home) }
+.trow { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 58px; padding: 0 14px; border: 0; background: none; cursor: pointer; text-align: left }
+.fab { position: absolute; right: 16px; bottom: 86px; border: 0; border-radius: 24px; background: var(--c-tpl); color: #fff; font-weight: 600; min-height: 48px; padding: 0 18px; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 14px rgba(0,0,0,.25); z-index: 20; cursor: pointer }
+.fab svg { width: 18px; height: 18px; stroke-width: 2.4 }
+.ic { width: 34px; height: 34px; border-radius: 50%; background: rgba(124,92,214,.15); color: var(--c-tpl); display: grid; place-items: center; flex: none }
+.ic svg { width: 20px; height: 20px }
+
+/* Highlight: no position here (it would break absolutely placed boxes) */
+.target { z-index: 2; animation: ring 1.6s ease-in-out infinite; border-radius: 9px }
+@keyframes ring { 0%,100% { box-shadow: 0 0 0 2px #E6B53F, 0 0 0 6px rgba(230,181,63,.35) } 50% { box-shadow: 0 0 0 2px #E6B53F, 0 0 0 11px rgba(230,181,63,0) } }
+@keyframes pop { from { transform: translate(-50%, 8px); opacity: .3 } to { transform: translate(-50%, 0); opacity: 1 } }
+
+/* Finish */
+.finish { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px }
+.finish h3 { font-family: var(--f-display); margin: 0 0 8px; font-size: 19px }
+.finish label { display: flex; gap: 10px; align-items: flex-start; padding: 7px 0; border-top: 1px solid var(--line); cursor: pointer }
+.finish input { width: 18px; height: 18px; accent-color: #C44A21; margin-top: 2px; flex: none }
+
+@media (min-width: 1020px) {
+  .main { grid-template-columns: minmax(0,1fr) 402px; align-items: start }
+  .topnote, .finish { grid-column: 1 / -1 }
+  .coach { grid-column: 1; grid-template-columns: minmax(0,1fr); position: sticky; top: 16px }
+  .stagebox { grid-column: 2; grid-row: 2 }
+  .coach { grid-row: 2 }
+}
+@media (max-width: 820px) {
+  .wrap { grid-template-columns: minmax(0,1fr) }
+  .rail { position: static; flex-direction: row; flex-wrap: wrap; gap: 4px }
+  .brand { width: 100% }
+  .chap .n { display: none }
+  .railnote, .bar { width: 100% }
+  .coach { grid-template-columns: minmax(0,1fr) }
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important } }
+</style>
+
+<div class="wrap">
+  <nav class="rail" id="rail" aria-label="Chapters"></nav>
+  <main class="main">
+    <p class="topnote">Practice copy, nothing changes in your real app.</p>
+    <section class="coach" id="coach" aria-live="polite"></section>
+    <div class="stagebox" id="stagebox"><div class="stage" id="stage"></div></div>
+    <section class="finish" id="finish" hidden></section>
+  </main>
+</div>
+
+<script>
+/* ---------- Icons: simple hand-drawn line shapes, 24-pt grid, stroke 1.9, round ends, no fill. ---------- */
+const ICON = {
+  home: 'M4 11 12 4l8 7 M6 10v9.5h12V10 M10 19.5v-5h4v5',
+  trips: 'M5 8h14a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5v-8A1.5 1.5 0 0 1 5 8Z M9 8V6a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2 M8.5 8v11 M15.5 8v11',
+  list: 'M5 6h14 M5 12h14 M5 18h9',
+  care: 'M12 20C6 16 3.5 13 3.5 9.8 3.5 7.3 5.5 5.5 8 5.5c1.6 0 3 .8 4 2.2 1-1.4 2.4-2.2 4-2.2 2.5 0 4.5 1.8 4.5 4.3C20.5 13 18 16 12 20Z',
+  box: 'M4 8l8-4 8 4v8l-8 4-8-4Z M4 8l8 4 8-4 M12 12v8',
+  todo: 'M5 5h14v14H5Z M8.5 12l2.5 2.5 4.5-5',
+  nut: 'M12 3l7 4v8l-7 4-7-4V7Z M12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z',
+  search: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14ZM20 20l-4-4',
+  chevR: 'M9 6l6 6-6 6', chevL: 'M15 6l-6 6 6 6',
+  plus: 'M12 5v14M5 12h14', check: 'M5 12.5l5 5 9-10.5', cross: 'M7 7l10 10M17 7 7 17',
+  pen: 'M4 20l4-1 10-10-3-3L5 16Z M13.5 6.5l3 3',
+  mic: 'M12 3.5a3 3 0 0 1 3 3v5a3 3 0 0 1-6 0v-5a3 3 0 0 1 3-3Z M6 11.5a6 6 0 0 0 12 0 M12 17.5v3 M9 20.5h6',
+  share: 'M12 15V4 M8 8l4-4 4 4 M5 12v7h14v-7',
+  cup: 'M5 9h11v5a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4Z M16 10h2a2 2 0 0 1 0 4h-2 M7 5v1.5 M10.5 5v1.5',
+  nosign: 'M4.5 12a7.5 7.5 0 1 0 15 0a7.5 7.5 0 1 0 -15 0 M7 17 17 7',
+  drop: 'M7 10l5 5 5-5',
+  doc: 'M7 3.5h7l4 4v13H7Z M14 3.5v4h4 M9.5 12h6 M9.5 15.5h6',
+  hiking: 'M2.5 19.5 9.2 7.8l3.4 5.8 2.6-3.6 6.3 9.5Z M7.4 10.9l1.8 1.2 1.6-1.3',
+  plane: 'M12 3.2c.8 0 1.3.8 1.3 1.9v4.8l7.2 4.3v1.9l-7.2-2.2v4l2 1.6v1.5L12 20.1l-3.3.9v-1.5l2-1.6v-4l-7.2 2.2v-1.9l7.2-4.3V5.1c0-1.1.5-1.9 1.3-1.9Z',
+  rv: 'M2.5 17V8.3c0-.8.6-1.4 1.4-1.4h11.4c.5 0 .9.2 1.2.6L19 11h2.5v6Z M2.5 12.5h19 M5.5 6.9v3.3h5V6.9 M6 17a2 2 0 0 0 4 0 M14 17a2 2 0 0 0 4 0',
+  sun: 'M8 12a4 4 0 1 0 8 0a4 4 0 1 0 -8 0 M12 2.8v2.4 M12 18.8v2.4 M2.8 12h2.4 M18.8 12h2.4 M5.5 5.5l1.7 1.7 M16.8 16.8l1.7 1.7 M5.5 18.5l1.7-1.7 M16.8 7.2l1.7-1.7',
+  snow: 'M12 3v18 M4.2 7.5l15.6 9 M4.2 16.5l15.6-9 M9.8 4.4 12 6l2.2-1.6 M9.8 19.6 12 18l2.2 1.6',
+  run: 'M3 18v-4.2c0-.6.5-1 1.1-1 2 0 3.6-1.2 4.5-3.1l.5-1.2 3.1 1.6.9 2.1 5.1 1.5c1.6.5 2.8 1.9 2.8 3.5v.8Z M3 18h18 M12.3 11.8l-1.4 1.4 M14.2 13.2l-1.4 1.4',
+  bike: 'M2.4 15.8a3.6 3.6 0 1 0 7.2 0a3.6 3.6 0 1 0 -7.2 0 M14.4 15.8a3.6 3.6 0 1 0 7.2 0a3.6 3.6 0 1 0 -7.2 0 M6 15.8l3.6-7h5.9L18 15.8 M9.6 8.8l2.9 7H6 M13.4 5.8h2.6 M14.7 5.8l.8 3',
+  swim: 'M2.5 16.6c1.6 0 1.6-1.2 3.2-1.2s1.6 1.2 3.2 1.2 1.6-1.2 3.2-1.2 1.6 1.2 3.2 1.2 1.6-1.2 3.2-1.2 1.6 1.2 3 1.2 M2.5 20.3c1.6 0 1.6-1.2 3.2-1.2s1.6 1.2 3.2 1.2 1.6-1.2 3.2-1.2 1.6 1.2 3.2 1.2 1.6-1.2 3.2-1.2 1.6 1.2 3 1.2 M5.5 12.5 10 8.8l3.5 2.4 3-1.4 M16.2 6.3a1.6 1.6 0 1 0 3.2 0a1.6 1.6 0 1 0 -3.2 0',
+  trophy: 'M7.5 3.5h9v5a4.5 4.5 0 0 1-9 0Z M7.5 5H4.5v1.5a3 3 0 0 0 3.3 3 M16.5 5h3v1.5a3 3 0 0 1-3.3 3 M12 13v3.5 M9.5 16.5h5l1 4h-7Z',
+  compass: 'M3.5 12a8.5 8.5 0 1 0 17.0 0a8.5 8.5 0 1 0 -17.0 0 M15.2 8.8l-1.9 4.5-4.5 1.9 1.9-4.5Z',
+  bag: 'M6 8.5h12l1 11H5Z M9 8.5V7a3 3 0 0 1 6 0v1.5',
+  scale: 'M9 3h6 M12 3v2.5 M8.8 9a3.2 3.2 0 1 0 6.4 0a3.2 3.2 0 1 0 -6.4 0 M12 9l1.3-1.3 M6.6 16.5h10.8a1.6 1.6 0 0 1 1.6 1.6v1.8a1.6 1.6 0 0 1-1.6 1.6H6.6a1.6 1.6 0 0 1-1.6-1.6v-1.8a1.6 1.6 0 0 1 1.6-1.6Z',
+  door: 'M4 20.5h16 M6 20.5V4.8A1.3 1.3 0 0 1 7.3 3.5h7.4A1.3 1.3 0 0 1 16 4.8v15.7 M12.5 12.5h1.2',
+  sync: 'M5 12a7 7 0 0 1 12-4.9L19 9 M19 4.5V9h-4.5 M19 12a7 7 0 0 1-12 4.9L5 15 M5 19.5V15h4.5',
+  phone: 'M8 3.5h8a1.5 1.5 0 0 1 1.5 1.5v14a1.5 1.5 0 0 1-1.5 1.5H8A1.5 1.5 0 0 1 6.5 19V5A1.5 1.5 0 0 1 8 3.5Z M11 17.8h2',
+};
+const icon = (n, cls = 'i') => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="${ICON[n]}"/></svg>`;
+const ico = (n, px, extra = '') => `<svg class="g" width="${px}" height="${px}" viewBox="0 0 24 24" aria-hidden="true" ${extra}><path d="${ICON[n]}"/></svg>`;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const tkc = on => `<span class="tk ${on ? 'on' : ''}">${on ? icon('check', 'g') : ''}</span>`;
+const ncl = s => s ? ' ' + s : '';
+
+/* ---------- The pretend app: made-up trip, bags and things only ---------- */
+const TPL = {
+  Basics: ['Toothbrush', 'Phone charger', 'Wallet', 'Book'],
+  Hiking: ['Rain jacket', 'Water bottle', 'Trail snacks', 'Headlamp'],
+  Swimming: ['Swim trunks', 'Goggles', 'Towel'],
+  'Museum day': ['Camera', 'Museum card'],
+  'Dinner out': ['Nice shirt', 'Umbrella']
+};
+const TPLICON = { Basics: 'trips', Hiking: 'hiking', Swimming: 'swim', 'Museum day': 'list', 'Dinner out': 'list' };
+const AREAS = [['Outdoors', ['Hiking', 'Swimming']], ['City', ['Museum day', 'Dinner out']]];
+const BAG = { Backpack: { max: 10 }, 'Day bag': { max: 0 } };
+const ROOM = { 'Rain jacket': ['Hall cupboard', 'top shelf'], Headlamp: ['Hall cupboard', ''], 'Water bottle': ['Kitchen', 'left cupboard'], 'Trail snacks': ['Kitchen', ''],
+  Toothbrush: ['Bathroom', 'mug'], 'Phone charger': ['Study', 'drawer'], Wallet: ['Study', ''], Book: ['Study', 'shelf'] };
+const ROOMS = ['Hall cupboard', 'Kitchen', 'Bathroom', 'Study'];
+const mkLines = () => {
+  const bagOf = { 'Rain jacket': 'Backpack', 'Water bottle': 'Backpack', 'Trail snacks': 'Backpack', Headlamp: 'Backpack' };
+  const out = []; let n = 1;
+  ['Hiking', 'Basics'].forEach(t => TPL[t].forEach(name => out.push({ id: n++, name, tpl: t, bag: bagOf[name] || 'Day bag', qty: name === 'Trail snacks' ? 2 : 1,
+    done: false, aside: false, note: name === 'Rain jacket' ? 'Hiking: take the light one.' : '' })));
+  return out;
+};
+const mkTrip = o => Object.assign({ name: 'Lake weekend', from: '4 Dec', setOff: false, lines: mkLines(), bagsOpen: false, key: false, weighing: null, scale: '', weighed: {},
+  group: 'Into', gb: false, only: false, adding: false, addText: '', addNeeds: '', undo: null, papers: [], papersOpen: false, askRemove: false, menu: null, folded: {},
+  out: {}, stShown: 'bags', stNeeds: '', topStart: true }, o || {});
+const mkCreate = o => Object.assign({ name: '', quick: false, hasDates: false, a: null, b: null, pickingEnd: false, acts: [], transport: '', moreOpen: false, season: 'Summer', seasonHand: false,
+  food: 'Mix', laundry: false, needs: '' }, o || {});
+const START = () => ({ screen: 'home', page: null, sheet: null, home: { nudge: false, bubble: false }, grab: { id: 'swim', done: [], skip: [], msg: '' },
+  c: mkCreate(), t: mkTrip(), tpl: { name: 'Hiking', items: TPL.Hiking.slice(), ask: null }, os: { bought: [], text: '', needs: '' },
+  up: { back: {}, room: {}, menu: null, stopped: false }, synced: false, toast: '' });
+let S = START();
+const set = o => { S = Object.assign(START(), o); };      // full reset, then what the step needs
+const timers = [];
+const later = (fn, ms) => { const h = setTimeout(fn, ms); timers.push(h); return h; };
+const clearTimers = () => { while (timers.length) clearTimeout(timers.pop()); };
+
+const GRABS = [
+  { id: 'swim', label: 'Swim', title: 'Indoor swim', icon: 'swim', col: '--c-home', out: false, items: ['Swim trunks', 'Goggles', 'Swim cap', 'Towel', 'Drink / water bottle', 'Sports watch', 'Flip-flops'] },
+  { id: 'bike', label: 'Bike', title: 'Indoor bike', icon: 'bike', col: '--c-care', out: false, items: ['Headband', 'AirPods', 'Drink / water bottle', 'Towel', 'Sports watch', 'Shoes', 'Heart-rate strap'] },
+  { id: 'run', label: 'Run', title: 'Indoor run', icon: 'run', col: '--c-trips', out: false, items: ['Headband', 'AirPods', 'Drink / water bottle', 'Towel', 'Sports watch', 'Shoes', 'Heart-rate strap'] },
+  { id: 'swim-out', label: 'Swim', title: 'Outdoor swim', icon: 'swim', col: '--c-home', out: true, items: ['Swim trunks', 'Goggles', 'Wetsuit', 'Safety buoy', 'Towel', 'Drink / water bottle', 'Sports watch'] },
+  { id: 'bike-out', label: 'Bike', title: 'Outdoor bike', icon: 'bike', col: '--c-care', out: true, items: ['Helmet', 'Sunglasses', 'Cycling gloves', 'Drink / water bottle', 'Spare tube & pump', 'iPhone', 'Sports watch'] },
+  { id: 'run-out', label: 'Run', title: 'Outdoor run', icon: 'run', col: '--c-trips', out: true, items: ['Shoes', 'Cap', 'Sunglasses', 'Sunscreen', 'iPhone', 'Drink / water bottle', 'Sports watch'] },
+];
+const kilos = g => g < 1000 ? `${Math.round(g)} g` : `${(g / 1000).toFixed(1)} kg`;
+const numKg = n => n === Math.round(n) ? String(n) : n.toFixed(1);
+
+/* ---------- Home and the tab screens ---------- */
+const TABS = [['home', 'Home', 'home', '--c-home'], ['trips', 'Trips', 'trips', '--c-trips'], ['templates', 'Templates', 'list', '--c-tpl'], ['care', 'Care', 'care', '--c-care'],
+  ['inventory', 'Inventory', 'box', '--c-inv'], ['todo', 'To do', 'todo', '--c-todo']];
+function tabBar() {
+  return `<div class="tabs" data-t="tabbar">${TABS.map(([id, nm, ic, col]) => `<button data-act="tab" data-id="${id}" data-t="tab-${id}" class="${S.screen === id ? 'on' : ''}" style="${S.screen === id ? `color:var(${col})` : ''}">${icon(ic)}${nm}${id === 'todo' ? '<span class="badge">2</span>' : ''}</button>`).join('')}</div>`;
+}
+function unpackLines() {
+  const t = S.t;
+  const a = t.lines.filter(l => l.done && !l.aside).map(l => ({ id: l.id, name: l.name, room: (ROOM[l.name] || [''])[0], spot: (ROOM[l.name] || ['', ''])[1], bought: false }));
+  const b = S.os.bought.map((name, i) => ({ id: 'b' + i, name, room: S.up.room['b' + i] || '', spot: '', bought: true }));
+  return a.concat(b);
+}
+function nudgeHTML() {
+  const left = unpackLines().filter(l => !S.up.back[l.id]).length;
+  if (!S.home.nudge || !left) return '';
+  return `<button class="nudge" data-act="nudge" data-t="nudge"><span>${left} ${left === 1 ? 'thing' : 'things'} still in the bag from ${esc(S.t.name)}</span><b>Unpack</b></button>`;
+}
+function homeHTML() {
+  const sync = S.home.bubble ? `<div class="bubble" style="position:static;display:block;width:max-content;margin:4px 0 4px auto" data-t="bubble">In sync \u00B7 today 09:41</div>` : '';
+  return `<div class="scr" data-keep="scr">
+    <div class="hd"><h1 style="color:var(--c-home)" data-t="home-title">Home</h1><div style="text-align:right"><button class="nut" data-act="nut" data-t="nut" aria-label="Settings">${icon('nut')}</button><div class="sub" style="font-size:10px;margin-top:-6px">0.126</div></div></div>
+    <button class="search" data-act="search" data-t="search">${icon('search')}<span>Search things and trips</span></button>
+    ${nudgeHTML()}
+    <div class="sec" style="color:var(--c-home)">Next trip</div>
+    <button class="cd" data-act="countdown" data-t="countdown"><div><span class="big" style="display:block">17</span><small>days</small></div><div class="sp"><b>Lake weekend</b><span class="sub">8 to pack</span></div>${ico('chevR', 20)}</button>
+    <div class="frame" data-t="grab-frame"><div class="fh"><b data-t="grab-heading">Grab and go</b><button class="linkb" data-act="grab-lists" data-t="grab-lists">Grab Lists</button></div>
+      <div class="tiles">${GRABS.map(g => `<button class="tile" data-act="grab" data-id="${g.id}" data-t="grab-${g.id}" style="color:var(${g.col})">${g.out ? `<span class="sunb">${ico('sun', 11)}</span>` : ''}${ico(g.icon, 28)}<span style="color:var(--pink)">${g.label}</span></button>`).join('')}</div></div>
+    <div class="sec" style="color:var(--c-home)" data-t="library">Library<span class="sp"></span><button class="nut" data-act="sync-dot" data-t="sync-dot" style="padding:6px" aria-label="Sync"><span class="dot"></span></button></div>${sync}
+    <div class="card" data-t="library-card">
+      <button class="row" data-act="tab" data-id="trips"><span style="color:var(--c-trips)">${icon('trips')}</span><b style="font-weight:600">Trips</b><span class="sp"></span><span class="sub">3</span></button>
+      <button class="row" data-act="tab" data-id="care"><span style="color:var(--c-care)">${icon('care')}</span><b style="font-weight:600">Things</b><span class="sp"></span><span class="sub">86</span></button>
+      <button class="row" data-act="tab" data-id="templates"><span style="color:var(--c-tpl)">${icon('list')}</span><b style="font-weight:600">Templates</b><span class="sp"></span><span class="sub">5</span></button></div>
+    <button class="mainb" data-act="new-trip" data-t="new-trip" style="background:var(--c-home);border-radius:24px;margin-top:12px">${icon('plus', 'g')}New trip</button>
+    </div>${tabBar()}`;
+}
+function tripsHTML() {
+  return `<div class="scr piles"><div class="hd"><h1 style="color:var(--c-trips)">Trips</h1></div>
+    <div class="sec" style="color:var(--c-trips)">Now <small>0</small></div><div class="empty">No trip under way today.</div>
+    <div class="sec">Coming up <small>1</small></div>
+    <div class="card"><button class="trow" data-act="open-trip" data-t="trip-row"><div class="sp"><b>Lake weekend</b><div class="sub">4 Dec \u2013 6 Dec</div></div><span class="badge2">Packing</span>${ico('chevR', 20)}</button></div></div>${tabBar()}`;
+}
+function templatesHTML() {
+  const row = n => `<button class="row" data-act="open-tpl" data-id="${n}" data-t="tpl-${n.replace(/\W/g, '')}"><span class="ic">${ico(TPLICON[n], 20)}</span><span class="sp"><b style="font-weight:600">${n}</b><br><span class="sub">${TPL[n].length} things</span></span>${ico('chevR', 18)}</button>`;
+  return `<div class="scr"><div class="hd"><h1 style="color:var(--c-tpl)" data-t="tpl-title">Your templates</h1></div>
+    <div class="hd2" style="color:var(--pmuted)">Always packed</div><div class="card">${row('Basics')}</div>
+    ${AREAS.map(([a, l]) => `<div class="hd2" style="color:var(--pmuted)">${a}</div><div class="card">${l.map(row).join('')}</div>`).join('')}
+    <button class="linkb" data-act="areas" style="color:var(--c-tpl);margin-top:8px">Activity areas</button></div>
+    <button class="fab" data-act="new-tpl" data-t="new-tpl">${icon('plus', 'g')}New template</button>${tabBar()}`;
+}
+function settingsHTML() {
+  return `<div class="scr"><button class="hb back" data-act="back-home" style="color:var(--c-home)" data-t="back-home">${ico('chevL', 20)}Home</button>
+    <div class="hd"><h1 style="color:var(--c-set)">Settings</h1></div>
+    <div class="card" style="padding:12px;margin-bottom:12px" data-t="sync-card"><div style="display:flex;align-items:center;gap:8px"><b style="flex:1;font-size:16px">iCloud sync</b><span class="dot"></span><b style="color:#1F8A4C;font-size:14px">In sync</b></div>
+      <div class="sub" style="margin:4px 0 10px" data-t="sync-line">${S.synced ? 'In sync \u00B7 today 09:41' : 'In sync \u00B7 today 09:12'}</div>
+      <button class="mainb" data-act="sync-now" data-t="sync-now" style="background:var(--c-set);border-radius:10px;min-height:42px">Sync now</button></div>
+    <div class="card" data-t="doors">
+      <button class="row" data-act="door" style="min-height:58px"><span class="sp"><b>What\u2019s new</b><br><span class="sub">0.126 \u00B7 Unpack and bag labels</span></span>${ico('chevR', 18)}</button>
+      <button class="row" data-act="door" style="min-height:58px"><span class="sp"><b>How it works</b><br><span class="sub">The whole app in plain words, screen by screen</span></span>${ico('chevR', 18)}</button>
+      <button class="row" data-act="door" style="min-height:58px"><span class="sp"><b>Your first real trip</b><br><span class="sub">In 6 steps, from a backup to the review</span></span>${ico('chevR', 18)}</button></div>
+    <p class="sub" style="text-align:center;margin-top:14px" data-t="version">AMS Packing 0.126</p></div>`;
+}
+
+/* ---------- Grab list ---------- */
+function grabHTML() {
+  const g = GRABS.find(x => x.id === S.grab.id), G = S.grab;
+  const active = g.items.filter(i => !G.skip.includes(i)), inHand = active.filter(i => G.done.includes(i)).length, skipped = G.skip.length;
+  const missing = active.filter(i => !G.done.includes(i));
+  return `<div class="dim"></div><div class="sheet"><div class="scr">
+    <div class="top"><span class="hb" style="color:var(--c-home)">Edit</span><span class="sp"></span><button class="hb fill" style="background:var(--c-home)" data-act="grab-done" data-t="grab-done">Done</button></div>
+    <div class="big" style="color:var(${g.col})">${g.title}</div>
+    <div class="cnt" data-t="grab-count">${inHand} of ${active.length} in hand${skipped ? ' \u00B7 ' + skipped + ' skipped' : ''}</div>
+    <div>${g.items.map((it, i) => `<div class="gl${G.skip.includes(it) ? ' skip' : ''}" data-act="grab-tick" data-id="${i}" data-t="gi-${i}" role="button" tabindex="0">${tkc(G.done.includes(it))}<span class="nm sp">${esc(it)}</span><button class="skipb" data-act="grab-skip" data-id="${i}" aria-label="Leave behind">${icon('nosign', 'g')}</button></div>`).join('')}</div>
+    <button class="mainb" data-act="grab-ready" data-t="grab-ready" style="background:var(${g.col});border-radius:12px;margin-top:12px">Ready to go</button>
+    <button class="quiet" data-act="grab-reset">Start over</button>
+    <p class="help">Tap each thing as you pick it up \u2014 or tap \u2298 to leave something behind, just this once. Ticks and skips clear themselves 6 hours after your last tap.</p></div>
+    ${G.msg ? grabOverlay(G.msg, missing) : ''}</div>`;
+}
+function grabOverlay(kind, missing) {
+  if (kind === 'go') return `<div class="overlay"><div class="box"><div class="ex" style="background:var(--c-trips)">${icon('check', 'g')}</div><h4>All there \u2014 go!</h4><button class="mainb" data-act="grab-msg-close" style="background:var(--c-trips);border-radius:12px;margin-top:10px">Done</button></div></div>`;
+  const said = missing.length <= 3 ? `Still missing: ${missing.join(', ')}.` : `${missing.length} things still missing.`;
+  return `<div class="overlay" data-t="not-yet"><div class="box"><div class="ex">!</div><h4>Not yet</h4><p class="sub" style="font-size:14px">${esc(said)}</p><button class="mainb" data-act="grab-msg-close" style="background:var(--c-home);border-radius:12px;margin-top:10px">Keep packing</button></div></div>`;
+}
+
+/* ---------- Create new trip ---------- */
+const DAYS31 = Array.from({ length: 31 }, (_, i) => i + 1);
+function createNeeds() {
+  const c = S.c, said = [];
+  if (!c.name.trim()) said.push('Give the trip a name.');
+  if (c.quick && !c.acts.length) said.push('Pick a template \u2014 Quick packs only the templates you tick.');
+  if (c.pickingEnd) said.push('Tap the trip\u2019s last day \u2014 the same day again for a day trip.');
+  return said.join(' ');
+}
+function createHTML() {
+  const c = S.c, nights = c.b != null ? c.b - c.a : 0;
+  const lo = c.a == null ? 0 : c.a, hi = c.b == null ? lo : c.b;
+  const dayBtn = d => {
+    const inb = c.a != null && d >= lo && d <= hi, isEnd = c.a != null && (d === lo || d === hi), solo = c.a != null && lo === hi;
+    return `<button data-act="day" data-id="${d}" data-t="day-${d}" class="${inb && !isEnd ? 'band' : ''}${isEnd ? ' end' : ''}${isEnd && !solo ? (d === lo ? ' e1' : ' e2') : ''}${isEnd && solo ? ' solo' : ''}">${d}</button>`;
+  };
+  const sum = !c.hasDates ? 'No dates' : c.pickingEnd ? 'Now tap the last day' : `${lo} Dec \u2013 ${hi} Dec \u00B7 ${nights === 1 ? '1 night' : nights + ' nights'}`;
+  const food = { 'Self-sufficient': 1, 'Eating out': 1, Mix: 1 };
+  const always = 'Basics';
+  const note = 'Quick packs only what you tick \u2014 not ' + always + ', no Plane or RV template. Plane still turns on the airport checks.';
+  const tnote = 'Leave both off for an ordinary trip. Plane adds the airport checks.';
+  const sumMore = [c.season, c.food, c.laundry ? 'Laundry, 4 nights' : 'No laundry'].join(' \u00B7 ');
+  const pills = (l) => l.map(n => `<button class="pill${c.acts.includes(n) ? ' on' : ''}" data-act="tpl" data-id="${n}" data-t="pick-${n.replace(/\W/g, '')}">${ico(TPLICON[n], 16)}${n}</button>`).join('');
+  return `<div class="dim"></div><div class="sheet" data-t="create-sheet"><div class="scr" data-keep="scr" style="padding-bottom:130px">
+    <div class="top"><button class="hb" style="color:var(--c-home)" data-act="create-cancel" data-t="create-cancel">Cancel</button><span class="t">New trip</span><button class="hb fill" style="background:var(--c-home)" data-act="create" data-t="create-top">Create</button></div>
+    <input class="field${/name/.test(c.needs) ? ' bad' : ''}" style="font-weight:600;font-size:19px;margin:6px 0 10px" placeholder="Name your trip" value="${esc(c.name)}" data-in="name" data-t="name" autocomplete="off">
+    <div class="seg" data-t="kind"><button class="${!c.quick ? 'on' : ''}" data-act="kind" data-id="full" data-t="kind-full">Full trip</button><button class="${c.quick ? 'on' : ''}" data-act="kind" data-id="quick" data-t="kind-quick">Quick</button></div>
+    <div class="note" data-t="kind-note">${esc(note)}</div>
+    <div class="hd2" style="color:var(--c-home)">Dates</div>
+    <div class="cal" data-t="cal"><div class="mt">December 2026</div><div class="g">${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => `<span class="wd">${d}</span>`).join('')}<span></span>${DAYS31.map(dayBtn).join('')}</div></div>
+    <div class="calsum"><span style="${c.hasDates && !c.pickingEnd ? '' : 'color:var(--pmuted)'}" data-t="cal-sum">${sum}</span><span class="sp"></span>${c.hasDates ? `<button class="linkb" style="color:var(--pmuted)" data-act="clear-dates" data-t="clear-dates">Clear dates</button>` : ''}</div>
+    ${AREAS.map(([a, l]) => `<div class="hd2" style="color:var(--c-tpl)">${a}</div><div class="pills">${pills(l)}</div>`).join('')}
+    <div class="hd2" style="color:var(--c-home)">Travelling by</div>
+    <div class="pills" data-t="transport"><button class="pill home${c.transport === 'Plane' ? ' on' : ''}" data-act="transport" data-id="Plane" data-t="t-plane">${ico('plane', 16)}Plane</button><button class="pill home${c.transport === 'RV' ? ' on' : ''}" data-act="transport" data-id="RV" data-t="t-rv">${ico('rv', 16)}RV</button></div>
+    <div class="note">${esc(tnote)}</div>
+    ${c.transport === 'Plane' ? `<div class="hd2" style="color:var(--c-home)" data-t="flights">Flights and stay</div><div class="card"><div class="row" style="cursor:default"><b style="font-weight:600">Out</b></div><div class="row" style="cursor:default"><b style="font-weight:600">Home</b></div></div>` : ''}
+    <button class="row" style="padding:0;margin-top:10px" data-act="more" data-t="more"><b style="color:var(--c-home)">More choices</b><span class="sp"></span><span class="${c.moreOpen ? '' : 'sub'}">${c.moreOpen ? '' : esc(sumMore)}</span>${ico(c.moreOpen ? 'drop' : 'chevR', 16)}</button>
+    ${c.moreOpen ? `<div data-t="more-body"><div class="hd2">Season</div><div class="pills">${['Summer', 'Winter'].map(s => `<button class="pill home${c.season === s ? ' on' : ''}" data-act="season" data-id="${s}">${ico(s === 'Winter' ? 'snow' : 'sun', 16)}${s}</button>`).join('')}</div>
+      <div class="hd2">Food</div><div class="pills">${Object.keys(food).map(s => `<button class="pill home${c.food === s ? ' on' : ''}" data-act="food" data-id="${s}">${s}</button>`).join('')}</div>
+      <div class="row" style="padding:0;cursor:default"><b style="font-weight:600">Laundry</b><span class="sp"></span><button class="sw${c.laundry ? ' on' : ''}" data-act="laundry" aria-label="Laundry"></button></div></div>` : ''}
+  </div><div class="foot">${c.needs ? `<div class="need" data-t="needs">${esc(c.needs)}</div>` : ''}<button class="mainb" data-act="create" data-t="create" style="background:var(--c-home);border-radius:12px">Create trip</button></div></div>`;
+}
+function doCreate() {
+  const c = S.c, needs = createNeeds();
+  if (needs) { c.needs = needs; renderStage(); emit('create-needs', needs); if (!c.name.trim()) { const f = document.querySelector('#stage [data-in="name"]'); if (f) f.focus(); } return; }
+  c.needs = '';
+  const lines = [], add = t => TPL[t].forEach(name => lines.push({ id: lines.length + 1, name, tpl: t, bag: 'Day bag', qty: 1, done: false, aside: false, note: '' }));
+  if (!c.quick) add('Basics');
+  c.acts.forEach(add);
+  const from = c.hasDates ? `${Math.min(c.a, c.b)} Dec` : '';
+  S.t = mkTrip({ name: c.name.trim(), from, lines });
+  S.sheet = null; S.page = 'trip';
+  renderStage(); emit('created', { quick: c.quick });
+}
+
+/* ---------- Trip ---------- */
+function progress() {
+  const L = S.t.lines, act = L.filter(l => !l.aside), done = act.filter(l => l.done).length;
+  return { total: act.length, done, aside: L.length - act.length, left: act.length - done };
+}
+function bagLoads() {
+  const t = S.t, names = []; t.lines.forEach(l => { if (!names.includes(l.bag)) names.push(l.bag); });
+  return names.map(n => { const g = t.weighed[n] || 0, mx = (BAG[n] || { max: 0 }).max; return { name: n, grams: g, max: mx, items: t.lines.filter(l => l.bag === n).length, over: mx > 0 && g / 1000 > mx }; });
+}
+function bagStatus(b) { return b.over ? 'over' : (b.max > 0 && b.grams / 1000 >= b.max * 0.9) ? 'close' : 'fine'; }
+const BAGCOL = { over: 'var(--c-todo)', close: 'var(--c-care)', fine: 'var(--c-home)' };
+function bagRowHTML(b, n, id, openAct) {
+  const w = b.grams ? kilos(b.grams) + ' weighed' : '';
+  const right = b.grams === 0 ? (b.items === 0 ? 'nothing in it yet' : 'Tap to weigh') : b.max > 0 ? `${w} / ${numKg(b.max)} kg` : `${w} \u00B7 no max`;
+  const part = b.max > 0 ? Math.min(1, b.grams / 1000 / b.max) : 0;
+  return `<button class="row bagrow" style="display:block;min-height:0" data-act="${openAct}" data-id="${esc(b.name)}" data-t="${id}"><div class="l1"><b>${esc(b.name)}</b><span class="${b.over ? 'over' : ''}">${right}</span></div>
+    ${b.max > 0 && b.grams > 0 ? `<div class="meter"><i style="width:${Math.max(16, part * 100)}%;background:${BAGCOL[bagStatus(b)]}"></i></div>` : ''}
+    ${b.grams > 0 ? `<div class="sub" style="font-size:12px">The things in it add up to 0 g</div>` : ''}</button>`;
+}
+function weighEditor(b, station) {
+  const t = S.t;
+  return `<div class="wrow"><input class="field" inputmode="decimal" placeholder="kg on the scale" value="${esc(t.scale)}" data-in="scale" data-t="scale-field" autocomplete="off">
+    <button class="sbtn" style="background:var(--c-trips)" data-act="${station ? 'st-save' : 'save-weight'}" data-t="scale-save">Save</button>${b.grams ? `<button class="linkb" style="color:var(--pmuted)" data-act="clear-weight" data-id="${esc(b.name)}">Clear</button>` : ''}</div>
+    ${station && t.stNeeds ? `<div class="need" style="text-align:left;padding:0 12px 8px" data-t="st-needs">${esc(t.stNeeds)}</div>` : ''}`;
+}
+function topGroup() {
+  const t = S.t, p = progress(), loads = bagLoads(), anyBag = t.lines.length > 0, total = loads.reduce((s, b) => s + b.grams, 0), over = loads.filter(b => b.over).length;
+  const rows = [];
+  if (!t.setOff && p.done === 0) rows.push(`<button class="row" data-act="soon" data-t="row-start"><span class="sp"><b style="font-weight:600">Before you start</b></span><span class="sub">2 to buy \u00B7 1 to prepare</span>${ico('chevR', 16)}</button>`);
+  if (!t.setOff) rows.push(`<div class="row" style="cursor:default" data-t="row-weather"><span class="sp"><b style="font-weight:600">Where is this trip?</b></span><button class="sbtn" style="background:var(--c-home);min-height:32px" data-act="soon">Weather</button></div>`);
+  if (anyBag) {
+    rows.push(`<button class="row" data-act="bags" data-t="row-bags" style="min-height:44px"><b style="font-weight:600">Bags</b>${over ? `<span class="overb">${over} over</span>` : ''}<span class="sp"></span><span class="sub">${kilos(total)}</span>${ico('chevR', 14, `style="transform:rotate(${t.bagsOpen ? 90 : 0}deg)"`)}</button>`);
+    if (t.bagsOpen) {
+      rows.push(`<div data-t="bags-body"><div style="padding:2px 12px 0"><button class="linkb" style="color:var(--pmuted)" data-act="key" data-t="key-btn">(i) What the colours mean</button></div>
+        ${t.key ? `<div class="bp" style="padding:0 12px 8px"><div class="krow"><i style="background:var(--c-home)"></i><b>Blue</b> well within its max</div><div class="krow"><i style="background:var(--c-care)"></i><b>Orange</b> nine tenths of its max or more</div><div class="krow"><i style="background:var(--c-todo)"></i><b>Red, \u201Cover\u201D</b> more than its max</div><div class="note">No bar: no max set. Set one in Care \u2192 Bags. Tap a bag for the luggage scale, and a photo of it packed. Lost bag? under a bag: everything a baggage desk asks for.</div></div>` : ''}
+        ${loads.map((b, n) => bagRowHTML(b, n, 'bag-' + n, 'bag') + (t.weighing === b.name ? weighEditor(b, false) : '') + `<div style="padding:0 12px 6px"><button class="linkb" style="color:var(--c-trips);font-size:12px" data-act="soon">Lost bag?</button></div>`).join('')}</div>`);
+    }
+  }
+  return rows.length ? `<div class="gr" data-t="top-group">${rows.join('')}</div>` : '';
+}
+function papersHTML() {
+  const t = S.t, P = t.papers;
+  if (!P.length && !t.papersOpen) return `<button class="row card" data-act="papers-open" data-t="papers-open" style="color:var(--c-trips);margin-bottom:8px;gap:6px">${ico('plus', 15)}<b>Add trip papers</b><span class="sub" style="font-weight:400">boarding pass, hotel</span></button>`;
+  const rows = P.map((p, n) => `<div class="pp"><span class="th">${icon('doc')}</span><div class="sp"><b>${esc(p.title)}</b><small>${p.day}</small></div><button class="linkb" style="color:var(--pmuted)" data-act="paper-remove" data-id="${n}" data-t="paper-remove-${n}">Remove</button></div>`).join('');
+  const ask = t.askRemove ? `<div class="ask" data-t="ask-paper"><b>Remove paper 1?</b><div class="ab"><button class="sbtn" style="background:var(--pmuted)" data-act="paper-keep" data-t="paper-keep">Keep it</button><button class="sbtn" style="background:var(--c-todo)" data-act="paper-yes" data-t="paper-yes">Remove paper</button></div></div>` : '';
+  return `<div class="card" style="margin-bottom:8px" data-t="papers"><button class="row" data-act="papers-fold" style="min-height:40px"><b style="color:var(--c-trips);font-size:16px">Papers</b><span class="sp"></span>${ico('chevR', 14, `style="transform:rotate(${t.papersOpen ? 90 : 0}deg);color:var(--c-trips)"`)}</button>
+    ${t.papersOpen ? `${rows}${ask}<div style="display:flex;flex-wrap:wrap;padding:0 0 12px 12px"><button class="stbtn" data-act="soon">${P.length ? 'Take another' : 'Take a photo'}</button><button class="stbtn" data-act="soon">${P.length ? 'Choose another' : 'Choose a photo'}</button><button class="stbtn" data-act="add-pdf" data-t="add-pdf">Add a PDF</button></div>` : ''}</div>`;
+}
+function stationState() {
+  const t = S.t, loads = bagLoads(), p = progress();
+  const st = { bags: loads.every(b => t.out[b.name]) ? 'done' : 'open', pack: p.left === 0 ? 'done' : 'open', weigh: loads.every(b => b.grams > 0) ? 'done' : 'open', tags: 'open', photos: 'open', ready: 'open' };
+  return st;
+}
+const STN = [['bags', 'Bags', 'Bags out'], ['pack', 'Pack', 'Pack'], ['weigh', 'Weigh', 'Weigh'], ['tags', 'Tag', 'Tags'], ['photos', 'Photo', 'Photos'], ['ready', 'Ready', 'Ready']];
+function chipsHTML(prefix, here, wrap) {
+  const st = stationState();
+  return STN.map(([id, chip]) => `<button class="chip${st[id] === 'done' ? ' done' : ''}${here === id ? ' here' : ''}" data-act="${prefix}" data-id="${id}" data-t="${prefix}-${id}">${chip}</button>`).join('');
+}
+function tripGroups() {
+  const t = S.t;
+  const key = l => t.group === 'Template' ? l.tpl : l.bag;
+  const names = []; t.lines.forEach(l => { if (!names.includes(key(l))) names.push(key(l)); });
+  return names.map(n => ({ name: n, lines: t.lines.filter(l => key(l) === n && (!t.only || (!l.done && !l.aside))) })).filter(g => g.lines.length);
+}
+function lineHTML(l) {
+  const t = S.t, bag = t.group === 'Template' ? `<small>${esc(l.bag)}</small>` : '';
+  const mark = `<span class="tm">${ico(TPLICON[l.tpl] || 'list', 15)}</span>`;
+  const lead = l.aside ? `<span class="no">${icon('nosign', 'g')}</span>` : tkc(l.done);
+  return `<div class="ln${l.done && !l.aside ? ' dn' : ''}${l.aside ? ' as' : ''}" data-act="line" data-id="${l.id}" data-hold="${l.id}" data-t="line-${l.id}" role="button" tabindex="0">${lead}<span class="nm">${esc(l.name)}${l.bought ? '<br><span class="bt">Bought on site</span>' : ''}</span>${l.qty > 1 ? `<small style="font-weight:600">\u00D7${l.qty}</small>` : ''}${mark}${bag}</div>`;
+}
+function tripHTML() {
+  const t = S.t, p = progress(), all = p.total > 0 && p.left === 0;
+  const mins = Math.max(1, Math.round(p.left * 45 / 60));
+  const shown = `${p.done} of ${p.total} packed` + (p.aside ? ` \u00B7 ${p.aside} set aside` : '') + (all ? '' : ` \u00B7 ${p.left} left` + (t.setOff ? '' : ` \u00B7 about ${mins} min`)) + (!t.setOff && t.from ? ` \u00B7 from ${t.from}` : '');
+  const groups = tripGroups();
+  const steps = ['Plan', 'Pack', 'On site', 'Review', 'Refine'], cur = t.setOff ? 2 : 1;
+  const bags = bagLoads();
+  const allFolded = groups.length > 0 && groups.every(g => t.folded[g.name]);
+  const door = (id, title, says, act) => `<button class="door" data-act="${act}" data-t="${id}"><span class="sp"><b>${title}</b><small>${says}</small></span>${ico('chevR', 20)}</button>`;
+  const up = unpackLines(), back = up.filter(l => S.up.back[l.id]).length;
+  const onsiteSays = (S.os.bought.length ? `${S.os.bought.length} bought \u00B7 ` : '') + 'home 0/' + (p.total + S.os.bought.length);
+  const unp = back === up.length ? `Everything is back \u00B7 ${up.length}` : `${back}/${up.length} back \u00B7 ${up.length - back} still in the bag`;
+  const menuL = t.menu != null ? t.lines.find(l => l.id === t.menu) : null;
+  return `<div class="scr nobar" data-keep="scr">
+    <div class="top"><button class="hb back" style="color:var(--c-trips)" data-act="trip-back" data-t="trip-back">${ico('chevL', 20)}Trips</button><span class="sp"></span>
+      <button class="nut" style="color:var(--c-trips)" data-act="soon" aria-label="Trip settings">${ico('pen', 22)}</button>
+      ${t.setOff ? `<button class="hb out" style="color:var(--c-tpl)" data-act="soon">Review</button>` : ''}
+      <button class="hb fill" style="background:var(--c-trips)" data-act="trip-back" data-t="trip-done">Done</button></div>
+    <div class="big" style="color:var(--c-trips)" data-t="trip-name">${esc(t.name)}</div>
+    <div class="status"><span class="st${all ? ' all' : ''}" data-t="progress">${shown}</span>${!all && !t.setOff ? `<button class="cup" data-act="soon" aria-label="Take a break">${icon('cup', 'g')}</button>` : ''}</div>
+    <div class="loop" data-t="loop">${steps.map((s, i) => `<button class="${i === cur ? 'on' : i < cur ? 'dn' : ''}" data-act="soon">${s}</button>`).join('')}</div>
+    ${!t.setOff && bags.length ? `<div class="stn" data-t="stations"><small>Stations</small>${chipsHTML('stn', null)}</div>` : ''}
+    ${topGroup()}
+    ${papersHTML()}
+    ${t.setOff ? door('door-onsite', 'On site', esc(onsiteSays), 'onsite-open') : ''}
+    ${t.setOff && up.length ? door('door-unpack', 'Unpack', unp, 'unpack-open') : ''}
+    ${p.total ? `<div class="segb"><div class="s2" data-t="showrow"><button class="${!t.only ? 'on' : ''}" data-act="only" data-id="0" data-t="show-all">Everything</button><button class="${t.only ? 'on' : ''}" data-act="only" data-id="1" data-t="show-left">${p.left > 0 ? 'Still to pack \u00B7 ' + p.left : 'Still to pack'}</button></div><span class="sp"></span><button class="linkb" style="color:var(--c-trips)" data-act="fold-all" data-t="fold-all">Fold all</button></div>` : ''}
+    ${groups.map(g => { const act = g.lines.filter(l => !l.aside), dn = act.filter(l => l.done).length, full = act.length > 0 && dn === act.length, open = !t.folded[g.name];
+      return `<div class="gh${full ? ' dn' : ''}"><button class="fold${open ? ' open' : ''}" data-act="fold" data-id="${esc(g.name)}">${ico('chevR', 16)}<span>${esc(g.name)}</span></button><span class="ct">${dn}/${act.length}</span><span class="sp"></span><button class="tk round${full ? ' on' : ''}" data-act="tickall" data-id="${esc(g.name)}" data-t="tickall-${esc(g.name).replace(/\W/g, '')}" aria-label="Tick all in ${esc(g.name)}">${icon('check', 'g')}</button></div>${open ? `<div class="lines">${g.lines.map(lineHTML).join('')}</div>` : ''}`; }).join('')}
+    ${!groups.length && p.total ? `<p class="sub" style="text-align:center;margin-top:16px">Everything is packed. Everything shows the whole list.</p>` : ''}
+    </div>
+    ${t.undo ? `<div class="undo" data-t="undo"><span class="sp">${esc(t.undo.said)}</span><button data-act="undo" data-t="undo-btn">Undo</button></div>` : ''}
+    ${t.adding ? `<div class="addrow" data-t="addrow"><div class="r"><input class="field" placeholder="Add a thing to this trip" value="${esc(t.addText)}" data-in="add" data-t="add-field" autocomplete="off"><button class="sbtn" style="background:var(--c-trips)" data-act="add-go" data-t="add-go">Add</button>${t.addText.trim() ? `<button class="sbtn" style="background:none;color:var(--c-trips);border:1.4px solid var(--c-trips)" data-act="add-bought">Bought on site</button>` : ''}<button class="xb" data-act="add-close" aria-label="Close">${icon('cross', 'g')}</button></div>${t.addNeeds ? `<div class="need" style="text-align:left;margin:6px 0 0" data-t="add-needs">${esc(t.addNeeds)}</div>` : ''}</div>` : ''}
+    <div class="bar2"><div class="glass"><button data-act="soon" aria-label="Share">${icon('share', 'g')}</button><button data-act="soon" aria-label="Pack by voice">${icon('mic', 'g')}</button><button class="gb" data-act="gb" data-t="groupby">Group by ${t.group} ${ico('drop', 16)}</button></div>
+      ${!t.adding ? `<button class="addb" data-act="add-open" data-t="add-open" aria-label="Add a thing to this trip">${icon('plus', 'g')}Add</button>` : ''}</div>
+    ${t.gb ? `<div class="drop" data-t="gb-menu">${['When', 'Into', 'From where', 'Category', 'Section', 'Template', 'Whose it is'].map(o => `<button class="${t.group === o ? 'on' : ''}" data-act="gb-pick" data-id="${o}" data-t="gb-${o.replace(/\W/g, '')}">${t.group === o ? icon('check', 'g') : '<span style="width:20px"></span>'}${o}</button>`).join('')}</div>` : ''}
+    ${menuL ? lineMenuHTML(menuL) : ''}`;
+}
+function lineMenuHTML(l) {
+  return `<div class="menu" style="left:70px;top:${S.t.menuY || 300}px" data-t="line-menu"><button data-act="m-note" data-id="${l.id}" ${l.note ? '' : 'disabled'}>${l.note ? 'Show note' : 'No note'}</button><button data-act="m-open" data-id="${l.id}" ${l.bought ? 'disabled' : ''}>Open thing</button><hr>
+    <button data-act="m-tick" data-id="${l.id}" ${l.aside ? 'disabled' : ''}>${l.done && !l.aside ? 'Untick' : 'Tick'}</button><button data-act="m-aside" data-id="${l.id}" data-t="m-aside">${l.aside ? 'Take it this time' : 'Not this time'}</button></div>`;
+}
+
+/* ---------- Packing Stations sheet ---------- */
+function stationsHTML() {
+  const t = S.t, loads = bagLoads(), st = stationState(), sh = t.stShown;
+  let body = '';
+  if (sh === 'bags') body = `<p class="lead">Lay every bag out where you pack, and tick it as it comes out.</p>${loads.map((b, n) => `<button class="tr" style="width:100%;border:0;background:none;text-align:left;cursor:pointer" data-act="bag-out" data-id="${esc(b.name)}" data-t="day-bag-${n}">${tkc(!!t.out[b.name])}<span class="nm"><b style="font-weight:500">${esc(b.name)}</b><br><small>${b.items} things</small></span></button>`).join('')}
+    ${st.bags === 'done' ? `<p class="green" data-t="bags-said">All bags are out.</p>` : ''}<button class="stbtn" style="margin-left:0" data-act="soon">${ico('plus', 16)}Add a bag</button>`;
+  else if (sh === 'weigh') body = `<p class="lead">One bag after another: hang it on the luggage scale and type what it says.</p>${loads.map((b, n) => `<div class="card" style="margin-bottom:8px">${bagRowHTML(b, n, 'day-weigh-' + n, 'st-bag')}${t.weighing === b.name ? weighEditor(b, true) : ''}</div>`).join('')}`;
+  else if (sh === 'ready') {
+    const left = STN.filter(([id]) => id !== 'ready' && st[id] !== 'done').length;
+    body = `${STN.filter(([id]) => id !== 'ready').map(([id, , nm]) => `<div class="tr"><span class="nm">${nm}</span><small>${st[id] === 'done' ? 'done' : 'open'}</small></div>`).join('')}
+      ${left ? `<p class="sub" style="font-weight:600;margin-top:10px" data-t="ready-left">Not yet \u2014 ${left} station${left === 1 ? '' : 's'} left.</p>` : `<p class="big" style="color:var(--c-trips);font-size:22px" data-t="ready-go">Ready to go</p>`}`;
+  } else body = `<p class="note">Practice copy: this station is not drawn here.</p>`;
+  return `<div class="dim"></div><div class="sheet" data-t="stations-sheet"><div class="scr">
+    <div class="top"><span class="sp"></span><button class="hb fill" style="background:var(--c-trips)" data-act="st-done" data-t="st-done">Done</button></div>
+    <div class="big" style="color:var(--c-trips);font-size:28px">Packing Stations</div><div class="sub" style="margin-bottom:8px">${esc(t.name)}</div>
+    <div class="pills" style="margin-bottom:8px">${chipsHTML('st-go', sh)}</div>${body}</div></div>`;
+}
+
+/* ---------- On site, Unpack, a template ---------- */
+function onsiteHTML() {
+  const o = S.os, p = progress();
+  return `<div class="dim"></div><div class="sheet" data-t="onsite-sheet"><div class="scr" data-keep="scr">
+    <div class="top"><span class="sp"></span><button class="hb fill" style="background:var(--c-trips)" data-act="sheet-done" data-t="onsite-done">Done</button></div>
+    <div class="big" style="color:var(--c-trips)">On site</div>
+    <div class="hd2" style="color:var(--c-trips);font-size:17px">Bought on site</div>
+    ${o.bought.length ? o.bought.map(n => `<div class="tr"><span class="nm">${esc(n)}</span></div>`).join('') : '<p class="sub" data-t="bought-none">Nothing bought yet.</p>'}
+    <div style="display:flex;gap:8px;margin-top:6px"><input class="field" style="font-size:16px" placeholder="What did you buy?" value="${esc(o.text)}" data-in="bought" data-t="bought-field" autocomplete="off"><button class="sbtn" style="background:var(--c-trips);min-height:44px" data-act="bought-add" data-t="bought-add">Bought on site</button></div>
+    ${o.needs ? `<div class="need" style="text-align:left;margin-top:6px" data-t="bought-needs">${esc(o.needs)}</div>` : ''}
+    <div class="hd2" style="font-size:17px">Left on site</div><div class="hd2" style="color:var(--c-care);font-size:17px">Maintenance notes</div>
+    <div class="hd2" style="color:var(--c-trips);font-size:17px">Pack to go home</div><div style="font-weight:600;margin-bottom:6px">${p.done} of ${p.total} packed</div>
+    <button class="mainb" style="background:var(--c-trips);border-radius:12px" data-act="soon">Pack to go home ${ico('chevR', 18)}</button></div></div>`;
+}
+function unpackHTML() {
+  const L = unpackLines(), left = L.filter(l => !S.up.back[l.id]).length;
+  const rooms = ROOMS.filter(r => L.some(l => l.room === r)); if (L.some(l => !l.room)) rooms.push('No room yet');
+  const grp = r => L.filter(l => (l.room || 'No room yet') === r);
+  return `<div class="dim"></div><div class="sheet" data-t="unpack-sheet"><div class="scr" data-keep="scr">
+    <div class="top"><span class="sp"></span><button class="hb fill" style="background:var(--c-trips)" data-act="sheet-done" data-t="unpack-done">Done</button></div>
+    <div class="big" style="color:var(--c-trips)">Unpack</div>
+    <div class="cnt" style="font-size:14px;${left ? 'color:var(--pmuted)' : 'color:var(--c-trips)'}" data-t="unpack-left">${left === 0 ? `Everything is back \u00B7 ${L.length}` : `Still in the bag \u00B7 ${left}`}</div>
+    ${rooms.map((r, gi) => { const g = grp(r), dn = g.filter(l => S.up.back[l.id]).length;
+      return `<div class="gh" style="margin-top:10px"><b>${r}</b><span class="ct">${dn}/${g.length}</span><span class="sp"></span><button class="linkb" style="color:var(--c-trips)" data-act="room-all" data-id="${r}" data-t="all-back-${gi}">All back</button></div>
+      ${g.map(l => `<div class="tr" style="position:relative"><button class="tr" style="border:0;flex:1;background:none;text-align:left;cursor:pointer" data-act="unpack-tick" data-id="${l.id}" data-t="up-${l.id}">${tkc(!!S.up.back[l.id])}<span class="nm"><span>${esc(l.name)}</span>${l.spot ? `<br><small>${esc(l.spot)}</small>` : ''}${l.bought ? '<br><small class="green">Bought on site</small>' : ''}</span></button>
+        ${l.bought && !l.room ? `<button class="linkb" style="color:var(--c-inv);font-size:12px" data-act="room-menu" data-id="${l.id}" data-t="give-room">Give it a room</button>` : ''}
+        ${S.up.menu === l.id ? `<div class="menu" style="right:0;top:34px" data-t="room-menu">${ROOMS.map(r2 => `<button data-act="room-pick" data-id="${l.id}" data-room="${r2}" data-t="room-${r2.replace(/\W/g, '')}">${r2}</button>`).join('')}</div>` : ''}</div>`).join('')}`; }).join('')}
+    ${left > 0 && !S.up.stopped ? `<button class="quiet" style="color:var(--c-trips);margin-top:14px" data-act="stop-remind" data-t="stop-remind">Stop reminding me on Home</button>` : ''}
+    </div></div>`;
+}
+function tplHTML() {
+  const T = S.tpl;
+  return `<div class="dim"></div><div class="sheet" data-t="tpl-sheet"><div class="scr" data-keep="scr">
+    <div class="top"><button class="hb" style="color:var(--c-tpl)" data-act="sheet-done">Cancel</button><span class="sp"></span><button class="hb fill" style="background:var(--c-tpl)" data-act="sheet-done">Done</button></div>
+    <div class="big" style="color:var(--c-tpl)">${esc(T.name)}</div>
+    <div class="hd2" style="color:var(--c-tpl)">Reminders</div><button class="stbtn" style="margin-left:0;color:var(--c-tpl);border-color:var(--c-tpl)" data-act="soon">Add a reminder</button>
+    <div class="hd2" style="color:var(--c-tpl)">Things</div>
+    ${T.ask ? `<div class="ask" data-t="ask-tpl"><b>Take \u201C${esc(T.ask)}\u201D off \u201C${esc(T.name)}\u201D?</b><div class="sub">It stays in Your things and on your other templates.</div><div class="ab"><button class="sbtn" style="background:var(--pmuted)" data-act="tpl-keep" data-t="tpl-keep">Keep it</button><button class="sbtn" style="background:var(--c-todo)" data-act="tpl-off" data-t="tpl-off">Take it off</button></div></div>` : ''}
+    <div class="card">${T.items.map((n, i) => `<div class="row" style="cursor:default"><span class="sp">${esc(n)}</span><button class="xb" data-act="tpl-x" data-id="${esc(n)}" data-t="tpl-x-${i}" aria-label="Take ${esc(n)} off">${icon('cross', 'g')}</button></div>`).join('')}</div>
+    <p class="note" style="margin-top:8px">How many and Note: blank means the same as the thing itself.</p></div></div>`;
+}
+
+/* ---------- Stage ---------- */
+function renderStage() {
+  const st = document.getElementById('stage');
+  const keyOf = e => e.closest('.sheet') ? 'sh:' + S.sheet : 'pg:' + (S.page || S.screen), prevKeys = renderStage.keys || {};
+  const scrolls = renderStage.scrolls = renderStage.scrolls || {};
+  st.querySelectorAll('[data-keep]').forEach(e => { if (e.dataset.k) scrolls[e.dataset.k] = e.scrollTop; });
+  const ae = document.activeElement, inId = ae && st.contains(ae) ? ae.dataset.in : null, sel = inId ? [ae.selectionStart, ae.selectionEnd] : null;
+  let body;
+  if (S.screen === 'home') body = homeHTML(); else if (S.screen === 'trips') body = tripsHTML(); else if (S.screen === 'templates') body = templatesHTML();
+  else if (S.screen === 'settings') body = settingsHTML(); else body = `<div class="scr"><div class="hd"><h1 style="color:var(--c-set)">${S.screen === 'care' ? 'Care' : S.screen === 'inventory' ? 'Inventory' : 'To do'}</h1></div><p class="sub">Practice copy: this tab is not drawn here.</p></div>${tabBar()}`;
+  let over = '';
+  if (S.page === 'trip') body = tripHTML();
+  if (S.sheet === 'create') over = createHTML(); else if (S.sheet === 'grab') over = grabHTML(); else if (S.sheet === 'stations') over = stationsHTML();
+  else if (S.sheet === 'onsite') over = onsiteHTML(); else if (S.sheet === 'unpack') over = unpackHTML(); else if (S.sheet === 'tpl') over = tplHTML();
+  st.innerHTML = `<div class="sbar"><span>9:41</span><span class="bat"></span></div>${body}${over}${S.toast ? `<div class="toast">${esc(S.toast)}</div>` : ''}`;
+  renderStage.keys = {};
+  st.querySelectorAll('[data-keep]').forEach(e => { const k = keyOf(e); e.dataset.k = k; renderStage.keys[k] = 1; e.scrollTop = prevKeys[k] ? (scrolls[k] || 0) : 0; });
+  if (inId) { const nf = st.querySelector(`[data-in="${inId}"]`); if (nf) { nf.focus(); try { nf.setSelectionRange(sel[0], sel[1]); } catch (e) {} } }
+  markTarget();
+}
+function toast(t) { S.toast = t; renderStage(); clearTimeout(toast.h); toast.h = setTimeout(() => { S.toast = ''; renderStage(); }, 2400); }
+const soon = () => toast('Practice copy: not drawn here.');
+
+/* ---------- Actions inside the pretend iPhone ---------- */
+function tickLine(l) { if (l.aside) return; l.done = !l.done; }
+const stage = document.getElementById('stage');
+let holdT = null, held = false, ptype = 'mouse';
+stage.addEventListener('pointerdown', ev => {
+  held = false; ptype = ev.pointerType; if (ev.button !== 0) return;
+  const el = ev.target.closest('[data-hold]'); if (!el) return;
+  const y = ev.clientY - stage.getBoundingClientRect().top;
+  holdT = setTimeout(() => { held = true; openMenu(+el.dataset.hold, y); }, 520);
+});
+['pointerup', 'pointerleave', 'pointercancel'].forEach(n => stage.addEventListener(n, () => { clearTimeout(holdT); }));
+stage.addEventListener('contextmenu', ev => { const el = ev.target.closest('[data-hold]'); if (!el) return; ev.preventDefault(); clearTimeout(holdT); held = ptype !== 'mouse'; openMenu(+el.dataset.hold, ev.clientY - stage.getBoundingClientRect().top); });
+function openMenu(id, y) { const sc = stage.getBoundingClientRect().height / 760; S.t.menu = id; S.t.menuY = Math.max(60, Math.min(520, y / sc)); renderStage(); emit('menu-open'); }
+stage.addEventListener('input', ev => {
+  const k = ev.target.dataset.in; if (!k) return; const v = ev.target.value;
+  if (k === 'name') { S.c.name = v; if (S.c.needs) S.c.needs = createNeeds(); if (v.trim()) emit('name', v); renderStage(); }
+  else if (k === 'scale') S.t.scale = v;
+  else if (k === 'add') { S.t.addText = v; S.t.addNeeds = ''; renderStage(); }
+  else if (k === 'bought') { S.os.text = v; S.os.needs = ''; renderStage(); }
+});
+stage.addEventListener('keydown', ev => {
+  if (ev.key !== 'Enter') return; const k = ev.target.dataset && ev.target.dataset.in; if (!k) return;
+  if (k === 'add') act('add-go'); else if (k === 'bought') act('bought-add'); else if (k === 'scale') act(S.sheet === 'stations' ? 'st-save' : 'save-weight');
+});
+stage.addEventListener('click', ev => {
+  if (held) { held = false; return; }
+  const el = ev.target.closest('[data-act]');
+  if (!el) { let ch = false; if (S.t.menu != null) { S.t.menu = null; ch = true; } if (S.t.gb) { S.t.gb = false; ch = true; } if (S.up.menu) { S.up.menu = null; ch = true; } if (S.home.bubble) { S.home.bubble = false; ch = true; } if (ch) renderStage(); return; }
+  act(el.dataset.act, el.dataset.id, el);
+});
+function act(a, id, el) {
+  const t = S.t;
+  if (t.menu != null && !/^m-/.test(a)) t.menu = null;
+  switch (a) {
+    case 'soon': soon(); break;
+    case 'tab': S.screen = id; S.home.bubble = false; renderStage(); emit('tab', id); break;
+    case 'nut': S.screen = 'settings'; renderStage(); emit('settings'); break;
+    case 'back-home': S.screen = 'home'; renderStage(); break;
+    case 'search': toast('Practice copy: search is not drawn here.'); break;
+    case 'countdown': case 'open-trip': S.page = 'trip'; renderStage(); emit('trip-open'); break;
+    case 'grab-lists': soon(); break;
+    case 'grab': S.grab = { id, done: [], skip: [], msg: '' }; S.sheet = 'grab'; renderStage(); emit('grab-open', id); break;
+    case 'grab-done': S.sheet = null; renderStage(); break;
+    case 'grab-tick': { const g = GRABS.find(x => x.id === S.grab.id), it = g.items[+id]; if (S.grab.skip.includes(it)) break;
+      const i = S.grab.done.indexOf(it); if (i < 0) S.grab.done.push(it); else S.grab.done.splice(i, 1);
+      renderStage(); { const nx = g.items.findIndex(x => !S.grab.done.includes(x) && !S.grab.skip.includes(x)); if (nx >= 0 && !solved) markTarget('gi-' + nx); }
+      emit('grab-tick', S.grab.done.length); break; }
+    case 'grab-skip': { const g = GRABS.find(x => x.id === S.grab.id), it = g.items[+id]; ev_stop();
+      const i = S.grab.skip.indexOf(it); if (i < 0) { S.grab.skip.push(it); S.grab.done = S.grab.done.filter(x => x !== it); } else S.grab.skip.splice(i, 1); renderStage(); break; }
+    case 'grab-ready': { const g = GRABS.find(x => x.id === S.grab.id), miss = g.items.filter(i => !S.grab.skip.includes(i) && !S.grab.done.includes(i));
+      S.grab.msg = miss.length ? 'no' : 'go'; renderStage(); emit(miss.length ? 'grab-notyet' : 'grab-go'); break; }
+    case 'grab-msg-close': S.grab.msg = ''; renderStage(); break;
+    case 'grab-reset': S.grab.done = []; S.grab.skip = []; S.grab.msg = ''; renderStage(); break;
+    case 'new-trip': S.c = mkCreate(); S.sheet = 'create'; renderStage(); emit('create-open'); break;
+    case 'create-cancel': S.sheet = null; renderStage(); break;
+    case 'create': doCreate(); break;
+    case 'kind': S.c.quick = id === 'quick'; if (S.c.needs) S.c.needs = createNeeds(); renderStage(); emit('kind', id); break;
+    case 'day': { const c = S.c, d = +id;
+      if (!c.hasDates || !c.pickingEnd) { c.hasDates = true; c.a = d; c.b = null; c.pickingEnd = true; }
+      else { c.b = Math.max(c.a, d); c.a = Math.min(c.a, d); c.pickingEnd = false; }
+      if (!c.seasonHand) c.season = 'Winter';
+      if (c.needs) c.needs = createNeeds(); renderStage(); emit(c.pickingEnd ? 'date-first' : 'dates'); break; }
+    case 'clear-dates': Object.assign(S.c, { hasDates: false, a: null, b: null, pickingEnd: false }); if (!S.c.seasonHand) S.c.season = 'Summer'; if (S.c.needs) S.c.needs = createNeeds(); renderStage(); break;
+    case 'tpl': { const c = S.c, i = c.acts.indexOf(id); if (i < 0) c.acts.push(id); else c.acts.splice(i, 1); if (c.needs) c.needs = createNeeds(); renderStage(); emit('tpl', id); break; }
+    case 'transport': S.c.transport = S.c.transport === id ? '' : id; renderStage(); emit('transport', S.c.transport); break;
+    case 'more': S.c.moreOpen = !S.c.moreOpen; renderStage(); emit('more', S.c.moreOpen); break;
+    case 'season': S.c.season = id; S.c.seasonHand = true; renderStage(); break;
+    case 'food': S.c.food = id; renderStage(); break;
+    case 'laundry': S.c.laundry = !S.c.laundry; renderStage(); break;
+    case 'trip-back': S.page = null; S.screen = S.screen === 'home' ? 'home' : S.screen; renderStage(); break;
+    case 'line': tickLine(t.lines.find(l => l.id === +id)); renderStage(); emit('tick', progress().done); break;
+    case 'tickall': { const g = tripGroups().find(x => x.name === id); if (!g) break;
+      const act2 = g.lines.filter(l => !l.aside), on = act2.some(l => !l.done), ch = act2.filter(l => l.done !== on);
+      ch.forEach(l => l.done = on);
+      t.undo = { ids: ch.map(l => l.id), to: on, said: `${on ? 'Ticked' : 'Unticked'} ${ch.length} in ${id}` };
+      clearTimeout(act.ut); act.ut = setTimeout(() => { S.t.undo = null; renderStage(); }, 6000);
+      renderStage(); emit('tickall', ch.length); break; }
+    case 'undo': if (t.undo) { t.lines.forEach(l => { if (t.undo.ids.includes(l.id)) l.done = !t.undo.to; }); t.undo = null; renderStage(); emit('undo'); } break;
+    case 'only': t.only = id === '1'; renderStage(); emit('only', t.only); break;
+    case 'fold': t.folded[id] = !t.folded[id]; renderStage(); break;
+    case 'fold-all': { const gs = tripGroups(), all = gs.every(g => t.folded[g.name]); gs.forEach(g => t.folded[g.name] = !all); renderStage(); break; }
+    case 'm-tick': tickLine(t.lines.find(l => l.id === +id)); t.menu = null; renderStage(); break;
+    case 'm-aside': { const l = t.lines.find(x => x.id === +id); l.aside = !l.aside; if (l.aside) l.done = false; t.menu = null; renderStage(); emit('aside', l.aside); break; }
+    case 'm-note': { const l = t.lines.find(x => x.id === +id); t.menu = null; toast(l.note); break; }
+    case 'm-open': t.menu = null; soon(); break;
+    case 'add-open': t.adding = true; t.addNeeds = ''; renderStage(); emit('add-open'); { const f = document.querySelector('#stage [data-in="add"]'); if (f) f.focus(); } break;
+    case 'add-close': t.adding = false; t.addText = ''; t.addNeeds = ''; renderStage(); break;
+    case 'add-go': if (!t.addText.trim()) { t.addNeeds = 'Type a thing first.'; renderStage(); emit('add-needs'); }
+      else { t.lines.push({ id: Date.now() % 100000, name: t.addText.trim(), tpl: 'Basics', bag: 'Day bag', qty: 1, done: false, aside: false, note: '' }); t.addText = ''; renderStage(); emit('add-done'); } break;
+    case 'add-bought': t.lines.push({ id: Date.now() % 100000, name: t.addText.trim(), tpl: 'Basics', bag: 'Day bag', qty: 1, done: true, aside: false, note: '', bought: true }); t.addText = ''; renderStage(); break;
+    case 'gb': t.gb = !t.gb; renderStage(); if (t.gb) emit('gb-open'); break;
+    case 'gb-pick': t.gb = false; if (id === 'Into' || id === 'Template') { t.group = id; renderStage(); emit('groupby', id); } else toast('Practice copy: this grouping is not drawn here. Into and Template are.'); break;
+    case 'bags': t.bagsOpen = !t.bagsOpen; renderStage(); emit('bags-open', t.bagsOpen); break;
+    case 'key': t.key = !t.key; renderStage(); break;
+    case 'bag': t.weighing = t.weighing === id ? null : id; t.scale = t.weighed[id] ? numKg(Math.round(t.weighed[id] / 100) / 10) : ''; renderStage(); emit('bag-tap'); break;
+    case 'save-weight': { const kg = parseFloat(String(t.scale).replace(',', '.')), name = t.weighing;
+      if (kg > 0 && isFinite(kg)) t.weighed[name] = kg * 1000; else delete t.weighed[name];      // as the real Bags card: nothing valid clears it, silently
+      t.weighing = null; renderStage(); emit('weight', { name, kg: kg > 0 ? kg : 0 }); break; }
+    case 'clear-weight': delete t.weighed[id]; t.weighing = null; renderStage(); break;
+    case 'stn': t.stShown = id; S.sheet = id === 'pack' ? null : 'stations'; t.stNeeds = ''; if (id === 'weigh') openFirstUnweighed(); renderStage(); emit('stations-open', id); break;
+    case 'st-go': t.stShown = id; t.stNeeds = ''; t.scale = ''; if (id === 'pack') S.sheet = null; if (id === 'weigh') openFirstUnweighed(); renderStage(); emit('station', id); break;
+    case 'st-done': S.sheet = null; renderStage(); break;
+    case 'bag-out': t.out[id] = !t.out[id]; renderStage(); { const nx = bagLoads().findIndex(b => !t.out[b.name]); if (nx >= 0 && !solved) markTarget('day-bag-' + nx); }
+      if (bagLoads().every(b => t.out[b.name])) emit('bags-out'); break;
+    case 'st-bag': t.weighing = t.weighing === id ? null : id; t.scale = ''; t.stNeeds = ''; renderStage(); break;
+    case 'st-save': { const kg = parseFloat(String(t.scale).replace(',', '.')), name = t.weighing;
+      if (!(kg > 0 && isFinite(kg))) { t.stNeeds = 'Type what the scale says, in kg.'; renderStage(); emit('st-needs'); break; }
+      t.weighed[name] = kg * 1000; t.stNeeds = ''; t.scale = ''; openFirstUnweighed(name); renderStage(); emit('st-weight'); break; }
+    case 'papers-open': t.papersOpen = true; renderStage(); emit('papers-open'); break;
+    case 'papers-fold': t.papersOpen = !t.papersOpen; renderStage(); break;
+    case 'add-pdf': t.papers.push({ title: 'Booking \u00B7 Hotel Sol', day: '17 Nov 2026' }); renderStage(); emit('paper'); break;
+    case 'paper-remove': t.askRemove = true; renderStage(); emit('paper-ask'); break;
+    case 'paper-keep': t.askRemove = false; renderStage(); break;
+    case 'paper-yes': t.papers.shift(); t.askRemove = false; renderStage(); break;
+    case 'onsite-open': S.sheet = 'onsite'; renderStage(); emit('onsite-open'); break;
+    case 'unpack-open': S.sheet = 'unpack'; renderStage(); emit('unpack-open'); break;
+    case 'nudge': S.page = 'trip'; S.sheet = 'unpack'; renderStage(); emit('unpack-open'); break;
+    case 'sheet-done': S.sheet = null; renderStage(); break;
+    case 'bought-add': if (!S.os.text.trim()) { S.os.needs = 'Type what you bought first.'; renderStage(); emit('bought-needs'); }
+      else { S.os.bought.push(S.os.text.trim()); S.os.text = ''; renderStage(); emit('bought'); } break;
+    case 'unpack-tick': S.up.back[id] = !S.up.back[id]; renderStage(); emit('unpack-tick'); break;
+    case 'room-all': unpackLines().filter(l => (l.room || 'No room yet') === id).forEach(l => S.up.back[l.id] = true); renderStage(); emit('allback'); break;
+    case 'room-menu': S.up.menu = S.up.menu === id ? null : id; renderStage(); emit('room-menu'); break;
+    case 'room-pick': S.up.room[id] = el.dataset.room; S.up.menu = null; renderStage(); emit('room', el.dataset.room); break;
+    case 'stop-remind': S.up.stopped = true; S.home.nudge = false; renderStage(); emit('stop'); break;
+    case 'open-tpl': S.tpl = { name: id, items: TPL[id].slice(), ask: null }; S.sheet = 'tpl'; renderStage(); emit('tpl-open', id); break;
+    case 'tpl-x': S.tpl.ask = id; renderStage(); emit('tpl-ask'); break;
+    case 'tpl-keep': S.tpl.ask = null; renderStage(); break;
+    case 'tpl-off': S.tpl.items = S.tpl.items.filter(x => x !== S.tpl.ask); S.tpl.ask = null; renderStage(); emit('tpl-off'); break;
+    case 'new-tpl': case 'areas': case 'door': soon(); break;
+    case 'sync-dot': S.home.bubble = !S.home.bubble; renderStage(); emit('sync-dot'); break;
+    case 'sync-now': S.synced = true; renderStage(); emit('sync-now'); break;
+    default: break;
+  }
+}
+function ev_stop() { /* the skip button sits inside a tappable row: its own click is enough */ }
+function openFirstUnweighed(except) { const t = S.t, nx = bagLoads().find(b => b.grams === 0 && b.name !== except); t.weighing = nx ? nx.name : null; t.scale = ''; }
+
+/* ---------- Lessons (see, try, check). Every step's setup does a full reset of what that step needs. ---------- */
+const trip = o => set({ page: 'trip', t: mkTrip(o) });
+const tickFirst = (n, extra) => { const lines = mkLines(); lines.slice(0, n).forEach(l => l.done = true); return Object.assign({ lines }, extra || {}); };
+const backHome = () => { const lines = mkLines(); lines.forEach(l => l.done = true); lines[7].done = false; lines[7].aside = true; return lines; };
+const LESSONS = [
+  { title: 'The main screen', icon: 'home', steps: [
+    { kind: 'look', head: 'Home, top to bottom', text: 'Home has a big blue title, the nut for Settings at the top right, and the search field: Search things and trips. The small number under the nut is the version.', target: 'home-title', setup: () => set({}) },
+    { kind: 'look', head: 'Next trip', text: 'Under Next trip is the countdown: the days left, the trip, and what is still to pack. Tap it and the trip opens.', target: 'countdown', setup: () => set({}) },
+    { kind: 'try', head: 'Open a grab list', text: 'Grab and go holds quick lists for a short outing. Tap "Swim".', target: 'grab-swim', setup: () => set({}), wait: 'grab-open', when: d => /^swim/.test(d), ok: 'The list opens with a count at the top: "0 of 7 in hand".' },
+    { kind: 'try', head: 'Too early', text: 'Press "Ready to go" before you have ticked anything.', target: 'grab-ready', setup: () => set({ sheet: 'grab', grab: { id: 'swim', done: [], skip: [], msg: '' } }), wait: 'grab-notyet', ok: 'It says "Not yet" and names what is missing. "Keep packing" takes you back.' },
+    { kind: 'try', head: 'Tick what is in your hand', text: 'Tap three things on the list.', target: 'gi-0', setup: () => set({ sheet: 'grab', grab: { id: 'swim', done: [], skip: [], msg: '' } }), wait: 'grab-tick', when: n => n >= 3, ok: 'The count moves: "3 of 7 in hand". Ticks clear themselves 6 hours after your last tap.' },
+    { kind: 'check', head: 'Quick check', text: 'Where do you find Settings?', answers: ['The nut at the top right of Home', 'A tab in the bar at the bottom', 'Under Library'], right: 0, ok: 'Right. Settings is not a tab. The nut opens it, and "Home" brings you back.' },
+  ]},
+  { title: 'Make a trip', icon: 'compass', steps: [
+    { kind: 'try', head: 'Start a trip', text: 'Press the full-colour "New trip" button at the foot of Home.', target: 'new-trip', setup: () => set({}), wait: 'create-open', ok: 'A page of its own opens, with Cancel at the top left and Create at the top right.' },
+    { kind: 'try', head: 'Create with nothing', text: 'Press "Create trip" at the bottom without typing anything.', target: 'create', setup: () => set({ sheet: 'create' }), wait: 'create-needs', ok: 'It does not make a trip. It says what is missing, in red, right above the button.' },
+    { kind: 'try', head: 'Name it', text: 'Type a name in the field, for example "Lake weekend".', target: 'name', setup: () => set({ sheet: 'create', c: mkCreate({ needs: 'Give the trip a name.' }) }), wait: 'name', ok: 'The red line goes as soon as you type.' },
+    { kind: 'try', head: 'Full trip or Quick', text: 'Tap "Quick" and read the line under it. You can tap "Full trip" again afterwards.', target: 'kind-quick', setup: () => set({ sheet: 'create', c: mkCreate({ name: 'Lake weekend' }) }), wait: 'kind', when: d => d === 'quick', ok: 'Quick packs only the templates you tick. Full trip also brings your Always packed things.' },
+    { kind: 'try', head: 'Pick the dates', text: 'In the calendar tap the 4th, then the 6th.', target: 'day-4', setup: () => set({ sheet: 'create', c: mkCreate({ name: 'Lake weekend' }) }), wait: 'dates', on: { 'date-first': 'day-6' }, ok: 'The line under the calendar says "4 Dec \u2013 6 Dec \u00B7 2 nights". "Clear dates" would take them away.' },
+    { kind: 'try', head: 'Pick a template', text: 'Under Outdoors tap "Hiking".', target: 'pick-Hiking', setup: () => set({ sheet: 'create', c: mkCreate({ name: 'Lake weekend' }) }), wait: 'tpl', when: d => d === 'Hiking', ok: 'A template is a building block. The trip gathers everything the ticked templates hold. A Full trip needs no tick when Always packed already has something.' },
+    { kind: 'try', head: 'Travelling by', text: 'Tap "Plane". More choices, under it, keeps Season, Food and Laundry out of the way.', target: 't-plane', setup: () => set({ sheet: 'create', c: mkCreate({ name: 'Lake weekend' }) }), wait: 'transport', when: d => d === 'Plane', ok: 'Plane turns on the airport checks and shows "Flights and stay". Tap Plane again, or leave both off, for an ordinary trip.' },
+    { kind: 'try', head: 'Make the trip', text: 'Press "Create trip".', target: 'create', setup: () => set({ sheet: 'create', c: mkCreate({ name: 'Lake weekend', hasDates: true, a: 4, b: 6, season: 'Winter', acts: ['Hiking'] }) }), wait: 'created', ok: 'The trip opens, with its name as a big green title.' },
+  ]},
+  { title: 'Packing the list', icon: 'trips', steps: [
+    { kind: 'look', head: 'A trip, top to bottom', text: 'At the top: "\u2039 Trips", the pen for the trip\u2019s settings and a green Done. Then the name, and one line: how many are packed, how many are left and about how long that takes. Under it the loop Plan, Pack, On site, Review, Refine.', target: 'progress', setup: () => trip() },
+    { kind: 'try', head: 'Tick a line', text: 'Tap "Rain jacket".', target: 'line-1', setup: () => trip(), wait: 'tick', ok: 'The circle fills and the count goes up: "1 of 8 packed". Tap again and it is back.' },
+    { kind: 'try', head: 'Tick a whole heading', text: 'The round button at the right of a heading ticks everything under it. Press the one at "Backpack".', target: 'tickall-Backpack', setup: () => trip(), wait: 'tickall', ok: 'For 6 seconds a bar says what it did, with Undo. A newer press replaces it.' },
+    { kind: 'try', head: 'Undo', text: 'Press "Undo" in the bar above the buttons.', target: 'undo-btn', setup: () => trip({ undo: { ids: [1, 2, 3, 4], to: true, said: 'Ticked 4 in Backpack' }, lines: tickFirst(4).lines }), wait: 'undo', ok: 'Exactly those ticks are put back.' },
+    { kind: 'try', head: 'Only what is left', text: 'Tap "Still to pack" above the list.', target: 'show-left', setup: () => trip(tickFirst(3)), wait: 'only', when: d => d === true, ok: 'Ticked lines go out of sight. The number says how many are left. "Everything" shows the whole list again.' },
+    { kind: 'try', head: 'Not this time', text: 'Press and hold "Headlamp" (on a Mac, right-click it). In the menu choose "Not this time".', target: 'line-4', setup: () => trip(), wait: 'aside', when: d => d === true, on: { 'menu-open': 'm-aside' }, ok: 'It stays on the list, struck through, and leaves the count. "Take it this time" brings it back.' },
+    { kind: 'try', head: 'Add a thing to this trip', text: 'Press the green "Add" at the right of the bottom bar, then press the field\u2019s "Add" without typing anything.', target: 'add-open', setup: () => trip(), wait: 'add-needs', on: { 'add-open': 'add-go' }, ok: 'A short red line says what is missing: "Type a thing first." It goes when you type.' },
+    { kind: 'try', head: 'Now add one', text: 'Type "Sunscreen" and press "Add".', target: 'add-field', setup: () => trip({ adding: true }), wait: 'add-done', ok: 'It goes on this trip only. The field stays open so you can add more.' },
+    { kind: 'try', head: 'Group by', text: 'Press "Group by" in the bottom bar and choose "Template".', target: 'groupby', setup: () => trip(), wait: 'groupby', when: d => d === 'Template', on: { 'gb-open': 'gb-Template' }, ok: 'The same lines now sit under the templates they come from. Into groups by bag.' },
+  ]},
+  { title: 'Bags, stations, papers', icon: 'bag', steps: [
+    { kind: 'try', head: 'Open the Bags row', text: 'Above the list sits a grouped list: Before you start, the weather, and Bags. Tap "Bags".', target: 'row-bags', setup: () => trip(), wait: 'bags-open', when: d => d === true, ok: 'A bag with nothing weighed yet says "Tap to weigh". A bag with a max shows a bar once it is weighed.' },
+    { kind: 'try', head: 'Weigh a bag', text: 'Tap "Backpack" and type 11 (it holds 10 kg at most), then press "Save".', target: 'bag-0', setup: () => trip({ bagsOpen: true }), wait: 'weight', when: d => d.name === 'Backpack' && d.kg > 0, on: { 'bag-tap': 'scale-save' }, ok: 'The bar turns red and the Bags row says "1 over". From now on that is the bag\u2019s weight. Blue is fine, orange is nine tenths of the max or more.' },
+    { kind: 'try', head: 'Lay the bags out', text: 'The Stations row has six steps. Tap "Bags", then tick each bag as it comes out.', target: 'stn-bags', setup: () => trip(), wait: 'bags-out', on: { 'stations-open': 'day-bag-0' }, ok: 'It says "All bags are out." and the Bags chip turns green.' },
+    { kind: 'try', head: 'Weigh with nothing typed', text: 'Tap the "Weigh" chip in the sheet, then press "Save" with the field empty.', target: 'st-go-weigh', setup: () => set({ page: 'trip', sheet: 'stations', t: mkTrip({ stShown: 'bags', out: { Backpack: true, 'Day bag': true } }) }), wait: 'st-needs', on: { station: 'scale-save' }, ok: 'It will not save an empty weight. It says: "Type what the scale says, in kg."' },
+    { kind: 'try', head: 'Keep papers on the trip', text: 'Tap "Add trip papers", then "Add a PDF".', target: 'papers-open', setup: () => trip(), wait: 'paper', on: { 'papers-open': 'add-pdf' }, ok: 'Papers are kept on the device, so a boarding pass or a booking opens with no internet. The real button also offers "Take a photo" and "Choose a photo".' },
+    { kind: 'try', head: 'Removing asks first', text: 'Press "Remove" beside the paper.', target: 'paper-remove-0', setup: () => trip({ papersOpen: true, papers: [{ title: 'Booking \u00B7 Hotel Sol', day: '17 Nov 2026' }] }), wait: 'paper-ask', ok: 'It asks "Remove paper 1?" first. "Keep it" leaves it alone.' },
+  ]},
+  { title: 'Templates', icon: 'list', steps: [
+    { kind: 'try', head: 'Open a template', text: 'Templates are the building blocks of every trip. Open the "Hiking" template.', target: 'tpl-Hiking', setup: () => set({ screen: 'templates' }), wait: 'tpl-open', when: d => d === 'Hiking', ok: 'Its page shows its reminders and the things on it. Cancel and Done sit at the top.' },
+    { kind: 'try', head: 'Take a thing off', text: 'Press the cross beside "Rain jacket".', target: 'tpl-x-0', setup: () => set({ screen: 'templates', sheet: 'tpl', tpl: { name: 'Hiking', items: TPL.Hiking.slice(), ask: null } }), wait: 'tpl-ask', ok: 'It asks first. The thing itself stays in Your things and on your other templates.' },
+    { kind: 'check', head: 'Quick check', text: 'On a template row, "How many" is left blank. What does that mean?', answers: ['The same as the thing itself says', 'Zero of them', 'One of them, always'], right: 0, ok: 'Right. A change to the thing still reaches the template.' },
+  ]},
+  { title: 'Away and back home', icon: 'door', steps: [
+    { kind: 'look', head: 'Two doors appear', text: 'Once the trip has begun, an "On site" row appears under the trip\u2019s cards. Once it has set off and something is packed, an "Unpack" row sits under it.', target: 'door-onsite', setup: () => trip({ setOff: true, lines: backHome() }) },
+    { kind: 'try', head: 'On site', text: 'Open "On site", press "Bought on site" with the field empty, then type "Sunscreen" and press it again.', target: 'door-onsite', setup: () => trip({ setOff: true, lines: backHome() }), wait: 'bought', on: { 'onsite-open': 'bought-add', 'bought-needs': 'bought-field' }, ok: 'Empty, it says "Type what you bought first." Typed, it joins the list, ticked, and comes home with you.' },
+    { kind: 'try', head: 'Unpack from Home', text: 'Back home, Home shows a quiet line. Tap its "Unpack".', target: 'nudge', setup: () => set({ t: mkTrip({ setOff: true, lines: backHome() }), os: { bought: ['Sunscreen'], text: '', needs: '' }, home: { nudge: true, bubble: false } }), wait: 'unpack-open', ok: 'The Unpack page lists what went, by the room each thing lives in at home.' },
+    { kind: 'try', head: 'Put things back', text: 'Press "All back" at "Kitchen".', target: 'all-back-1', setup: () => set({ page: 'trip', sheet: 'unpack', t: mkTrip({ setOff: true, lines: backHome() }), os: { bought: ['Sunscreen'], text: '', needs: '' } }), wait: 'allback', ok: 'Everything in that room is ticked. The top line counts down: "Still in the bag".' },
+    { kind: 'try', head: 'Give it a room', text: 'Sunscreen was bought on site. Press "Give it a room" and pick "Bathroom".', target: 'give-room', setup: () => set({ page: 'trip', sheet: 'unpack', t: mkTrip({ setOff: true, lines: backHome() }), os: { bought: ['Sunscreen'], text: '', needs: '' } }), wait: 'room', on: { 'room-menu': 'room-Bathroom' }, ok: 'It becomes one of your things, kept in that room.' },
+    { kind: 'check', head: 'Quick check', text: 'What does "Stop reminding me on Home" do?', answers: ['Removes the quiet line from Home; the ticks stay on Unpack', 'Deletes the trip', 'Ticks everything as back'], right: 0, ok: 'Right. You can finish unpacking later. The line also goes by itself 30 days after the trip.' },
+  ]},
+  { title: 'iPhone and Mac', icon: 'sync', steps: [
+    { kind: 'try', head: 'The sync dot', text: 'The small dot beside the Library heading is the sync. Tap it.', target: 'sync-dot', setup: () => set({}), wait: 'sync-dot', ok: 'One line says how it is going. Green is in sync, orange while changes are on their way.' },
+    { kind: 'try', head: 'Sync now', text: 'Open Settings with the nut, then press "Sync now" in the iCloud sync card.', target: 'nut', setup: () => set({}), wait: 'sync-now', on: { settings: 'sync-now' }, ok: 'The iPhone and the Mac hold the same library through iCloud. A change on one reaches the other within a minute or so.' },
+    { kind: 'check', head: 'Quick check', text: 'You tick a line on the iPhone. When does the Mac show it?', answers: ['Within a minute or so, through iCloud', 'Only after you save a backup', 'Never; each device keeps its own list'], right: 0, ok: 'Right. On the Mac the same tabs sit in a sidebar. Every page where you change something has Cancel and Save (or Done).' },
+  ]},
+];
+
+/* ---------- Tour engine (reusable) ---------- */
+let ci = 0, si = 0, solved = false, targetOff = false;
+const store = { get(k) { try { return localStorage.getItem(k) } catch { return null } }, set(k, v) { try { localStorage.setItem(k, v) } catch {} } };
+let doneChapters = new Set(JSON.parse(store.get('packingtour-done') || '[]'));
+
+function emit(name, data) {
+  const st = LESSONS[ci]?.steps[si]; if (!st || solved || st.kind !== 'try') return;
+  if (st.on && st.on[name]) { markTarget(st.on[name]); }
+  if ((st.wait === name || st.alt === name) && (!st.when || st.when(data))) succeed(st.ok);
+}
+function succeed(msg) {
+  solved = true; targetOff = true; const fb = document.getElementById('fb'); if (fb) { fb.textContent = '\u2713 ' + msg; fb.className = 'feedback'; }
+  const nx = document.getElementById('next'); if (nx) { nx.disabled = false; nx.focus({ preventScroll: true }); }
+  markTarget();
+}
+let curTarget = null;
+function markTarget(t) {
+  if (t !== undefined) curTarget = t;
+  document.querySelectorAll('.target').forEach(e => e.classList.remove('target'));
+  if (!curTarget || targetOff) return;
+  const q = n => document.querySelector(`#stage [data-t="${CSS.escape(n)}"]`);
+  // If the thing to tap is out of sight (a stray tap closed a page), point at the way back to it.
+  const first = LESSONS[ci] && LESSONS[ci].steps[si] && LESSONS[ci].steps[si].target;
+  const el = q(curTarget) || (first && first !== curTarget ? q(first) : null) || (S.sheet ? q('create-cancel') : S.page ? q('trip-back') : S.screen !== 'home' ? q('tab-home') : null);
+  if (el) {
+    el.classList.add('target');
+    const sc = el.closest('.scr');
+    if (sc) { const r = el.getBoundingClientRect(), s = sc.getBoundingClientRect(), k = document.getElementById('stagebox').clientWidth / 390;
+      if (r.top < s.top + 40 * k || r.bottom > s.bottom - 110 * k) sc.scrollTop += (r.top - s.top - 120 * k) / k; }
+  }
+}
+function renderRail() {
+  const total = LESSONS.reduce((n, l) => n + l.steps.length, 0);
+  const before = LESSONS.slice(0, ci).reduce((n, l) => n + l.steps.length, 0) + si;
+  document.getElementById('rail').innerHTML = `<div class="brand"><span class="logo">${icon('trips')}</span><div><h1>Packing Tour</h1><small>Learn the app in about 12 minutes</small></div></div>
+    ${LESSONS.map((l, i) => `<button class="chap ${i === ci ? 'cur' : ''} ${doneChapters.has(i) ? 'done' : ''}" data-ch="${i}">${icon(l.icon)}<span>${l.title}</span><span class="n">${doneChapters.has(i) ? '\u2713' : l.steps.length + ' steps'}</span></button>`).join('')}
+    <button class="chap ${ci === LESSONS.length ? 'cur' : ''}" data-ch="${LESSONS.length}">${icon('phone')}<span>Now on your iPhone</span></button>
+    <div class="bar"><i style="width:${Math.round(100 * Math.min(before, total) / total)}%"></i></div>
+    <p class="railnote">Practice copy, nothing changes in your real app. Based on AMS Packing 0.126.</p>`;
+}
+document.getElementById('rail').addEventListener('click', e => { const b = e.target.closest('[data-ch]'); if (b) goChapter(+b.dataset.ch); });
+
+function goChapter(i) {
+  ci = i; si = 0; clearTimers(); S = START();
+  const L = LESSONS[i]; if (L && L.setup) L.setup();
+  renderStep();
+}
+function renderStep() {
+  renderRail();
+  const coach = document.getElementById('coach'), fin = document.getElementById('finish');
+  if (ci >= LESSONS.length) { renderFinish(); coach.hidden = true; return; }
+  coach.hidden = false; fin.hidden = true;
+  const L = LESSONS[ci], st = L.steps[si];
+  solved = st.kind === 'look'; targetOff = false;
+  if (st.setup) st.setup();
+  S.toast = ''; clearTimeout(act.ut);
+  const kindName = { look: 'Look', try: 'Try it', check: 'Check' }[st.kind];
+  coach.innerHTML = `<div class="eyebrow">${icon(L.icon)} ${esc(L.title)} <span class="kind">\u00B7 ${kindName} \u00B7 step ${si + 1} of ${L.steps.length}</span></div>
+    <div><h2>${esc(st.head)}</h2><p>${esc(st.text)}</p>${st.hint ? `<p style="color:var(--muted);font-size:13px">${esc(st.hint)}</p>` : ''}</div>
+    <div class="btns">${ci + si > 0 ? '<button class="btn ghost" id="back">Back</button>' : ''}<button class="btn main-b" id="next" ${solved ? '' : 'disabled'}>${si === L.steps.length - 1 ? 'Finish chapter' : 'Next'}</button></div>
+    ${st.kind === 'check' ? `<div class="answers">${st.answers.map((a, i) => `<button class="ans" data-a="${i}">${esc(a)}</button>`).join('')}</div>` : ''}
+    <p class="feedback" id="fb"></p>`;
+  curTarget = st.target || null;
+  renderStage();
+  if (st.kind === 'check') coach.querySelectorAll('.ans').forEach(b => b.onclick = () => {
+    const fb = document.getElementById('fb');
+    if (+b.dataset.a === st.right) { coach.querySelectorAll('.ans').forEach(x => x.disabled = true); b.classList.add('right'); succeed(st.ok); }
+    else { b.classList.add('wrong'); fb.textContent = 'Not quite. Try another answer.'; fb.className = 'feedback no'; }
+  });
+  document.getElementById('next').onclick = next;
+  const bk = document.getElementById('back'); if (bk) bk.onclick = back;
+}
+function next() {
+  const L = LESSONS[ci];
+  if (si < L.steps.length - 1) { si++; renderStep(); return; }
+  doneChapters.add(ci); store.set('packingtour-done', JSON.stringify([...doneChapters]));
+  goChapter(ci + 1);
+}
+function back() { if (si > 0) { si--; renderStep(); } else if (ci > 0) { goChapter(ci - 1); } }
+
+function renderFinish() {
+  const fin = document.getElementById('finish'); fin.hidden = false;
+  clearTimers(); S = START(); curTarget = null; renderStage();
+  const items = ['Open Packing on your iPhone. Find the Next trip countdown, Grab and go, and the Library rows on Home.',
+    'Press "New trip", type a name, tap two days in the calendar, tick one template and press "Create trip". Delete it again at the foot of its page (Delete trip asks first).',
+    'On a trip, tap a few lines, press a heading\u2019s round button, then press "Undo".',
+    'Open the Bags row, tap a bag and type what your luggage scale says, then tap "Bags" in the Stations row and tick each bag as it comes out.',
+    'Under Papers, press "Add trip papers" and add a PDF or a photo of a booking.',
+    'After a real trip: open "Unpack" on the trip page (or from the quiet line on Home) and tick each thing back into its room.',
+    'Open Settings with the nut and check that iCloud sync says "In sync". Then open "How it works".'];
+  let ticks = JSON.parse(store.get('packingtour-real') || '[]');
+  fin.innerHTML = `<h3>Now on your iPhone</h3>${items.map((t, i) => `<label><input type="checkbox" id="real-${i}" ${ticks.includes(i) ? 'checked' : ''}><span>${esc(t)}</span></label>`).join('')}
+    <div style="display:flex;gap:8px;margin-top:12px"><button class="btn main-b" id="again">Start the tour again</button></div>`;
+  fin.querySelectorAll('input').forEach((c, i) => c.onchange = () => { ticks = ticks.filter(x => x !== i); if (c.checked) ticks.push(i); store.set('packingtour-real', JSON.stringify(ticks)); });
+  document.getElementById('again').onclick = () => goChapter(0);
+}
+
+/* Fit the 390 x 760 pretend iPhone into its box */
+function fit() { const box = document.getElementById('stagebox'); document.getElementById('stage').style.transform = `scale(${box.clientWidth / 390})`; }
+new ResizeObserver(fit).observe(document.getElementById('stagebox'));
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && S.sheet && ['create', 'grab', 'tpl', 'stations', 'onsite', 'unpack'].includes(S.sheet)) { S.sheet = null; renderStage(); return; }
+  if (e.key === 'Enter' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') { const n = document.getElementById('next'); if (n && !n.disabled && document.activeElement !== n) n.click(); }
+});
+goChapter(0); fit();
+</script>
