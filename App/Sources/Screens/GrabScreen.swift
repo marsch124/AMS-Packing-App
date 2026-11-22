@@ -305,7 +305,7 @@ struct GrabScreen: View {
                             .padding(.vertical, 5)
                             .accessibilityIdentifier("grab-empty")
                     }
-                    // HIS OWN headings (0.85), small and grey, each over the things he put under
+                    // HIS OWN headings (0.85), grey — Title 3 since 0.127 — each over the things he put under
                     // it in Edit; what is above his first heading stands under none, and a list
                     // with no headings is one flat run, as before. His words, 15 Oct 2026: "How
                     // do I define the small headings, and how do I group the items in the
@@ -464,12 +464,13 @@ struct GrabScreen: View {
         .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
     }
 
-    /// One of his headings over its lines: small and grey — his words (15 Oct 2026, on 0.84's
-    /// look, which this keeps), "small headings in the list … maybe another colour, grey or
-    /// something like that", not the big headings of a trip. Footnote semibold in `muted`, a
-    /// hair of letter-spacing, his own spelling (no capitals: 0.62 took capitals with
-    /// letter-spacing out of every heading); no tick, no count in words and no line of its own —
-    /// the count stays the one at the top.
+    /// One of his headings over its lines, grey — his words (15 Oct 2026, on 0.84's look),
+    /// "small headings in the list … maybe another colour, grey or something like that". Footnote
+    /// until 0.127; since then Title 3 semibold, a size above the things' Body, his words of
+    /// 22 Nov 2026 on a picture of "Hike" with its five done headings marked: "Larger headings in
+    /// the grab lists." In `muted`, a hair of letter-spacing, his own spelling (no capitals: 0.62
+    /// took capitals with letter-spacing out of every heading); no tick, no count in words and no
+    /// line of its own — the count stays the one at the top.
     ///
     /// Done headings turn green and fold (0.87, his yes of 15 Oct 2026; `GrabFolds.swift`): beside
     /// the words, the trip's small ring (`GroupProgressMark`, 0.82) fills as its things are ticked —
@@ -483,7 +484,7 @@ struct GrabScreen: View {
         let done = p.done
         return HStack(spacing: 6) {
             Text(group.heading)
-                .font(.system(.footnote, weight: .semibold)).tracking(0.4)
+                .font(.system(.title3, weight: .semibold)).tracking(0.4)
                 .foregroundStyle(done ? GroupProgressMark.words(scheme) : Theme.muted)
                 .lineLimit(1).truncationMode(.tail)
                 .accessibilityAddTraits(.isHeader)

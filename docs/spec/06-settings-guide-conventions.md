@@ -1173,7 +1173,7 @@ field never builds it again; the sheet's container id stays `guide-howitworks`:
 **The topics and their lines** (summarised; the code holds the exact sentences):
 
 0. **Home** (Home mark): (1) eight grab lists, four in a row; tap one, tick what is in your hand; (0.85, replacing
-   0.84's grouping by Kind of thing) HIS OWN small grey headings group it: in Edit, holding a thing (right-click on the
+   0.84's grouping by Kind of thing) HIS OWN grey headings (a size larger than the things since 0.127) group it: in Edit, holding a thing (right-click on the
    Mac) → Heading above puts one right above it, ready to name (unnamed, dropped on Save), A new heading + Add puts
    one last, its grip ≡ (on the Mac ▲▼ too) moves it, a thing belongs to the heading above it, tap a heading's name to change
    it, ✕ removes it and its things stay, joining what is above; headings are never ticked or counted; a list without

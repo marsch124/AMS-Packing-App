@@ -919,6 +919,10 @@ is `"\u{2063}##"`, `GrabLine.storedHeading(name)` the whole form. So on a factor
 - **0.87 (15 Oct 2026), done headings turn green and fold.** His yes to the idea put to him: "Done headings turn
   green and fold: in a grab list, when everything under a heading is in hand, it turns green and folds to one line,
   like the groups on a trip. You scroll less at the door." See "Done headings fold" below.
+- **0.127 (22 Nov 2026), larger headings.** His picture of "Hike" open on the iPhone, its five done headings
+  (Clothes, Nutrition, Tech, Other, Brompton) marked in orange: "Larger headings in the grab lists." The heading
+  goes from Footnote to **Title 3** semibold — a size above the things' Body — and keeps everything else: grey
+  while not done, green on its band when done, the ring (its size unchanged), the spacing (12 above, 2 below).
 - **0.84, Share at the bottom right.** His words, the same day and the same picture (header: Edit · Share ·
   Done): "Please move the share button down to the bottom right. I almost never use it. Now that we are on it, can
   we make the share button more rounded?"
@@ -994,10 +998,10 @@ is `"\u{2063}##"`, `GrabLine.storedHeading(name)` the whole form. So on a factor
      this once" or "Take <name> along after all".
    - Rows are keyed by their position (`id: \.offset`).
    - **Under his own headings (0.85)** when he has set any (the rule under "His own headings" below): his
-     things above his first heading come first, under no heading; then each of his headings — a **small grey
+     things above his first heading come first, under no heading; then each of his headings — a **grey
      heading** (`grab-group-<g>`, `g` = 0, 1, … his headings top to bottom, as shown) — and the things under it,
-     down to the next. The heading: his words as he typed them, **Footnote semibold in `muted`, letter-spacing
-     0.4**, one line (cut at the end), left; **12 pt above it (4 when it is the very first line), 2 below**; no
+     down to the next. The heading: his words as he typed them, **Title 3 semibold in `muted`, letter-spacing
+     0.4** (Footnote until 0.127 — a size above the lines' Body now), one line (cut at the end), left; **12 pt above it (4 when it is the very first line), 2 below**; no
      tick, no count in words, no line of its own (the line under the row above stays); the `.isHeader` trait.
      Since 0.87 the trip's small ring sits 6 pt right of the words and a done heading turns green and folds —
      "Done headings fold" below. Not in
