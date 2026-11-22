@@ -8585,6 +8585,13 @@ final class AMSPackingUITests: XCTestCase {
         let first = app.buttons["grab-item-0"].label
         tap(app, id: "grab-edit")
         XCTAssertTrue(app.buttons["grab-cancel"].waitForExistence(timeout: 5), "editing a grab list has no Cancel")
+        // 0.128 (his ask, 22 Nov 2026): Cancel, the heading and Save on ONE line; the icon and name
+        // centred on the page on their own.
+        let cancel = app.buttons["grab-cancel"], save = app.buttons["grab-edit"], title = app.staticTexts["grab-title"]
+        let middle = (cancel.frame.minX + save.frame.maxX) / 2
+        XCTAssertEqual(title.frame.midY, cancel.frame.midY, accuracy: 10, "the name is not on Cancel's line: \(title.frame) / \(cancel.frame)")
+        XCTAssertLessThan(title.frame.minX - 40, middle, "the name is not centred: \(title.frame), middle \(middle)")
+        XCTAssertGreaterThan(title.frame.maxX, middle, "the name is not centred: \(title.frame), middle \(middle)")
         shot(app, "cancel-grab")
         replace("Swim shorts", in: app.textFields["grab-rename-0"])
         app.buttons["grab-remove-1"].tap()
@@ -9113,6 +9120,16 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertLessThan(countdown.frame.maxY, heading.frame.minY, "the countdown is not above Grab and go")
         XCTAssertLessThan(first.frame.maxY, library.frame.minY, "Library is not under Grab and go")
         XCTAssertLessThan(library.frame.maxY, new.frame.minY, "New trip is not under Library")
+        // 0.128 (his asks, 22 Nov 2026): "Grab and Go"; Library's heading inside its own frame, like
+        // Grab and Go's; Edit Grab Lists smaller than the New trip button.
+        XCTAssertEqual(words(heading), "Grab and Go")
+        if let frame = find(app, "home-device")?.frame {
+            let box = frame.insetBy(dx: -1, dy: -1)
+            for part in [app.staticTexts["device-heading"], library, app.buttons["home-library-templates"]] {
+                XCTAssertTrue(part.exists && box.contains(part.frame), "\(part.identifier) is outside Library's frame \(frame)")
+            }
+        } else { XCTFail("no frame round Library") }
+        XCTAssertLessThan(app.buttons["grab-lists"].frame.height, new.frame.height, "Edit Grab Lists is not smaller than New trip")
         // Create new trip: its own page, no longer on Home.
         XCTAssertFalse(app.textFields["trip-name"].exists, "the Create new trip form is still on Home")
         openNewTrip(app)
@@ -10682,6 +10699,9 @@ final class AMSPackingUITests: XCTestCase {
         let homeHeading = app.staticTexts["grablists-home-heading"], waiting = app.staticTexts["grablists-waiting-heading"]
         XCTAssertTrue(waitUntil { self.words(homeHeading).contains("6 of 8") },
                       "Home does not start with six of eight: '\(words(homeHeading))'")
+        // 0.128: one "Show on Home" over the switches, not "On Home" on every row.
+        XCTAssertTrue(app.staticTexts["grablists-switch-heading-home"].exists, "no Show on Home heading")
+        XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label == 'On Home'")).count, 0, "On Home is back on the rows")
 
         // New lists take the free places — and the screen says so (it said "is
         // waiting", in red, wherever the list went, until 4 Oct 2026)…

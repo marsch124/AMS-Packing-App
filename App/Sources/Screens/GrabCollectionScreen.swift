@@ -50,18 +50,26 @@ struct GrabCollectionScreen: View {
                             .accessibilityIdentifier("grablists-made")
                     }
 
-                    Text("On Home · \(home.count) of \(GRAB_HOME_SLOTS)")
-                        .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
-                        .padding(.bottom, 2)
-                        .accessibilityIdentifier("grablists-home-heading")
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("On Home · \(home.count) of \(GRAB_HOME_SLOTS)")
+                            .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
+                            .accessibilityIdentifier("grablists-home-heading")
+                        Spacer(minLength: 8)
+                        switchHeading(id: "grablists-switch-heading-home")
+                    }
+                    .padding(.bottom, 2)
                     ForEach(Array(home.enumerated()), id: \.element.id) { n, list in
                         row(list, n: n, onHome: true, count: home.count)
                     }
 
-                    Text("Waiting · \(waiting.count)")
-                        .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
-                        .padding(.top, 14).padding(.bottom, 2)
-                        .accessibilityIdentifier("grablists-waiting-heading")
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("Waiting · \(waiting.count)")
+                            .font(.system(.subheadline, weight: .semibold)).foregroundStyle(Theme.muted)
+                            .accessibilityIdentifier("grablists-waiting-heading")
+                        Spacer(minLength: 8)
+                        if !waiting.isEmpty { switchHeading(id: "grablists-switch-heading-waiting") }
+                    }
+                    .padding(.top, 14).padding(.bottom, 2)
                     if waiting.isEmpty {
                         // Where a new list goes depends on whether Home has room.
                         Text(home.count < GRAB_HOME_SLOTS ? "Nothing waiting. A new list goes straight onto Home."
@@ -200,10 +208,9 @@ struct GrabCollectionScreen: View {
     /// "On Home" and its switch: on = the list is on Home; off = it waits here with everything on
     /// it. On with Home full asks which one steps back (`bringOn`).
     private func onHomeSwitch(_ list: GrabDefinition, on: Bool, id: String) -> some View {
+        // "On Home" is no longer on every row (0.128, his ask 22 Nov 2026): it heads the switch
+        // column once per part (`switchHeading`).
         HStack(spacing: 6) {
-            Text("On Home").font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
-                .lineLimit(1).fixedSize()
-                .accessibilityHidden(true)
             Toggle("Show \(list.label) on Home", isOn: Binding(get: { on }, set: { want in
                 if want { bringOn(list.id) } else { takeOff(list.id) }
             }))
@@ -216,6 +223,15 @@ struct GrabCollectionScreen: View {
             .tint(AppSection.events.color)
             .accessibilityIdentifier(id)
         }
+    }
+
+    /// The switch column's heading (0.128): "Show on Home", once above each part's switches —
+    /// it was "On Home" beside every switch.
+    private func switchHeading(id: String) -> some View {
+        Text("Show on Home").font(.system(.footnote, weight: .semibold)).foregroundStyle(Theme.muted)
+            .lineLimit(1).fixedSize()
+            .padding(.trailing, 10)
+            .accessibilityIdentifier(id)
     }
 
     private func canStep(_ id: String, _ by: Int) -> Bool {

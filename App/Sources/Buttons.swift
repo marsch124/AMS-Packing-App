@@ -35,6 +35,28 @@ struct HeaderButtonStyle: ButtonStyle {
     }
 }
 
+/// A small outlined button for a door inside a card (0.128, his "too prominent" of 22 Nov 2026 —
+/// Home's Edit Grab Lists): footnote words in the tint, a thin capsule round them on the tint's
+/// 10 % fill. Never grey.
+struct SmallOutlineButtonStyle: ButtonStyle {
+    var tint: Color
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(.footnote, weight: .semibold))
+            .foregroundStyle(tint)
+            .lineLimit(1)
+            .fixedSize()
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(Capsule().fill(tint.opacity(0.10)))
+            .overlay(Capsule().stroke(tint.opacity(0.6), lineWidth: 1))
+            .frame(minHeight: Metrics.compact)
+            .contentShape(Rectangle())
+            .opacity(configuration.isPressed ? 0.6 : 1)
+    }
+}
+
 /// The button beside a field that takes what was typed — Add, New, Make. ALWAYS in
 /// full colour: his standing rule (2026-09-26), "the app's central button is ALWAYS
 /// full colour; pressed too early it says what's missing under it". Until the field

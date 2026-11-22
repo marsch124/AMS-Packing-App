@@ -250,20 +250,25 @@ struct GrabScreen: View {
         let items = list.items
         let complete = state.isComplete(items)
         VStack(spacing: 0) {
+            // While editing (0.92, Cancel everywhere): Cancel throws the edit away and the list
+            // is as it was; Save keeps it. Escape = Cancel, ⌘S = Save.
+            // 0.128 (his ask, 22 Nov 2026): Cancel is an outlined button (was the plain word). Cancel,
+            // the heading and Save stay on ONE line, as before; the icon with the name is centred on
+            // the page on its own — in the middle whatever the buttons' widths ("the button is its own
+            // entity, and the heading, including the icon, is centred on its own").
+            ZStack {
             HStack(spacing: 8) {
-                // While editing (0.92, Cancel everywhere): Cancel throws the edit away and the list
-                // is as it was; Save keeps it. Escape = Cancel, ⌘S = Save.
                 if editing {
                     Button("Cancel") { cancelEdits() }
-                        .buttonStyle(BarCancelStyle(tint: tint)).focusEffectDisabled()
-                        .font(.system(.body, weight: .semibold))
+                        .buttonStyle(HeaderButtonStyle(tint: tint, filled: false)).focusEffectDisabled()
                         .keyboardShortcut(.cancelAction)
                         .accessibilityIdentifier("grab-cancel")
+                } else {
+                    GrabDoodle(icon: list.icon, size: 36, initial: list.label).foregroundStyle(tint)
+                    Text(list.title).font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
+                        .lineLimit(1).minimumScaleFactor(0.7)
+                        .accessibilityIdentifier("grab-title")
                 }
-                GrabDoodle(icon: editing ? draftIcon : list.icon, size: 36, initial: list.label).foregroundStyle(tint)
-                Text(list.title).font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
-                    .lineLimit(1).minimumScaleFactor(0.7)
-                    .accessibilityIdentifier("grab-title")
                 Spacer(minLength: 4)
                 Button(editing ? "Save" : "Edit") { editing ? saveEdits() : startEditing() }
                     .buttonStyle(HeaderButtonStyle(tint: tint, filled: editing)).focusEffectDisabled()
@@ -280,6 +285,18 @@ struct GrabScreen: View {
                         .commandS { dismiss() }                         // ⌘S = Done (0.103)
                         .accessibilityIdentifier("grab-done")
                 }
+            }
+            if editing {
+                // Kept clear of Cancel and Save (each ~90 pt wide) on both sides, so it stays centred.
+                HStack(spacing: 8) {
+                    GrabDoodle(icon: draftIcon, size: 36, initial: list.label).foregroundStyle(tint)
+                    Text(list.title).font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
+                        .lineLimit(1).minimumScaleFactor(0.6)
+                        .accessibilityIdentifier("grab-title")
+                }
+                .padding(.horizontal, 96)
+                .frame(maxWidth: .infinity)
+            }
             }
             // Save pressed on a list with nothing on it says so right under it, in
             // red, and the editor stays open (5 Oct 2026: it closed and said nothing).

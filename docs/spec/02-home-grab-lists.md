@@ -334,17 +334,17 @@ before; the tab bar floats over the bottom, the page leaves room for it):
 3. **Next trip**: a small coloured heading, then the countdown card (§11, unchanged: the days, the trip's name, what is
    still to pack, the from date, what is to buy; a tap opens the trip). While a trip is under way, going home or back home
    and not reviewed, the **On your trip** card (§11a, unchanged) takes its place; with no trip ahead, no card and no heading.
-4. **Grab and go**: its heading with the Edit Grab Lists button (0.127) at the right, then the eight grab tiles (§4), exactly as before.
-5. **Library**: a heading and one card of three tight rows — **Trips**, **Things**, **Templates** — each with its drawn mark in
+4. **Grab and Go** (0.128: capital G; was "Grab and go"): its heading with the small Edit Grab Lists button (0.127; small since 0.128) at the right, then the eight grab tiles (§4), exactly as before.
+5. **Library** (0.128, his ask 22 Nov 2026: ONE panel — "Library" and the sync dot are its top line, then the three rows with hairlines, in the same card; no frame inside a frame; before 0.128 the heading stood above the card): a heading and one card of three tight rows — **Trips**, **Things**, **Templates** — each with its drawn mark in
    its part's colour, its name and its count (as the old tiles: `library.trips.count`, the things, the templates; "This device"
    counted the same). A row opens its tab: Trips, Care (where his things live), Templates (`home-library-<section>`; the
 counts keep `count-trips`, `count-things`, `count-templates`).
    Hairlines between rows, like Settings' card of doors.
-6. **"＋ New trip"**: a full-colour button (the main button: never grey), full width, at the foot of Home.
+6. **"＋ New trip"**: a full-colour button (the main button: never grey), full width, at the foot of Home. While away or going home (0.128) it is an outlined blue button, full width and as tall as the full-colour one (`home-create-folded`); before 0.128 it was one quiet muted line.
 **What is gone from Home:** the three count tiles under "This Device" (§12 — the Library rows replace them) and the
 Create new trip card with its frame. The **sync dot** (§12b) moved with the counts: it stands at the right of the Library
 heading (`home-device` holds it; `home-sync-light` unchanged). The 0.109 rule stays: while away or going home (not
-`backHome`) the button is ONE quiet muted line "+ New trip" (`home-create-folded`) that opens the same page; otherwise the
+`backHome`) the button (0.128: an outlined blue button, full width, as tall as the full-colour one; before 0.128 ONE quiet muted line) "+ New trip" (`home-create-folded`) opens the same page; otherwise the
 full-colour button (`home-new-trip`). Grab and go keeps its frame (`home-grab-frame`, his 0.91 ask).
 **Create new trip as a page of its own** (0.110): "＋ New trip" opens it as a full page (a sheet on the iPhone, a sheet on the
 Mac; `CreateTripPage`, `screen-new-trip`) with the title "New trip" (`home-create-heading`), **Cancel** at the top left
@@ -390,11 +390,11 @@ field above." (The fourth is the Create new trip file's, spec 03.)
    `home-grab-frame` whose lines keep their own ids), `Metrics.screenTop` (4 pt) under the top of the page (as
    Settings' first card). Inside, 8 pt apart:
    - **Its line** (`grabHeading`), at least `Metrics.tap` tall, everything on ONE centre line:
-     - "Grab and go": **Title 3 bold**, `ink`, one line (scales down to 80 %); id `home-grab-heading`.
+     - "Grab and Go" (0.128; "Grab and go" before): **Title 3 bold**, `ink`, one line (scales down to 80 %); id `home-grab-heading`.
      - A spacer (at least 8), then, 8 pt apart:
      - **On the iPhone** the magnifier `SearchButton` (`search-open`; section 15).
      - "Edit Grab Lists" (0.127, his ask 22 Nov 2026; was the plain words "Grab Lists"): an outlined button,
-       `HeaderButtonStyle(tint: Home blue, filled: false)` like the app's other Edit buttons, no focus ring. Before 0.127: a plain button, Footnote semibold, Home blue, no focus ring, `Metrics.tap` tall so the
+       `HeaderButtonStyle(tint: Home blue, filled: false)` like the app's other Edit buttons, no focus ring. **0.128 (his ask, 22 Nov 2026): smaller** — `SmallOutlineButtonStyle` (Buttons.swift): Footnote 13 pt words in a thin Home-blue capsule outline; before 0.128 the header button style at body 17 pt, as tall as the header buttons. Before 0.127: a plain button, Footnote semibold, Home blue, no focus ring, `Metrics.tap` tall so the
        whole height takes the tap; id `grab-lists`. It opens the Grab Lists sheet (section 8). The code
        comment notes that this door opens the grab lists, not the templates ("Your templates"), and that the
        owner's note on the Mac asked for "Your Grab Lists".
@@ -1325,7 +1325,7 @@ while editing so Escape does not close it — spec 06 §20a) — the draft is th
 
 **What is on screen** (editing) — the list's lines in his order, things and (0.85) his headings, each heading a
 line of its own (0.84 showed it flat while the open list was grouped by kind):
-1. The header with **"Cancel"** first (0.92, `grab-cancel`, outlined muted) and **"Save"** (a capsule filled with the tone). Under the header, after a refused Save
+1. The header with **"Cancel"** first (0.92, `grab-cancel`; **0.128: `HeaderButtonStyle(tint:, filled: false)`, an outlined button like Edit; Cancel, heading and Save stay on ONE line; the icon + name (`grab-title`) are centred on the page on their own (a ZStack over the buttons' line, 96 pt kept clear each side) (his words: "the button is its own entity, and the heading, including the icon, is centred on its own") — before 0.128 plain words (`BarCancelStyle`) with the icon + name at the left next to it; only on the grab list's edit page**) and **"Save"** (a capsule filled with the tone). Under the header, after a refused Save
    (0.62): **"Put at least one thing on the list first."** (`grab-save-needs`, 15 pt bold red — the
    shared `NeedsLine`). It goes as soon as the draft changes (a name typed, a thing added or removed) and
    when editing starts again.
@@ -1717,7 +1717,7 @@ doodle back) — red on 0.107
      until 0.61 it was the red `grablists-problem`), wrapping over as many lines as it needs, when set
      (only after Make, see Behaviour).
    - **"On Home · <n> of 8"** (`grablists-home-heading`, 15 pt heavy `muted`, 2 pt under it); n can be anything
-     from 0 to 8.
+     from 0 to 8. **0.128:** the heading line also holds, at its right, the heading **"Show on Home"** (small, `muted`), above the switches; before 0.128 every row carried the words "On Home" beside its switch.
    - **The rows (0.108)** — his words on a screenshot of this page (2 Nov 2026): "Reduce padding" and "change the Off
      Home to something that the user understands". Each row is ONE compact line, as a trip's lines and Your choices:
      at least `Metrics.tap` tall (36 iPhone / 26 Mac — Apple's switch and a hair; 54 and two lines until 0.108),
@@ -1733,11 +1733,11 @@ doodle back) — red on 0.107
        the chevrons are drawn 14 pt (20 until 0.108), `muted` when enabled and `line` when disabled, in a
        24 × `Metrics.tap` hit area (34 × 36 until 0.108) — both the Mac's only since 0.72;
      - **"On Home" and its switch** (0.108; `onHomeSwitch`): the words "On Home" (Footnote semibold `muted`, hidden
-       from VoiceOver) and an Apple switch (`Toggle(.switch)`, its label hidden on screen, small on the Mac, Trips
+       from VoiceOver; **gone from the rows in 0.128** — the heading "Show on Home" on the part's heading line replaces them) and an Apple switch (`Toggle(.switch)`, its label hidden on screen, small on the Mac, Trips
        green when on), **on** (`grablists-home-switch-<n>`; VoiceOver "Show <label> on Home"). Switched off, the
        list goes to wait (`takeOff`). Until 0.108 this was the outlined pill **"Off Home"** (`grablists-off-<n>`) —
        a word that said what a press would DO, which he did not read as a state.
-   - **"Waiting · <n>"** (`grablists-waiting-heading`), 15 pt heavy `muted`, 14 pt above, 2 pt under.
+   - **"Waiting · <n>"** (`grablists-waiting-heading`), 15 pt heavy `muted`, 14 pt above, 2 pt under. 0.128: "Show on Home" at the right of this line too, only when something is waiting.
    - If none are waiting (15 pt medium `muted`), worded by whether Home has room: fewer than 8 on Home →
      "Nothing waiting. A new list goes straight onto Home."; 8 on Home → "Nothing waiting. A new list waits
      here while Home is full."
