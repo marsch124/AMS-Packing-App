@@ -18,9 +18,10 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
-        Release(version: "0.127", date: "22 Nov 2026", title: "Larger headings in the grab lists",
+        Release(version: "0.127", date: "22 Nov 2026", title: "Larger headings in the grab lists, and the web app\u{2019}s new address",
                 changed: ["In an open grab list, your own headings (for example Clothes, Tech, Brompton) are larger: a size bigger than the things under them, so the groups are easy to see at a glance. Before, they were smaller than the things.",
                           "Everything else about them stays: grey while something under them is still to take, green with a check once all is in hand, and a tap on a done heading still opens or folds it.",
+                          "Share links for a trip, a template or a grab list now use the web app\u{2019}s new address, https://marsch124.github.io/AMS-Packing-Web-Helper/ \u{2014} its home on GitHub was renamed from AMS-Packing to AMS-Packing-Web-Helper, so it is not mixed up with this app. A link pasted into this app works whatever address is in front of it, old or new.",
                           "How it works and the written specification say this. Nothing else about your trips, templates or grab lists changed."]),
         Release(version: "0.126", date: "12 Nov 2026", title: "Unpack and bag labels",
                 new: ["Unpack: once a trip has set off and has something packed, the trip page shows an \u{201C}Unpack\u{201D} row under On site, with how many are back, for example \u{201C}3/9 back\u{201D}. It opens the Unpack page \u{2014} the way to put things back in their rooms when you are home.",

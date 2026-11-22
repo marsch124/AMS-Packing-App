@@ -2,7 +2,8 @@
 
 A SwiftUI rebuild of the AMS Packing List web app: **one app for the iPhone and
 the Mac that keeps the two in sync** — in the owner's words, "that sync function is
-very important". One target for both devices, like AMS Coffee. The web app stays live at https://marsch124.github.io/AMS-Packing/
+very important". One target for both devices, like AMS Coffee. The web app stays live at https://marsch124.github.io/AMS-Packing-Web-Helper/
+(its repository, `marsch124/AMS-Packing-Web-Helper`, was `marsch124/AMS-Packing` until 22 Nov 2026)
 — with its tests still gating every release — until this one has been through a
 real trip. Do not retire it early.
 

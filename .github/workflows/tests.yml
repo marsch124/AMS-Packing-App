@@ -196,7 +196,7 @@ jobs:
         if: matrix.group == 2
         uses: actions/checkout@v4
         with:
-          repository: marsch124/AMS-Packing
+          repository: marsch124/AMS-Packing-Web-Helper
           path: web-app
       - name: Node for the web app's model
         if: matrix.group == 2

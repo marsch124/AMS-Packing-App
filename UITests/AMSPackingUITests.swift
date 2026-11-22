@@ -7278,7 +7278,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(waitUntil { self.words(app.staticTexts["trip-progress"]) == "1/7" })
         tapVisible(app, app.buttons["trip-share"])
         XCTAssertTrue(appears(app, "share-screen", timeout: 5), "Share did not open")
-        XCTAssertTrue(waitUntil { self.words(app.staticTexts["share-link"]).hasPrefix("https://marsch124.github.io/AMS-Packing/#/t/") },
+        XCTAssertTrue(waitUntil { self.words(app.staticTexts["share-link"]).hasPrefix("https://marsch124.github.io/AMS-Packing-Web-Helper/#/t/") },
                       "not a web app trip link: '\(words(app.staticTexts["share-link"]).prefix(60))'")
         XCTAssertTrue(app.buttons["share-send"].exists, "no way to send it")
         shot(app, "share-trip")
