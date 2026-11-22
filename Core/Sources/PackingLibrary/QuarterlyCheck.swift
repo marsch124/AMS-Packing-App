@@ -3,12 +3,47 @@ import PackingCore
 
 // 0.124 — the quarterly check (his pick of 12 Nov 2026, "make it quarterly"): on 1 Jan, 1 Apr, 1 Jul
 // and 1 Oct the app asks, room by room, "Still have it?" for each thing not looked at this quarter.
-// "Still here" stamps `extra["checked"]` with the day; "Gone…" marks it gone. A thing added this
+// "Still here" stamps `extra[CHECKED_KEY]` with the day; "Gone…" marks it gone. A thing added this
 // quarter counts as looked at (`addThing` stamps it).
+//
+// 0.127: the day sits under "lookedAt". In 0.124–0.126 it sat under "checked" — the name of a trip
+// line's tick, a field EVERY thing has (`Item.checked`, read back as true or false) — so the stored
+// day came back as a tick: the day was lost on the next load, and a backup holding it was REFUSED
+// on restore ("template 1, row 1: checked"; nine model tests red from 0.124 on). `liftOldStamp`
+// moves such a day to its own key wherever a thing is read from what was stored: the records
+// (`Library(records:)`) and a backup file (`Importer.backup(in:)`).
 
-public let CHECKED_KEY = "checked"
+public let CHECKED_KEY = "lookedAt"
+/// Where the day sat in 0.124–0.126 (see above).
+let OLD_CHECKED_KEY = "checked"
 
 extension Library {
+    /// A thing as stored, its day under "checked" (0.124–0.126) moved to `CHECKED_KEY`. Only a text
+    /// moves: a tick is true or false, and no trip line ever carries a text there.
+    static func liftOldStamp(_ v: JSONValue) -> JSONValue {
+        guard var o = v.objectValue, let day = o[OLD_CHECKED_KEY]?.stringValue else { return v }
+        o[OLD_CHECKED_KEY] = nil
+        if isYMD(day), o[CHECKED_KEY] == nil { o[CHECKED_KEY] = .string(day) }
+        return .object(o)
+    }
+
+    /// The same for every thing in a backup file: its templates' rows, the things on no template
+    /// and the things as this app stored them. A trip's lines are left as they are.
+    static func liftOldStamps(inBackup json: JSONValue) -> JSONValue {
+        guard var o = json.objectValue else { return json }
+        if let lists = o["lists"]?.arrayValue {
+            o["lists"] = .array(lists.map { list in
+                guard var l = list.objectValue, let rows = l["items"]?.arrayValue else { return list }
+                l["items"] = .array(rows.map { liftOldStamp($0) })
+                return .object(l)
+            })
+        }
+        for key in ["things", Library.backupItemsKey] {
+            if let things = o[key]?.arrayValue { o[key] = .array(things.map { liftOldStamp($0) }) }
+        }
+        return .object(o)
+    }
+
     /// The first day of today's quarter ("2026-10-01").
     public static func quarterStart(_ today: String) -> String {
         let b = today.split(separator: "-").compactMap { Int($0) }

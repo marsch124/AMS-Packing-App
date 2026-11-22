@@ -191,4 +191,71 @@ final class BackupTests: XCTestCase {
         XCTAssertEqual(counts.map(\.table), Table.allCases)
         XCTAssertEqual(counts.first { $0.table == .items }?.count, 2)
     }
+
+    // MARK: - The quarterly check's day (0.127)
+
+    /// Each thing's quarterly-check day by name ("" = never looked at).
+    static func quarterlyDays(_ lib: Library) -> [String: String] {
+        Dictionary(lib.items.map { ($0.name, Library.checked($0)) }, uniquingKeysWith: { a, _ in a })
+    }
+
+    /// The day "Still here" stamps on a thing, and a new thing's, comes back from the store
+    /// (iCloud) and from a backup as that day. In 0.124–0.126 it sat under "checked", a trip
+    /// line's tick: the store gave it back as a tick, and the backup was refused.
+    func testTheQuarterlyCheckDayComesBackAsADayNotATick() throws {
+        var lib = BackupTests.richer()
+        lib.stillHave([lib.items.first { $0.name == "Headlamp" }!.id], today: "2026-11-12")
+        let days = BackupTests.quarterlyDays(lib)
+        XCTAssertEqual(days["Headlamp"], "2026-11-12")
+        XCTAssertNotEqual(days["Snow shovel"] ?? "", "", "a new thing is stamped as looked at")
+
+        let stored = Library(records: lib.records())
+        XCTAssertEqual(BackupTests.quarterlyDays(stored), days, "the store lost the day")
+        XCTAssertEqual(stored.items.filter(\.checked).map(\.name), [], "the day came back as a tick")
+
+        let (back, report) = try Importer.read(lib.backupData(exportedAt: "2026-11-12T10:00:00.000Z"))
+        XCTAssertTrue(report.isFaithful, "refused: " + report.mismatches.joined(separator: "; "))
+        XCTAssertEqual(BackupTests.quarterlyDays(back), days, "the backup lost the day")
+    }
+
+    /// A file written by 0.124–0.126, and a record they stored, hold the day under "checked":
+    /// the file is restored (it was refused: "template 1, row 1: checked") and the day moves to
+    /// its own key — never read as a tick.
+    func testADayUnderCheckedFromAnOlderBuildIsMovedNotRefused() throws {
+        var lib = BackupTests.richer()
+        lib.stillHave([lib.items.first { $0.name == "Headlamp" }!.id], today: "2026-11-12")
+        let days = BackupTests.quarterlyDays(lib)
+        var moved = 0
+        func older(_ v: JSONValue) -> JSONValue {
+            guard var o = v.objectValue, let day = o[CHECKED_KEY] else { return v }
+            o[CHECKED_KEY] = nil
+            o["checked"] = day
+            moved += 1
+            return .object(o)
+        }
+
+        var json = try JSONValue.parse(lib.backupData(exportedAt: "2026-11-12T10:00:00.000Z"))
+        json["lists"] = .array((json["lists"]?.arrayValue ?? []).map { (list: JSONValue) -> JSONValue in
+            var l = list
+            l["items"] = .array((list["items"]?.arrayValue ?? []).map { older($0) })
+            return l
+        })
+        for key in ["things", Library.backupItemsKey] {
+            json[key] = .array((json[key]?.arrayValue ?? []).map { older($0) })
+        }
+        XCTAssertGreaterThan(moved, 0, "the older file has no day under \"checked\"")
+        let (back, report) = try Importer.read(Data(json.text(pretty: true).utf8))
+        XCTAssertTrue(report.isFaithful, "refused: " + report.mismatches.joined(separator: "; "))
+        XCTAssertEqual(BackupTests.quarterlyDays(back), days, "the day was not moved to its key")
+        XCTAssertEqual(back.items.filter(\.checked).map(\.name), [], "the day was read as a tick")
+
+        let records = lib.records().map { (record: StoredRecord) -> StoredRecord in
+            var r = record
+            if r.table == .items { r.json = older(r.json) }
+            return r
+        }
+        let stored = Library(records: records)
+        XCTAssertEqual(BackupTests.quarterlyDays(stored), days, "a stored record's day was not moved")
+        XCTAssertEqual(stored.items.filter(\.checked).map(\.name), [], "a stored record's day was read as a tick")
+    }
 }
