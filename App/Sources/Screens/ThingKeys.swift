@@ -41,6 +41,10 @@ enum ThingField: Hashable {
     /// a thing, Return adds it, Esc closes the list.
     case kitFind
     case weight, brand, colour, condition, care, careNotes, liquid, restricted, expiry
+    /// A text field of the Details card besides Brand (0.127 — his answer of 22 Nov 2026: "make the
+    /// details card fields reachable with tab again"), by its control's id: Model, Serial, Bought at,
+    /// Price, Value today, How many (`ThingEditor.detailFields`).
+    case detail(String)
     /// Has a battery (0.75, spec 07 part 15): since 0.104 the first of Before a trip, right after Notes — Space switches it.
     case battery
     /// The ⌘J box's own field — never in the Tab order.
@@ -49,7 +53,7 @@ enum ThingField: Hashable {
     /// Typed into: the window's own text field has the keys.
     var isText: Bool {
         switch self {
-        case .name, .notes, .weight, .brand, .colour, .careNotes, .expiry, .jump, .kitFind: return true
+        case .name, .notes, .weight, .brand, .colour, .careNotes, .expiry, .jump, .kitFind, .detail: return true
         default: return false
         }
     }

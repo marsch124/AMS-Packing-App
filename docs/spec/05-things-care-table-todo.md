@@ -1598,7 +1598,7 @@ Pocket (0.69, when that bag is one of his — since 0.73 one with no pockets too
 in his order (0.73; `kitOut(id)` then `kitRemove(id)`, scroll id `key-kit-row-<id>`): its Take out / Put back, then
 its ✕; Add from your things; while its list is open, Find a thing (0.73, `kitFind`, a text field, scroll id
 `key-kit-find`); and, when it holds something, Check before each trip — each ringed by `ThingKitPart(ringed:)`
-(`KitDraft.picking`, so a newly loaded thing starts closed) · Colour (Brand until 0.115; since then it is in the Details card, whose fields Tab does not reach) · Condition · Care · What to do (Care's
+(`KitDraft.picking`, so a newly loaded thing starts closed) · Colour (Brand until 0.115, when it went into the Details card; from 0.115 to 0.126 Tab did not reach that card at all — since 0.127 its text fields Brand · Model · Serial · Bought at · Price · Value today · How many come right after Before a trip, while the card is open; folded, Tab passes it and ⌘J opens it) · Condition · Care · What to do (Care's
 notes) — the last (until 0.104 Liquid, Not allowed in the cabin, Has a battery and Valid until followed it). Before a
 trip folded: its four are left out (Notes → Kind of thing); ⌘J (`fieldOrder(all: true)`) still finds them and opens
 the frame (`land`); one of them in focus when a click folds the frame: Tab goes on from Kind of thing, Shift-Tab to

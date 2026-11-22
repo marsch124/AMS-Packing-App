@@ -546,6 +546,9 @@ struct ThingEditor: View {
     @State private var newTemplates: [PackList] = []
     /// What it holds, or the kit it is in (0.70, ThingKitPart.swift) — kept until Save.
     @State private var kit = KitDraft()
+    /// The Details card opened with "Add details" while the thing has none yet (0.115; here since 0.127,
+    /// so the Mac's keys know whether its fields are on the page).
+    @State private var detailsOpen = false
     /// Remember with it and Goes with (0.101, ThingRemember.swift) — kept until Save.
     @State private var remember = RememberDraft()
     /// Its own "Only on some trips" (0.73, spec 07 part 14): every template it is on follows
@@ -628,7 +631,12 @@ struct ThingEditor: View {
                     // Lent to… (0.124): who has it, since when; kept on Save.
                     ThingLentLine(draft: $draft).environmentObject(model)
                     // Details (0.115, inventory step 1 — his pick: under the photos, folded while empty).
-                    ThingDetailsCard(draft: $draft).environmentObject(model)
+                    // On the Mac its text fields are in the keys' order (0.127), right here: after Before a trip.
+                    #if os(macOS)
+                    ThingDetailsCard(draft: $draft, open: $detailsOpen, typing: $typing).environmentObject(model)
+                    #else
+                    ThingDetailsCard(draft: $draft, open: $detailsOpen).environmentObject(model)
+                    #endif
                     // Papers (0.119 — receipts, delivery notes, warranty cards, manuals; the manual's link).
                     ThingPapersCard(thingId: shown, draft: $draft).environmentObject(model).id(shown ?? "new")
                     // 0.124: spare parts and refills; claim letter, Sell it…, label.
@@ -1750,6 +1758,7 @@ extension ThingEditor {
         case .kitFind: return "key-kit-find"
         case .battery: return "key-battery"
         case .jump: return "key-jump"
+        case .detail(let id): return "key-\(id)"
         default: return "key-\(f)"
         }
     }
@@ -1757,6 +1766,16 @@ extension ThingEditor {
     /// Before a trip's fields (0.104), in its order: Battery, On a plane's two, Valid until (Also pack
     /// and Remember are not in the walk).
     static let beforeFields: [ThingField] = [.battery, .liquid, .restricted, .expiry]
+
+    /// The Details card's text fields (0.127), in its order. Bought on and Warranty are pickers — Tab
+    /// goes past them, as past every drop-down; so does the price's currency, a part of Price.
+    static let detailFields: [ThingField] = [.brand, .detail("thing-model"), .detail("thing-serial"),
+                                             .detail("thing-bought-at"), .detail("thing-price"),
+                                             .detail("thing-value"), .detail("thing-owned-count")]
+    /// Their names, as the card's lines say them.
+    static let detailNames: [String: String] = ["thing-model": "Model", "thing-serial": "Serial",
+                                                "thing-bought-at": "Bought at", "thing-price": "Price",
+                                                "thing-value": "Value today", "thing-owned-count": "How many"]
 
     /// Before a trip folded, as this device keeps it NOW — read from the defaults themselves: the
     /// keys' monitor holds a copy of the page, whose @AppStorage still said "open" after a fold
@@ -1772,6 +1791,9 @@ extension ThingEditor {
     fileprivate func fieldOrder(all: Bool = false) -> [ThingField] {
         var out: [ThingField] = [.name, .notes]
         if all || !ThingEditor.beforeFoldedNow { out += ThingEditor.beforeFields }
+        // The Details card's (0.127), where the card is — under Photos: while it is folded to "Add details"
+        // Tab goes past them; `all` (⌘J) names them folded too, and landing on one opens it.
+        if all || detailsOpen || !ThingDetailsCard.isEmpty(draft) { out += ThingEditor.detailFields }
         out.append(.category)
         out.append(.owner)                                                               // always (0.73)
         let templates = self.templates
@@ -1793,7 +1815,7 @@ extension ThingEditor {
                 if !kit.contents.isEmpty { out.append(.kitCheck) }
             }
         }
-        out += [.colour, .condition, .care, .careNotes]   // Brand is in Details since 0.115
+        out += [.colour, .condition, .care, .careNotes]   // Brand is in Details since 0.115 (walked there, above)
         return out
     }
 
@@ -1834,6 +1856,7 @@ extension ThingEditor {
         case .when: return "thing-when"
         case .weight: return "thing-weight"
         case .brand: return "thing-brand"
+        case .detail(let id): return id
         case .colour: return "thing-colour"
         case .condition: return "thing-condition"
         case .care: return "thing-care"
@@ -1868,6 +1891,7 @@ extension ThingEditor {
         case .when: return "When"
         case .weight: return "Weight"
         case .brand: return "Brand"
+        case .detail(let id): return ThingEditor.detailNames[id] ?? id
         case .colour: return "Colour"
         case .condition: return "Condition"
         case .care: return "Care"
@@ -1910,7 +1934,7 @@ extension ThingEditor {
         case .section: return "type to pick, or a new section · Space opens · Tab next · Return saves"
         case .category, .owner, .bag, .pocket, .when, .condition, .care:
             return "type to pick · Space opens · Tab next · Return saves"
-        case .name, .brand, .colour: return "type · Tab next · Return saves"
+        case .name, .brand, .colour, .detail: return "type · Tab next · Return saves"
         }
     }
 
@@ -1984,6 +2008,8 @@ extension ThingEditor {
         if at == .expiry, f != .expiry { readExpiry() }
         // A field of Before a trip reached while it is folded (⌘J): the frame opens (0.104).
         if let f, ThingEditor.beforeFields.contains(f), ThingEditor.beforeFoldedNow { ThingEditor.beforeFoldedNow = false }
+        // A field of the Details card reached while it is folded (⌘J): the card opens (0.127).
+        if let f, ThingEditor.detailFields.contains(f), !detailsOpen, ThingDetailsCard.isEmpty(draft) { detailsOpen = true }
         keyHome.quiet = quiet && f != at
         keyNote = ""
         at = f

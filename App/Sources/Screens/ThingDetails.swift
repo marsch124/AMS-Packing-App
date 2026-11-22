@@ -8,7 +8,10 @@ import PackingLibrary
 struct ThingDetailsCard: View {
     @EnvironmentObject var model: LibraryModel
     @Binding var draft: Item
-    @State private var open = false
+    /// Opened with "Add details" while the thing has none (the page's, since 0.127: its keys ask).
+    @Binding var open: Bool
+    /// The page's field in focus — the Mac's keys only (0.127): the card's text fields are in Tab's walk.
+    var typing: FocusState<ThingField?>.Binding? = nil
     @State private var priceText = ""
     @State private var valueText = ""
     @State private var countText = ""
@@ -57,7 +60,7 @@ struct ThingDetailsCard: View {
         let today = Today.local
         let estimate = Library.valueSet(draft) == nil ? Library.valueToday(draft, today: today) : nil
         return VStack(alignment: .leading, spacing: 0) {
-            line("Brand") { text($draft.manufacturer, "e.g. Sony", "thing-brand") }
+            line("Brand") { text($draft.manufacturer, "e.g. Sony", "thing-brand", .brand) }
             line("Model") { text($draft.model, "e.g. WH-1000XM5", "thing-model") }
             line("Serial") {
                 HStack(spacing: 4) {
@@ -179,10 +182,14 @@ struct ThingDetailsCard: View {
         .overlay(alignment: .bottom) { if !last { Theme.line.frame(height: 1).padding(.leading, 12) } }
     }
 
-    private func text(_ binding: Binding<String>, _ prompt: String, _ id: String) -> some View {
-        TextField(prompt, text: binding)
+    /// One of the card's text fields — on the Mac in the keys' walk (0.127): `.detail(id)`, Brand `.brand`.
+    private func text(_ binding: Binding<String>, _ prompt: String, _ id: String, _ field: ThingField? = nil) -> some View {
+        let f = field ?? .detail(id)
+        return TextField(prompt, text: binding)
             .textFieldStyle(.plain).font(.system(.body)).foregroundStyle(Theme.ink)
             .accessibilityIdentifier(id)
+            .detailFocused(typing, f)
+            .keyed(f)
     }
 
     private func chips(_ words: [String], id: String, pick: @escaping (String) -> Void) -> some View {
@@ -264,5 +271,12 @@ struct ThingStaysHome: View {
         .bCard()
         .accessibilityLabel("Stays at home \u{2014} never offered on trips")
         .accessibilityIdentifier("thing-stays-home")
+    }
+}
+
+extension View {
+    /// A Details text field tied to the page's field in focus — the Mac's keys only (`macFocused`, 0.127).
+    @ViewBuilder func detailFocused(_ binding: FocusState<ThingField?>.Binding?, _ f: ThingField) -> some View {
+        if let binding { macFocused(binding, f) } else { self }
     }
 }

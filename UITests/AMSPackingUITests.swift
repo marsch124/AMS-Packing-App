@@ -15513,10 +15513,26 @@ final class AMSPackingUITests: XCTestCase {
         tabTo(app, "thing-notes")
         app.typeText("Dry bag")
         XCTAssertTrue(says(app, "thing-notes").contains("Dry bag"), "what was typed did not reach Notes: '\(says(app, "thing-notes"))'")
-        tabTo(app, "thing-colour")                                 // Brand left the walk for Details (0.115)
+        tabTo(app, "thing-colour")                                 // Brand went into the Details card in 0.115
         app.typeText("Olive")
         XCTAssertEqual(says(app, "thing-colour"), "Olive", "what was typed did not reach Colour")
         shot(app, "keys-focus-colour")
+        // The Details card's text fields (0.127 — his answer of 22 Nov 2026, "make the details card fields
+        // reachable with tab again"): folded to Add details on Map, Tab went past them (above); opened, they
+        // follow Before a trip in the card's order — Bought on and Warranty are pickers, passed as every
+        // drop-down — and Kind of thing comes after them.
+        tap(app, id: "thing-details-open")
+        XCTAssertTrue(app.textFields["thing-brand"].waitForExistence(timeout: 5), "Add details did not open the card")
+        tabTo(app, "thing-expiry")
+        for id in ["thing-brand", "thing-model", "thing-serial", "thing-bought-at", "thing-price", "thing-value",
+                   "thing-owned-count", "thing-category"] {
+            app.typeKey(.tab, modifierFlags: [])
+            XCTAssertTrue(focused(app, id), "Tab did not go on to \(id) with the Details card open")
+        }
+        tabTo(app, "thing-brand", back: true)
+        app.typeText("Trailco")
+        XCTAssertEqual(says(app, "thing-brand"), "Trailco", "what was typed did not reach Brand")
+        shot(app, "keys-focus-brand")
         pressEscape(app)
         XCTAssertTrue(disappears(app, "thing-detail", timeout: 5), "Escape no longer cancels the page")
         #endif

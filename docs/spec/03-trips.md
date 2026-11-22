@@ -1316,7 +1316,8 @@ left, the choice beside it) are kept.
 5. **The groups** (a lazy stack with **no spacing** — 4 until 0.67), one per non-empty group of
    `groupBy(view, trip.entries)`; `g` = the group's position in that list:
    - Heading row (top padding **6** — 12 until 0.67, his words of 6 Oct 2026, "Far too much space between the
-     lines"; with a line above it, the heading's words stand about 12 pt under that line, 25 until 0.67):
+     lines"; 10 from 0.111 to 0.126, which left the words 16 pt under the line above on the iPhone — back to 6 in
+     0.127, his choice of 22 Nov 2026; 2 under it since 0.111; with a line above it, the heading's words stand about 12 pt under that line, 25 until 0.67):
      fold arrow (drawn chevron at `Metrics.glyph`, 20 / 16, with `onGrid`, in a `Metrics.lineButton` − 6 ×
      `Metrics.line` target — 34×36 and 20 pt until 0.67; pointing right when folded,
      down when open; id `trip-group-<g>-fold`, label "Open <heading>" / "Fold <heading>"); the heading

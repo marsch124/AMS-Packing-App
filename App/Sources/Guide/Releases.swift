@@ -19,7 +19,8 @@ struct Release: Identifiable {
 enum Releases {
     static let all: [Release] = [
         Release(version: "0.127", date: "22 Nov 2026", title: "Larger headings in the grab lists, and the web app\u{2019}s new address",
-                changed: ["In an open grab list, your own headings (for example Clothes, Tech, Brompton) are larger: a size bigger than the things under them, so the groups are easy to see at a glance. Before, they were smaller than the things.",
+                changed: ["On a trip, the headings of its groups sit a little closer to the lines above them again (as before 0.111), so more of the list fits on the screen.",
+                          "In an open grab list, your own headings (for example Clothes, Tech, Brompton) are larger: a size bigger than the things under them, so the groups are easy to see at a glance. Before, they were smaller than the things.",
                           "Everything else about them stays: grey while something under them is still to take, green with a check once all is in hand, and a tap on a done heading still opens or folds it.",
                           "Share links for a trip, a template or a grab list now use the web app\u{2019}s new address, https://marsch124.github.io/AMS-Packing-Web-Helper/ \u{2014} its home on GitHub was renamed from AMS-Packing to AMS-Packing-Web-Helper, so it is not mixed up with this app. A link pasted into this app works whatever address is in front of it, old or new.",
                           "How it works and the written specification say this. Nothing else about your trips, templates or grab lists changed."],
@@ -28,7 +29,8 @@ enum Releases {
                         "iPhone: on a new iPhone with nothing on it yet, the first screen now has the Settings nut at the top right. Since 0.110 there was no way to open Settings there.",
                         "iPhone: tapping the sync dot on Home opens its bubble to the left of the dot, on the screen. Since 0.110 it opened off the right edge, so its line and Details could not be reached.",
                         "On a trip, each step of the strip at the top (Plan, Pack, On site, Review, Refine) takes a tap over its full height again. Since 0.112 a tap near its top or bottom edge did nothing.",
-                        "Mac: the To do tab\u{2019}s heading sits under the window\u{2019}s title bar, level with the other tabs. Since 0.110 it sat up in the title bar, beside the window\u{2019}s three buttons."]),
+                        "Mac: the To do tab\u{2019}s heading sits under the window\u{2019}s title bar, level with the other tabs. Since 0.110 it sat up in the title bar, beside the window\u{2019}s three buttons.",
+                        "Mac: Tab reaches the Details card\u{2019}s fields again \u{2014} Brand, Model, Serial, Bought at, Price, Value today and How many \u{2014} right after Before a trip. Since 0.115 Tab went past them. While the card is folded to Add details, Tab goes past it; \u{2318}J still finds its fields and opens it."]),
         Release(version: "0.126", date: "12 Nov 2026", title: "Unpack and bag labels",
                 new: ["Unpack: once a trip has set off and has something packed, the trip page shows an \u{201C}Unpack\u{201D} row under On site, with how many are back, for example \u{201C}3/9 back\u{201D}. It opens the Unpack page \u{2014} the way to put things back in their rooms when you are home.",
                       "What is on it: every thing that went on the trip (ticked on the way out, not set aside, and not a reminder) plus what you bought on site, less what you marked used up. Things are grouped by the room each lives in at home (the Inventory room), in the order of your own rooms, with its spot under the name (for example \u{201C}top shelf\u{201D}). Things with no room yet come last, under \u{201C}No room yet\u{201D}.",
