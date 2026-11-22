@@ -12665,7 +12665,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
         for id in ["thing-heading-name", "thing-heading-kept", "thing-category-title", "thing-bag-title",
                    "thing-heading-plane", "thing-heading-valid", "thing-when-title", "thing-condition-title",
-                   "thing-heading-weight", "thing-heading-brand", "thing-heading-colour", "thing-heading-notes",
+                   "thing-heading-weight", "thing-heading-details", "thing-heading-colour", "thing-heading-notes",
                    "thing-lists-title"] {
             XCTAssertTrue(app.staticTexts[id].waitForExistence(timeout: 5), "the thing editor lost its heading \(id)")
         }
@@ -14007,6 +14007,12 @@ final class AMSPackingUITests: XCTestCase {
 
     // MARK: - Kept at home is chosen (0.64)
 
+    /// Kept at home's starter rooms (0.115, spec 05 "Kept at home = Room ▸ spot", `STARTER_ROOMS` — the tests
+    /// cannot import PackingLibrary): offered AFTER his own places, those he has not got yet, so his newest
+    /// place is the last row that is none of these.
+    private static let starterRooms: Set<String> = ["Hall", "Kitchen", "Living room", "Bedroom", "Office", "Bathroom",
+                                                    "Laundry", "Storage", "Garage", "Attic", "Cellar", "Car", "At work"]
+
     /// The thing's Kept at home, as he reads it.
     private func keptAtHome(_ app: XCUIApplication) -> String {
         let b = app.buttons["thing-storage"]
@@ -14204,9 +14210,9 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
         let order = ["thing-heading-name", "thing-heading-notes", "thing-heading-battery", "thing-heading-with",
                      "thing-heading-remember", "thing-heading-plane", "thing-heading-valid",
-                     "thing-heading-photos", "thing-category-title", "thing-owner-title",
+                     "thing-heading-photos", "thing-heading-details", "thing-category-title", "thing-owner-title",
                      "thing-lists-title", "thing-heading-kept", "thing-bag-title", "thing-when-title",
-                     "thing-heading-weight", "thing-heading-brand", "thing-heading-colour", "thing-condition-title",
+                     "thing-heading-weight", "thing-heading-colour", "thing-condition-title",   // Brand: in Details since 0.115
                      "thing-care-title"]
         let tops = order.map { id -> CGFloat in
             let e = app.descendants(matching: .any).matching(identifier: id).firstMatch
@@ -14226,7 +14232,7 @@ final class AMSPackingUITests: XCTestCase {
         newPlace(app, "Attic shelf")
         XCTAssertEqual(keptAtHome(app), "Attic shelf")
         openPlaces(app)
-        let last = (0..<60).map { app.buttons["thing-place-\($0)"] }.last { $0.exists }!
+        let last = (0..<60).map { app.buttons["thing-place-\($0)"] }.last { $0.exists && !Self.starterRooms.contains(words($0)) }!
         XCTAssertEqual(words(last), "Attic shelf", "the new place did not join his places")
         XCTAssertTrue(isOn(last), "the thing's place is not ticked in the list")
         shot(app, "thing-kept-at-home-list")
@@ -14254,14 +14260,16 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
         if app.buttons["thing-details-open"].waitForExistence(timeout: 3) { tap(app, id: "thing-details-open") }
         XCTAssertTrue(app.textFields["thing-model"].waitForExistence(timeout: 5), "no Model in Details")
+        // 🪤 Mac: a click does not scroll, and Model lies below the list's visible part (20 Nov: y 683–701, list ends at 670).
+        bringIntoView(app, app.textFields["thing-model"])
         type("XM5", into: app.textFields["thing-model"])
         tap(app, id: "thing-warranty-2")
         XCTAssertTrue(app.staticTexts["thing-warranty-says"].waitForExistence(timeout: 5), "the warranty does not say how long is left")
         XCTAssertTrue(words(app.staticTexts["thing-warranty-says"]).contains("left"))
-        let home = app.switches["thing-stays-home"]
-        XCTAssertTrue(home.waitForExistence(timeout: 5), "no Stays at home switch")
+        let home = switchNamed(app, "thing-stays-home")           // a check box on the Mac, as bag-detail-cabin
+        XCTAssertTrue(home.exists, "no Stays at home switch")
         #if os(macOS)
-        home.click()
+        setSwitch(app, "thing-stays-home", on: true)
         #else
         home.switches.firstMatch.exists ? home.switches.firstMatch.tap() : home.tap()
         #endif
@@ -14368,7 +14376,12 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "thing-label-done")
         tap(app, id: "thing-save")
         XCTAssertTrue(disappears(app, "thing-detail", timeout: 5))
+        #if os(macOS)
+        // 🪤 The Mac folds a button's texts into its own words (README): no thing-row-0-lent child there.
+        XCTAssertTrue(waitUntil { self.words(app.buttons["thing-row-0"]).contains("Lent") }, "no Lent tag: '\(words(app.buttons["thing-row-0"]))'")
+        #else
         XCTAssertTrue(app.descendants(matching: .any)["thing-row-0-lent"].waitForExistence(timeout: 5), "no Lent tag")
+        #endif
     }
 
     /// 0.124: the quarterly check opens from the Inventory tab and "Still here" takes a thing off it.
@@ -14393,7 +14406,12 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "care-things")
         XCTAssertTrue(appears(app, "things-detail", timeout: 5))
         type("Sofa", into: app.textFields["things-search"])
+        #if os(macOS)
+        // 🪤 The Mac folds a button's texts into its own words (README): no thing-row-0-sample child there.
+        XCTAssertTrue(waitUntil(timeout: 10) { self.words(app.buttons["thing-row-0"]).contains("Sample") }, "no Sample tag: '\(words(app.buttons["thing-row-0"]))'")
+        #else
         XCTAssertTrue(app.descendants(matching: .any)["thing-row-0-sample"].waitForExistence(timeout: 10), "no Sample tag")
+        #endif
         tap(app, id: "thing-row-0")
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
         XCTAssertTrue(app.staticTexts["thing-sample"].waitForExistence(timeout: 5), "the page does not say Sample")
@@ -14432,9 +14450,17 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "thing-row-0")
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
         if app.buttons["thing-details-open"].waitForExistence(timeout: 3) { tap(app, id: "thing-details-open") }
-        tap(app, id: "thing-serial-scan")
         let serial = app.textFields["thing-serial"]
+        #if os(macOS)
+        // No camera scan on the Mac (0.121, spec 05: "Serial scan (iPhone only)… Mac: no scan button, type it").
         XCTAssertTrue(serial.waitForExistence(timeout: 5), "no Serial field")
+        XCTAssertFalse(app.buttons["thing-serial-scan"].exists, "a scan button on the Mac")
+        bringIntoView(app, serial)                                 // below the list's visible part, as Model
+        type("TEST-4512 0877", into: serial)
+        #else
+        tap(app, id: "thing-serial-scan")
+        XCTAssertTrue(serial.waitForExistence(timeout: 5), "no Serial field")
+        #endif
         XCTAssertTrue(waitUntil { (serial.value as? String) == "TEST-4512 0877" },
                       "the scan left \(String(describing: serial.value))")
 
@@ -15577,7 +15603,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(appears(app, "thing-detail", timeout: 5))
         XCTAssertTrue(waitUntil { self.keptAtHome(app) == "Workbench" }, "the new place was not kept")
         openPlaces(app)
-        let last = (0..<60).map { app.buttons["thing-place-\($0)"] }.last { $0.exists }
+        let last = (0..<60).map { app.buttons["thing-place-\($0)"] }.last { $0.exists && !Self.starterRooms.contains(words($0)) }
         XCTAssertEqual(last.map { words($0) }, "Workbench", "the new place did not join his places")
         closeDropDown(app, "thing-place")
         #endif
