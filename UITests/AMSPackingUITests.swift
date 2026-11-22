@@ -2058,12 +2058,14 @@ final class AMSPackingUITests: XCTestCase {
         let numbers = words(progress).split { !$0.isNumber }.compactMap { Int($0) }
         let lines = numbers.dropFirst().prefix(2).reduce(0, +)
         XCTAssertGreaterThan(lines, 0, "the trip has no lines: '\(words(progress))'")
-        // 🪤 Start at the top of the list, steered by the Sorting row (in the same list, never lazy):
-        // with no row above the first line, the Mac scrolled the Trips screen BEHIND the trip and line 1
-        // "never appeared" (0.79's probe, after the bag photos had scrolled the list down).
-        bringIntoView(app, app.buttons["trip-view"])
+        // 🪤 Start at the top of the list, steered by Everything | Still to pack (in the same list, never
+        // lazy, right above the first line; the Sorting row `trip-view` until 0.111, when Group by went down
+        // to the floating bar — in no list, so nothing scrolled and line 1 "never appeared" on the iPhone):
+        // with no row above the first line, the Mac scrolled the Trips screen BEHIND the trip (0.79's probe,
+        // after the bag photos had scrolled the list down).
+        bringIntoView(app, app.buttons["trip-show-all"])
         for n in 0..<lines {
-            XCTAssertTrue(scrollUntil(app, "trip-line-\(n)", near: n > 0 ? "trip-line-\(n - 1)" : "trip-view"),
+            XCTAssertTrue(scrollUntil(app, "trip-line-\(n)", near: n > 0 ? "trip-line-\(n - 1)" : "trip-show-all"),
                           "line \(n + 1) of \(lines) never appeared")
             let line = app.buttons.matching(identifier: "trip-line-\(n)").firstMatch
             if !isOn(line) { tapVisible(app, line) }
@@ -5480,7 +5482,7 @@ final class AMSPackingUITests: XCTestCase {
     func testTheSyncLightOnHomeSaysHowICloudIsGoing() {
         var app = launch()
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
-        XCTAssertTrue(app.staticTexts["count-trips"].waitForExistence(timeout: 5), "no This Device on Home")
+        XCTAssertTrue(app.buttons["home-library-events"].waitForExistence(timeout: 5), "no Library on Home")   // a button since 0.110
         XCTAssertFalse(app.buttons["home-sync-light"].waitForExistence(timeout: 2), "a sync dot while iCloud is off")
         deviceBlockIsAsIn091(app)
         for (state, says) in [("insync", "green \u{00B7} In sync \u{00B7} today "), ("sending", "orange \u{00B7} Sending 4 changes\u{2026}")] {
@@ -8330,7 +8332,8 @@ final class AMSPackingUITests: XCTestCase {
         tap(app, id: "template-detail-done")
         XCTAssertTrue(app.staticTexts["templates-area-base"].waitForExistence(timeout: 5))
         tab(app, "home")
-        XCTAssertTrue(scrollUntil(app, "trip-activity-1"))
+        openNewTrip(app)                    // its own page since 0.110, as above (this half was missed then)
+        XCTAssertTrue(scrollUntil(app, "trip-activity-1"), "Create new trip offers no second template to tick")
         XCTAssertFalse(app.buttons["trip-activity-2"].exists, "an always-packed template is offered to tick")
     }
 
@@ -9042,7 +9045,9 @@ final class AMSPackingUITests: XCTestCase {
 
         tab(app, "home")
         XCTAssertTrue(appears(app, "screen-home"))
-        XCTAssertTrue(scrollUntil(app, "trip-activity-1"))
+        // Create new trip is its own page since 0.110 (Home's "＋ New trip"); `tab` cancelled it above.
+        openNewTrip(app)
+        XCTAssertTrue(scrollUntil(app, "trip-activity-1"), "no template pills on Create new trip, opened again")
         XCTAssertTrue(waitUntil { (hiking.value as? String) == "#ffd60a/#3d3000" },
                       "Hiking's pill does not wear its yellow: '\(hiking.value as? String ?? "")'")
         XCTAssertTrue(waitUntil { (swim.value as? String) == "#dc3d43/#ffffff" },
@@ -11121,9 +11126,11 @@ final class AMSPackingUITests: XCTestCase {
     func testHomeCountsTheTemplatesYourTemplatesShows() {
         let app = launch("-uiTestingChecks")
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
-        let tile = app.staticTexts["count-templates"]
-        XCTAssertTrue(tile.waitForExistence(timeout: 5))
-        let onHome = words(tile)
+        // Since 0.110 the number is in Library's Templates row, a button; the Mac folds it into the row's words (README).
+        let row = app.buttons["home-library-templates"]
+        XCTAssertTrue(row.waitForExistence(timeout: 5), "Home's Library has no Templates row")
+        XCTAssertTrue(waitUntil { self.words(row).contains(where: \.isNumber) }, "the Templates row shows no number: '\(words(row))'")
+        let onHome = String(words(row).filter(\.isNumber))
         tab(app, "templates")
         let summary = app.staticTexts["templates-summary"]
         XCTAssertTrue(summary.waitForExistence(timeout: 5))
@@ -11131,7 +11138,7 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertFalse(shown.isEmpty, "'\(words(summary))'")
         XCTAssertEqual(onHome, shown, "Home counts \(onHome) templates, Your templates shows \(shown)")
         tab(app, "home")
-        bringIntoView(app, app.staticTexts["count-templates"])
+        bringIntoView(app, row)
         shot(app, "home-device-counts")
     }
 
@@ -15199,10 +15206,10 @@ final class AMSPackingUITests: XCTestCase {
     }
     #endif
 
-    /// His note on 0.63, "The area above Grab and go is underused": Grab and go is
-    /// Home's first line, with its search and Grab Lists beside it, and the grab lists
-    /// start right under it — no empty band above the heading. Since 0.91 the heading leads
-    /// its own frame (his ask, 19 Oct 2026), the frame Home's first block.
+    /// His note on 0.63, "The area above Grab and go is underused": no empty band above Grab
+    /// and go's heading, and the grab lists start right under it. Since 0.91 the heading leads
+    /// its own frame (his ask, 19 Oct 2026); until 0.110 that frame was Home's first block,
+    /// since 0.110 (redesign B) it comes after Next trip's countdown.
     func testHomeLeadsWithGrabAndGoAtTheTop() {
         let app = launch()
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
@@ -15210,34 +15217,21 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(heading.waitForExistence(timeout: 5), "Home has no Grab and go")
         XCTAssertTrue(first.waitForExistence(timeout: 5), "Home has no grab list")
         shot(app, "home-top")
-        #if os(macOS)
-        // The Mac (0.91): the strip holds the search alone; Grab and go's frame starts right
-        // under it, the heading at the frame's top and the tiles right under that. (0.67–0.90:
-        // the heading ON the lights' line, the first tile ~38 pt under the window's top.)
-        let top = screenTop(app, "home")
-        let band = heading.frame.minY - top
-        XCTAssertGreaterThanOrEqual(band, -2, "Grab and go reaches up into the strip (\(heading.frame.minY) < \(top))")
-        XCTAssertLessThan(band, 40, "an empty band of \(band) pt above Grab and go")
-        let under = first.frame.minY - heading.frame.maxY
-        XCTAssertLessThan(under, 16, "the grab lists start \(under) pt under Grab and go")
-        let gap = first.frame.minY - app.windows.firstMatch.frame.minY
-        print("HOME-TOP band=\(band) under=\(under) gap=\(gap)")
-        XCTAssertLessThan(gap, 110, "the grab lists start \(gap) pt under the top of the window")
-        #else
-        let top = screenTop(app, "home")
-        let band = heading.frame.minY - top
-        XCTAssertGreaterThanOrEqual(band, -2, "Grab and go reaches above the top of Home (\(heading.frame.minY) < \(top))")
-        // On the iPhone the screen begins 8 pt under the status bar (its safe area), so the
-        // band is that plus the header's own top: 18 pt in 0.67, 39 in 0.66 — and since 0.91
-        // (the heading inside its frame: 4 to the frame, 14 of padding) 32.
+        // 0.110 (redesign B; spec 02 §3, What's new 0.110): Home runs the title with the nut, the search,
+        // Next trip with its countdown, THEN Grab and go — no longer Home's first block, so the band is
+        // measured from the block above it (the sample's trip is a month ahead: its countdown). His 0.63
+        // rule holds where it stands now: no empty band above the heading, the tiles right under it.
+        let countdown = app.buttons["home-countdown"]
+        XCTAssertTrue(countdown.waitForExistence(timeout: 5), "no countdown above Grab and go")
+        let band = heading.frame.minY - countdown.frame.maxY
+        XCTAssertGreaterThanOrEqual(band, 0, "Grab and go reaches up into the countdown (\(heading.frame.minY) < \(countdown.frame.maxY))")
+        // 8 between Home's blocks + 14 of the frame's padding + the heading centred on its line: about 27.
         XCTAssertLessThan(band, 38, "an empty band of \(band) pt above Grab and go")
         let under = first.frame.minY - heading.frame.maxY
         XCTAssertLessThan(under, 16, "the grab lists start \(under) pt under Grab and go")
-        // 0.66: 73 pt; 0.67: 54.
-        let gap = first.frame.minY - top
+        let gap = first.frame.minY - countdown.frame.maxY
         print("HOME-TOP band=\(band) under=\(under) gap=\(gap)")
-        XCTAssertLessThan(gap, 80, "the grab lists start \(gap) pt under the top of Home")
-        #endif
+        XCTAssertLessThan(gap, 80, "the grab lists start \(gap) pt under the countdown")
     }
 
     /// 0.108 — his words (2 Nov 2026, on a trip): "I am currently on a trip, but I can't see it on the
@@ -17639,7 +17633,7 @@ final class AMSPackingUITests: XCTestCase {
     }
 
     /// Send to Obsidian at the FOOT of a reviewed trip (his ask, 12 Oct 2026; until 0.73 a
-    /// card at the very top): under every line, under Save as Excel and Share, the same size
+    /// card at the very top): under every line, under Save as Excel (and Share, until 0.111 put Share in the floating bar), the same size
     /// as Save as Excel and on its left edge — and only Delete trip after it.
     func testSendToObsidianIsAtTheFootOfAReviewedTrip() {
         continueAfterFailure = true
@@ -17661,12 +17655,12 @@ final class AMSPackingUITests: XCTestCase {
             if lowest.isNull || f.maxY > lowest.maxY { lowest = f }
         }
         XCTAssertFalse(lowest.isNull, "no line of the trip is in sight at its foot")
-        let s = send.frame, excel = app.buttons["trip-excel"], share = app.buttons["trip-share"]
-        XCTAssertTrue(excel.exists && share.exists, "no Save as Excel or Share on the trip")
+        let s = send.frame, excel = app.buttons["trip-excel"]
+        XCTAssertTrue(excel.exists, "no Save as Excel on the trip")
         let e = excel.frame
         XCTAssertGreaterThanOrEqual(s.minY, lowest.maxY, "Send to Obsidian is not under the last line: \(s) vs \(lowest)")
-        XCTAssertGreaterThanOrEqual(s.minY, max(e.maxY, share.frame.maxY),
-                                    "Send to Obsidian is not under Save as Excel and Share: \(s) vs \(e), \(share.frame)")
+        // Share left Excel's side for the floating bar in 0.111 (B): Save as Excel stands alone above it.
+        XCTAssertGreaterThanOrEqual(s.minY, e.maxY, "Send to Obsidian is not under Save as Excel: \(s) vs \(e)")
         XCTAssertLessThanOrEqual(abs(s.height - e.height), 0.5, "Send to Obsidian is not as tall as Save as Excel: \(s) vs \(e)")
         XCTAssertLessThanOrEqual(abs(s.minX - e.minX), 0.5, "Send to Obsidian does not start where Save as Excel does: \(s) vs \(e)")
         let delete = app.buttons["trip-delete"]
@@ -18948,7 +18942,9 @@ final class AMSPackingUITests: XCTestCase {
         let count = app.staticTexts["guide-search-count"]
         XCTAssertTrue(waitUntil { self.words(count) == "2 places" }, "the count says '\(words(count))', not 2 places")
         XCTAssertFalse(app.staticTexts["guide-hit-topic-1-0"].exists, "a paragraph that does not say it shows")
-        for (part, n) in [("topic-1", 7), ("topic-11", 3)] {
+        // Packing a trip's Siri paragraph is 8 since 0.111 (a new first paragraph); Shortcuts is topic 12
+        // since 0.117 (Inventory before it).
+        for (part, n) in [("topic-1", 8), ("topic-12", 3)] {
             XCTAssertNotNil(find(app, "guide-hit-\(part)"), "the part \(part) is not shown")
             XCTAssertFalse(guideHit(app, "guide-hit-\(part)-title").said.isEmpty, "the part \(part) shows no heading")
             let hit = guideHit(app, "guide-hit-\(part)-\(n)")
@@ -19680,9 +19676,12 @@ final class AMSPackingUITests: XCTestCase {
         #else
         let app = launch()
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
-        let count = app.staticTexts["count-things"]
-        XCTAssertTrue(count.waitForExistence(timeout: 5))
-        let before = Int(words(count)) ?? -1
+        // Since 0.110 the number is in Library's Things row, a button; the Mac folds it into the row's words (README).
+        let count = app.buttons["home-library-care"]
+        XCTAssertTrue(count.waitForExistence(timeout: 5), "Home's Library has no Things row")
+        let number = { Int(self.words(count).filter(\.isNumber)) }
+        XCTAssertTrue(waitUntil { number() != nil }, "the Things row shows no number: '\(words(count))'")
+        let before = number() ?? -1
         let item = app.menuItems["file-new-thing"]
         XCTAssertTrue(item.waitForExistence(timeout: 5), "File has no New Thing:\n" + String(app.menuBars.firstMatch.debugDescription.prefix(3000)))
         XCTAssertTrue(waitUntil { item.isEnabled }, "File ▸ New Thing is off with no page open")
@@ -19706,7 +19705,7 @@ final class AMSPackingUITests: XCTestCase {
         pressEscape(app)
         XCTAssertTrue(disappears(app, "thing-detail", timeout: 5), "Esc did not close the new thing's page")
         tab(app, "home")
-        XCTAssertTrue(waitUntil { Int(self.words(count)) == before + 1 }, "not exactly one thing more: \(before) → '\(words(count))'")
+        XCTAssertTrue(waitUntil { number() == before + 1 }, "not exactly one thing more: \(before) → '\(words(count))'")
         #endif
     }
 

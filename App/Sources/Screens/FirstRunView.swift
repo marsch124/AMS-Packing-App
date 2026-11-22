@@ -41,6 +41,23 @@ struct FirstRunView: View {
         }
         .padding(.horizontal, 20)
         .frame(maxWidth: .infinity)
+        #if os(iOS)
+        // Settings' only door on the iPhone since 0.110 is Home's nut, and on an empty device Home is this
+        // screen — so until 0.127 an empty iPhone could not reach Settings at all (no Sync now, no restore
+        // from a file there). It carries the nut too (spec 02 §1: Settings "still opens on an empty library").
+        .overlay(alignment: .topTrailing) {
+            Button { model.tabToOpen = .settings } label: {
+                SectionMark(section: .settings, size: 22, weight: 1.9)
+                    .foregroundStyle(AppSection.settings.color)
+                    .frame(width: Metrics.tap + 4, height: Metrics.tap)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain).focusEffectDisabled()
+            .accessibilityIdentifier("home-settings")
+            .accessibilityLabel("Settings")
+            .padding(.top, Metrics.screenTop).padding(.trailing, 16)
+        }
+        #endif
         .fileImporter(isPresented: $picking, allowedContentTypes: [.json]) { result in
             do {
                 let url = try result.get()

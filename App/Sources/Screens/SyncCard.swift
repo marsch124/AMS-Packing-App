@@ -449,13 +449,15 @@ struct SyncLight: View {
                 .accessibilityHint("Shows how the sync is going.")
                 .accessibilityIdentifier("home-sync-light")
             }
-            // To the dot's right, over the tiles: the dot is at the page's left edge. The iPhone (iOS 26) puts
-            // the bubble on the side away from `arrowEdge` — `.trailing` there put it off the screen to the
-            // left; the Mac reads it as the dot's edge the arrow points from.
+            // Since 0.110 the dot is at the RIGHT end of the Library heading (until then the page's left edge).
+            // The iPhone (iOS 26) puts the bubble on the side away from `arrowEdge`: `.leading` (right for the
+            // dot at the left edge) put it off the screen to the right from 0.110 until 0.127 — he could not
+            // read it or reach Details. `.trailing` puts it to the dot's left, on the screen. The Mac reads it
+            // as the dot's edge the arrow points from, and places it on the screen itself.
             #if os(macOS)
             .popover(isPresented: $bubble, arrowEdge: .trailing) { bubbleView(light, line: line, tone: tone) }
             #else
-            .popover(isPresented: $bubble, arrowEdge: .leading) { bubbleView(light, line: line, tone: tone) }
+            .popover(isPresented: $bubble, arrowEdge: .trailing) { bubbleView(light, line: line, tone: tone) }
             #endif
     }
 
