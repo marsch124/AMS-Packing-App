@@ -128,7 +128,10 @@ jobs:
         id: ui
         # tools/ui-test.sh: the group, then ONE retry of just the tests that failed (at
         # most 5) on the same build — a flake costs minutes, not a 45-minute re-run. The
-        # retried tests are listed in the job summary.
+        # retried tests are listed in the job summary. Each test may take 10 minutes
+        # (600 s): testABagsPageKeepsEverythingTypedFieldAfterField types into seven
+        # fields and went past 8 minutes on GitHub's slow simulator (440-492 s, steady
+        # progress, no hang; 20-22 Nov 2026). His OK of 22 Nov 2026.
         run: |
           tools/ui-test.sh TestResults-iPhone-${{ matrix.group }} iphone ${{ matrix.group }} 3 -- \
             -project AMSPacking.xcodeproj \
@@ -137,7 +140,7 @@ jobs:
             -derivedDataPath build \
             -collect-test-diagnostics never \
             -test-timeouts-enabled YES \
-            -maximum-test-execution-time-allowance 480 \
+            -maximum-test-execution-time-allowance 600 \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGN_IDENTITY="" \
             DEVELOPMENT_TEAM=""
