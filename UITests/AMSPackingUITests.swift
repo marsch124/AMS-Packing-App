@@ -129,13 +129,19 @@ final class AMSPackingUITests: XCTestCase {
         let app = launch()
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
 
-        let version = app.staticTexts["app-version"]
+        // 0.127 (his ask, 22 Nov 2026): no version under the nut on Home; Settings names it.
+        XCTAssertTrue(app.buttons["home-settings"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["app-version"].exists, "the version is back under the nut on Home")
+        // "Edit Grab Lists", a button (same day).
+        XCTAssertEqual(app.buttons["grab-lists"].label, "Edit Grab Lists")
+        shot(app, "home")
+        tab(app, "settings")
+        let version = app.staticTexts["settings-version"]
         XCTAssertTrue(version.waitForExistence(timeout: 5))
         // The Mac reports a text's words as its value, the iPhone as its label.
         let shown = version.label.isEmpty ? (version.value as? String ?? "") : version.label
         XCTAssertNotNil(shown.rangeOfCharacter(from: .decimalDigits),
                         "the version marker shows no number: '\(shown)'")
-        shot(app, "home")
     }
 
     /// 0.110, the redesign "B" (his pick, 11 Nov 2026): Home's big title, the nut for Settings with the
@@ -144,7 +150,7 @@ final class AMSPackingUITests: XCTestCase {
     func testHomeBHasLibraryNewTripAndTheSettingsNut() {
         let app = launch()
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
-        for id in ["home-heading", "app-version"] {
+        for id in ["home-heading"] {
             XCTAssertTrue(app.staticTexts[id].waitForExistence(timeout: 5), "Home has no \(id)")
         }
         for id in ["home-settings", "search-open", "home-library-events", "home-library-care", "home-library-templates", "home-new-trip"] {
@@ -1311,13 +1317,14 @@ final class AMSPackingUITests: XCTestCase {
     func testWhatsNewStartsWithThisVersion() {
         let app = launch()
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
-        let marker = app.staticTexts["app-version"]
+        // 0.127: the version is no longer on Home — Settings says it at its foot.
+        tab(app, "settings")
+        let marker = app.staticTexts["settings-version"]
         XCTAssertTrue(marker.waitForExistence(timeout: 5))
-        let shown = words(marker)                                   // "0.23 (2)"
-        let version = String(shown.split(separator: " ").first ?? "")
+        let shown = words(marker)                                   // "AMS Packing 0.23 (2)"
+        let version = String(shown.split(separator: " ").first { $0.first?.isNumber == true } ?? "")
         XCTAssertFalse(version.isEmpty, "no version on screen: '\(shown)'")
 
-        tab(app, "settings")
         tap(app, id: "settings-whatsnew")
         XCTAssertTrue(appears(app, "guide-whatsnew", timeout: 5), "What's new did not open")
         let top = app.staticTexts["guide-release-0-version"]
@@ -7026,8 +7033,10 @@ final class AMSPackingUITests: XCTestCase {
         let mark = groupProgress(app, 2), all = app.buttons["trip-group-2-all"]
         XCTAssertTrue(all.exists, "the heading's round tick is gone")
         XCTAssertLessThan(mark.frame.maxX, all.frame.minX - 40, "the ring is not left of the round tick: \(mark.frame) / \(all.frame)")
-        XCTAssertLessThan(mark.frame.width, all.frame.width, "the ring is not smaller than the round tick")
-        XCTAssertFalse(app.buttons["trip-group-2-progress"].exists, "the ring is a button")
+        // 0.127: the count is plain words — no ring, no second tick beside it.
+        XCTAssertTrue(app.staticTexts["trip-group-2-progress"].exists, "the count is not plain words")
+        XCTAssertFalse(app.images["trip-group-2-progress"].exists || app.otherElements["trip-group-2-progress"].exists, "a ring is back beside the count")
+        XCTAssertFalse(app.buttons["trip-group-2-progress"].exists, "the count is a button")
 
         tap(app, id: "trip-line-2")                                // the Toothbrush
         XCTAssertTrue(waitUntil { self.words(progress) == "1/7" }, "'\(words(progress))'")

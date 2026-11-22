@@ -334,7 +334,7 @@ before; the tab bar floats over the bottom, the page leaves room for it):
 3. **Next trip**: a small coloured heading, then the countdown card (§11, unchanged: the days, the trip's name, what is
    still to pack, the from date, what is to buy; a tap opens the trip). While a trip is under way, going home or back home
    and not reviewed, the **On your trip** card (§11a, unchanged) takes its place; with no trip ahead, no card and no heading.
-4. **Grab and go**: its heading with Grab Lists at the right, then the eight grab tiles (§4), exactly as before.
+4. **Grab and go**: its heading with the Edit Grab Lists button (0.127) at the right, then the eight grab tiles (§4), exactly as before.
 5. **Library**: a heading and one card of three tight rows — **Trips**, **Things**, **Templates** — each with its drawn mark in
    its part's colour, its name and its count (as the old tiles: `library.trips.count`, the things, the templates; "This device"
    counted the same). A row opens its tab: Trips, Care (where his things live), Templates (`home-library-<section>`; the
@@ -393,7 +393,8 @@ field above." (The fourth is the Create new trip file's, spec 03.)
      - "Grab and go": **Title 3 bold**, `ink`, one line (scales down to 80 %); id `home-grab-heading`.
      - A spacer (at least 8), then, 8 pt apart:
      - **On the iPhone** the magnifier `SearchButton` (`search-open`; section 15).
-     - "Grab Lists": a plain button, Footnote semibold, Home blue, no focus ring, `Metrics.tap` tall so the
+     - "Edit Grab Lists" (0.127, his ask 22 Nov 2026; was the plain words "Grab Lists"): an outlined button,
+       `HeaderButtonStyle(tint: Home blue, filled: false)` like the app's other Edit buttons, no focus ring. Before 0.127: a plain button, Footnote semibold, Home blue, no focus ring, `Metrics.tap` tall so the
        whole height takes the tap; id `grab-lists`. It opens the Grab Lists sheet (section 8). The code
        comment notes that this door opens the grab lists, not the templates ("Your templates"), and that the
        owner's note on the Mac asked for "Your Grab Lists".
@@ -996,8 +997,8 @@ is `"\u{2063}##"`, `GrabLine.storedHeading(name)` the whole form. So on a factor
    - **Under his own headings (0.85)** when he has set any (the rule under "His own headings" below): his
      things above his first heading come first, under no heading; then each of his headings — a **small grey
      heading** (`grab-group-<g>`, `g` = 0, 1, … his headings top to bottom, as shown) — and the things under it,
-     down to the next. The heading: his words as he typed them, **Footnote semibold in `muted`, letter-spacing
-     0.4**, one line (cut at the end), left; **12 pt above it (4 when it is the very first line), 2 below**; no
+     down to the next. The heading: his words as he typed them, **Headline (17 pt) semibold in `muted`, letter-spacing
+     0.4** (0.127; Footnote 13 pt until 0.126), one line (cut at the end), left; **12 pt above it (4 when it is the very first line), 2 below**; no
      tick, no count in words, no line of its own (the line under the row above stays); the `.isHeader` trait.
      Since 0.87 the trip's small ring sits 6 pt right of the words and a done heading turns green and folds —
      "Done headings fold" below. Not in
@@ -1087,7 +1088,7 @@ The whole screen is the container `grab-detail` on a `bg` background.
 
 **Done headings fold** (0.87; model `PackingLibrary/GrabFolds.swift`, screen `groupHeading`, `toggleFold`, `refold`,
 `showFolds` in `GrabScreen`). His yes of 15 Oct 2026 (see the purpose list). Only the open list (not Edit).
-- **The ring.** Beside each of his headings, 6 pt right of its words (the words, the ring, then a spacer), the trip's
+- **The ring.** (0.127: the trip's own heading ring is gone, the trip has the group's round tick alone; the grab list keeps this ring, it has no tick button on its heading.) Beside each of his headings, 6 pt right of its words (the words, the ring, then a spacer), the trip's
   `GroupProgressMark` (0.82, spec 07 part 20; TripScreen.swift) — **14 pt across on the iPhone, 11 on the Mac**, a
   hairline `line` track that fills in the trip's green (`AppSection.events`) from the top, clockwise, as the
   heading's things are ticked: **in hand / to take**, where "to take" is its things not skipped (⊘) and "in hand"
@@ -1167,7 +1168,7 @@ writes `UserDefaults ams.grab.<listId>`. Nothing about ticking is synced or back
 kinds and his list of kinds for its grouping; 0.85 reads neither.)
 
 **iPhone vs Mac.** The Mac sheet is at least **480 × 600**. Share at the foot is 38 across on the iPhone, 30 on
-the Mac (0.84); the headings are Footnote on both (13 pt on the iPhone, the Mac's own Footnote there). Everything
+the Mac (0.84); his own headings are Headline semibold on both since 0.127 (17 pt on the iPhone; Footnote 13 pt until 0.126). Everything
 else is the same.
 
 **Tests.**

@@ -245,12 +245,8 @@ struct HomeScreen: View {
                 .buttonStyle(.plain).focusEffectDisabled()
                 .accessibilityIdentifier("home-settings")
                 .accessibilityLabel("Settings")
-                Text(AppInfo.version)
-                    .font(.system(.caption2, weight: .semibold))
-                    .foregroundStyle(Theme.muted.opacity(0.7))
-                    .lineLimit(1).fixedSize()
-                    .allowsHitTesting(false)
-                    .accessibilityIdentifier("app-version")
+                // No version under the nut any more (0.127, his ask 22 Nov 2026): it is in Settings
+                // (`settings-version`) and, on the Mac, under the sidebar (`sidebar-version`).
             }
         }
     }
@@ -305,12 +301,11 @@ struct HomeScreen: View {
                 .accessibilityIdentifier("home-grab-heading")
             Spacer(minLength: 8)
             // This door opens the grab lists — not the templates. His note on the Mac: "Your Grab Lists".
-            Button { showingGrabLists = true } label: {
-                Text("Grab Lists")
-                    .font(.system(.footnote, weight: .semibold)).foregroundStyle(AppSection.home.color)
-                    .frame(minHeight: Metrics.compact).contentShape(Rectangle())
-            }
-            .buttonStyle(.plain).focusEffectDisabled()
+            // A button that looks like one (0.127, his ask 22 Nov 2026): "Edit Grab Lists", outlined
+            // in Home's blue like the app's other Edit buttons — was the plain words "Grab Lists".
+            Button("Edit Grab Lists") { showingGrabLists = true }
+                .buttonStyle(HeaderButtonStyle(tint: AppSection.home.color, filled: false))
+                .focusEffectDisabled()
             .accessibilityIdentifier("grab-lists")
         }
     }

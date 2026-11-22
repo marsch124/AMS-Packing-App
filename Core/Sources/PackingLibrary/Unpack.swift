@@ -11,7 +11,7 @@ import PackingCore
 
 /// A line's extra key: true once it is back in its room at home.
 public let UNPACKED_KEY = "unpacked"
-/// A trip's extra key: true when he closed Unpack with "Done" while things were left — Home stops asking.
+/// A trip's extra key: true when he tapped "Stop reminding me on Home" on Unpack while things were left — Home stops asking.
 public let UNPACK_DONE_KEY = "unpackDone"
 /// How long after its last day Home still reminds of a trip's bag.
 public let UNPACK_NUDGE_DAYS = 30
@@ -106,7 +106,7 @@ extension Library {
         return ids.count
     }
 
-    /// "Done" with things left: Home stops reminding. Unticking or ticking later is still possible.
+    /// "Stop reminding me on Home" with things left: Home stops reminding. Unticking or ticking later is still possible.
     public mutating func setUnpackDone(_ on: Bool, tripId: String) {
         guard let t = trips.firstIndex(where: { $0.id == tripId }) else { return }
         trips[t].extra[UNPACK_DONE_KEY] = on ? .bool(true) : nil

@@ -483,7 +483,8 @@ struct GrabScreen: View {
         let done = p.done
         return HStack(spacing: 6) {
             Text(group.heading)
-                .font(.system(.footnote, weight: .semibold)).tracking(0.4)
+                // Larger (0.127, his ask 22 Nov 2026): headline, was footnote.
+                .font(.system(.headline, weight: .semibold))
                 .foregroundStyle(done ? GroupProgressMark.words(scheme) : Theme.muted)
                 .lineLimit(1).truncationMode(.tail)
                 .accessibilityAddTraits(.isHeader)

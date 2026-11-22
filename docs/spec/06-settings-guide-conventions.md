@@ -15,7 +15,7 @@ slate) at the top right of Home (spec 02 §3), as a screen of its own above the 
 on the iPhone (`settings-back`; a tap on Home's tab does the same — Home's tab is lit while Settings is open), and its big slate
 title "Settings" (`settings-heading`). On the Mac Settings is the last row of the sidebar (`tab-settings`), also ⌘6 or ⌘,. The
 version number (`AppInfo.version`) shows at the **foot of Settings** ("AMS Packing 0.110 (n)", `settings-version`), small under
-Home's nut (`app-version`), and on the Mac under the sidebar (`sidebar-version`). Settings keeps the
+Home's nut until 0.127 (`app-version`, removed 22 Nov 2026), and on the Mac under the sidebar (`sidebar-version`). Settings keeps the
 slate colour for its heading and marks, and every card, row and test below is unchanged. Where this chapter says "the tab bar's sixth
 button" or "another tab", read: the nut on Home / "‹ Home" (iPhone), the sidebar row or ⌘, (Mac).
 
@@ -964,6 +964,7 @@ against `Releases.swift`):
 
 | Version | Date | Title | Lines | Gist |
 |---|---|---|---|---|
+| 0.127 | 22 Nov 2026 | One tick, bigger grab headings, Signs in this app | N2 | trip group heading loses `GroupProgressMark` (count + round tick only; grab headings keep the ring, now Headline 17 semibold); How it works: Create trip line ABOVE the button, Unpack row "N/M back · K still in the bag"; new last topic "Signs in this app" (section 7) |
 | 0.110 | 11 Nov 2026 | A new frame: five tabs, a calmer Home, and the Mac with a sidebar | N5 C7 R1 | frame110 (stage 1 of the "B" redesign: five tabs in a floating glass-style bar, Settings from the nut on Home with a ‹ Home back button, version at the foot of Settings and under the nut, big coloured tab titles, Home = title + nut, search field, Next trip, Grab and go, Library rows, ＋ New trip opening Create new trip as its own page with Cancel/Create, the Mac's sidebar and normal title bar, ⌘1–⌘5; 0.109's folded New trip line and Home's count tiles gone; no data changes) |
 | 0.109 | 4 Nov 2026 | New trip steps back while you travel | C1 | Create new trip folds to one quiet line on a trip (replaced by the 0.110 button) |
 | 0.108 | 2 Nov 2026 | Your trip on Home, Still to pack, and grab list icons | N3 C2 F1 | home108 (On your trip card first on Home: away / going home / welcome home, `onTripCard`, 14 days after the end at most; grab list icon from the template icons, stored as "icon:<key>" in the existing `icon`, `grab-icon-<key>` quick-action pictures; Your grab lists rows 37/31 pt with an On Home switch), left108 (Everything / Still to pack under Group by, kept per trip, `ams.trip.onlyLeft`; no weather card once `hasSetOff`; Fold all glyph `onGrid(18)`, measured in a picture of the pill) |
@@ -1385,6 +1386,7 @@ and Not this time act on all; Space ticks them, Esc lets them go; a plain click 
     the same step — never twice." (6 lines.)
 12. **Keyboard shortcuts** (0.103; not one of the `topics` — a part of its own, `KeysGuide`, §7b): every key the app
     answers, as cards of key caps.
+13. **Signs in this app** (0.127; the last of the `topics`, section Home, 11 lines): every mark and colour that means something, each with its one meaning: the line's round tick, the group heading's round tick (the only tick on a trip heading), the grab list heading's ring, the faint ⊘ and ↻, ＋ Add, the sync dot, the Sample tag, the red line above Create trip, the part colours, the full-colour main button. Findable by search like any topic.
 
 **Tests.** `testWhatsNewStartsWithThisVersion` (topics 0 and 1 exist), `testTheLoopShowsWhereATripStands` (loop
 card, first-trip card, Words), (0.79) `testHowItWorksExplainsThePackingDayStations` (the Packing day part is there;
@@ -3047,7 +3049,7 @@ material with a hairline before it. Each button: the hand-drawn mark in its colo
 the selected one on a soft capsule of its colour (14 %), its label bold in its colour; the others' labels muted.
 While Settings is open, Home's tab is the lit one. To do keeps its red count badge. On the iPhone there is
 no `tab-settings`: Settings opens from the nut at the top right of Home (`home-settings`). The build marker is no longer a row under the bar: it
-shows at the foot of Settings and small under Home's nut (id `app-version` stays on it).
+shows at the foot of Settings (`settings-version`). Since 0.127 (his ask, 22 Nov 2026) no longer under Home's nut — `app-version` is gone.
 **The Mac**: the main window has its NORMAL title bar again (`.windowStyle(.hiddenTitleBar)` and the `lead` / title-strip
 measuring of §21 are gone; the window's three buttons sit in the title bar, nothing of a page reaches under it). Instead of the
 tab bar it shows a **sidebar** at the left — Home, Trips, Templates, Care, To do, then Settings — each row with its mark and

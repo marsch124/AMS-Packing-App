@@ -492,17 +492,14 @@ struct TripScreen: View {
                                     .foregroundStyle(sectionDone ? GroupProgressMark.words(scheme) : headingColour(group))
                                     .accessibilityIdentifier("trip-group-\(g)-label")
                                     .onTapGesture { toggleFold(group.label) }
-                                // The green ring, LEFT of the count it reads (0.82): it fills as the lines
-                                // are ticked, a filled check when all are. Not a button — the round tick
-                                // that ticks the group stays at the right end, bigger.
-                                HStack(spacing: 5) {
-                                    if !mine.isEmpty {
-                                        GroupProgressMark(packed: ticked, total: mine.count, id: "trip-group-\(g)-progress")
-                                    }
-                                    Text("\(ticked)/\(mine.count)")
-                                        .font(.system(.footnote, weight: .semibold).monospacedDigit())
-                                        .foregroundStyle(sectionDone ? GroupProgressMark.words(scheme) : Theme.muted)
-                                }
+                                // The plain count (0.127, the sign check of 19 Nov 2026): no ring beside it any
+                                // more — a dead ring next to the live round tick at the right end looked like
+                                // two ticks. The round tick is the heading's only tick. Its words are its label.
+                                Text("\(ticked)/\(mine.count)")
+                                    .font(.system(.footnote, weight: .semibold).monospacedDigit())
+                                    .foregroundStyle(sectionDone ? GroupProgressMark.words(scheme) : Theme.muted)
+                                    .accessibilityLabel(mine.isEmpty ? "" : sectionDone ? "all packed" : "\(ticked) of \(mine.count) packed")
+                                    .accessibilityIdentifier("trip-group-\(g)-progress")
                                 Spacer()
                                 // Only while the section has something to tick: with every line set
                                 // aside there is nothing, and a switched-off grey circle is what his

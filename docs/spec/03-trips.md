@@ -1321,7 +1321,8 @@ left, the choice beside it) are kept.
      `Metrics.line` target — 34×36 and 20 pt until 0.67; pointing right when folded,
      down when open; id `trip-group-<g>-fold`, label "Open <heading>" / "Fold <heading>"); the heading
      (15 heavy; sorted When: the colour of the FIRST line's phase made readable; otherwise green; id
-     `trip-group-<g>-label`; tapping the words folds too); since 0.82 the **progress mark** (spec 07 part 20 —
+     `trip-group-<g>-label`; tapping the words folds too); **0.127: the progress mark is GONE from trip headings** (two look-alike ticks, one dead; the whole-section tick at the right end is now the only tick; the
+     count and the done colours below stay; grab lists keep their ring, spec 02). The rest of this item is history, 0.82-0.126: since 0.82 the **progress mark** (spec 07 part 20 —
      `GroupProgressMark`, not a button, id `trip-group-<g>-progress`, its label "<ticked> of <packable> packed" /
      "all packed"): 14 pt across on the iPhone, 11 on the Mac, 8 pt after the words — a hairline track
      with a green arc from the top, clockwise, as long as ticked ÷ packable; when every packable line is ticked a
@@ -3788,6 +3789,8 @@ deleted = none). **Not covered:** the real scheduling and a real tap (the system
 **Tests.** One data test per rule (which things, used up left out, room grouping and order, No room yet last, give a room, 30-day and stop rules); one screen test finds the row and ticks a thing by the ids above.
 
 **Version.** 0.126. **Docs.** What's new 0.126; How it works: On site (Unpack, Still in the bag).
+
+**0.127 - wording.** The trip page's Unpack row reads "N/M back · K still in the bag" (K = M - N), and "Everything is back · M" when done (TripScreen). The How it works text now says so, and that Create trip's still-needed line (`trip-create-needs`) is ABOVE the button, not under it (CreateTrip.swift).
 
 ---
 
