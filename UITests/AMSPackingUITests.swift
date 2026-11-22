@@ -14305,7 +14305,12 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(after.waitForExistence(timeout: 5))
         XCTAssertNotEqual(words(after), before, "the count did not move")
         tap(app, id: "walk-done")
+        #if os(macOS)
+        // 🪤 The Mac folds a button's texts into its own words (README): no walk-added-0 child there.
+        XCTAssertTrue(waitUntil { self.words(app.buttons["walk-room-0"]).contains("1 added") }, "the room list does not say what was added: '\(words(app.buttons["walk-room-0"]))'")
+        #else
         XCTAssertTrue(app.staticTexts["walk-added-0"].waitForExistence(timeout: 5), "the room list does not say what was added")
+        #endif
         tap(app, id: "walk-done")
         XCTAssertTrue(appears(app, "things-detail", timeout: 5))
     }
@@ -14329,12 +14334,12 @@ final class AMSPackingUITests: XCTestCase {
     func testInventoryInsuranceAndReceipts() {
         let app = launch()
         tab(app, "inventory")
-        XCTAssertTrue(app.switches["inventory-remind"].waitForExistence(timeout: 5), "no reminders switch")
+        XCTAssertTrue(switchNamed(app, "inventory-remind").exists, "no reminders switch")    // a check box on the Mac
         XCTAssertTrue(app.buttons["inventory-noreceipt"].waitForExistence(timeout: 5), "no No receipt yet row")
         tap(app, id: "inventory-pdf")
         let said = app.staticTexts["inventory-pdf-said"]
         XCTAssertTrue(said.waitForExistence(timeout: 10), "the PDF did not say anything")
-        XCTAssertTrue(said.label.hasPrefix("PDF ready"), "PDF said: \(said.label)")
+        XCTAssertTrue(waitUntil { self.words(said).hasPrefix("PDF ready") }, "PDF said: '\(words(said))'")   // the Mac: its value
         shot(app, "inventory-papers")
         tap(app, id: "inventory-noreceipt")
         XCTAssertTrue(appears(app, "things-detail", timeout: 5))
@@ -15489,7 +15494,7 @@ final class AMSPackingUITests: XCTestCase {
         // Before a trip's (0.104) right after Notes: Battery, Liquid, Not in the cabin, Valid until.
         let order = ["thing-notes", "thing-battery", "thing-liquid", "thing-restricted", "thing-expiry",
                      "thing-category", "thing-owner", "thing-lists", "thing-section-1",
-                     "thing-seasons", "thing-transports", "thing-catering", "thing-storage", "thing-bag", "thing-when", "thing-weight", "thing-kit-add", "thing-brand", "thing-colour",
+                     "thing-seasons", "thing-transports", "thing-catering", "thing-storage", "thing-bag", "thing-when", "thing-weight", "thing-kit-add", "thing-colour",   // Brand: in Details since 0.115, not in fieldOrder()
                      "thing-condition", "thing-care", "thing-care-notes", "thing-name"]
         for id in order {
             app.typeKey(.tab, modifierFlags: [])
@@ -15508,10 +15513,10 @@ final class AMSPackingUITests: XCTestCase {
         tabTo(app, "thing-notes")
         app.typeText("Dry bag")
         XCTAssertTrue(says(app, "thing-notes").contains("Dry bag"), "what was typed did not reach Notes: '\(says(app, "thing-notes"))'")
-        tabTo(app, "thing-brand")
-        app.typeText("Trailco")
-        XCTAssertEqual(says(app, "thing-brand"), "Trailco", "what was typed did not reach Brand")
-        shot(app, "keys-focus-brand")
+        tabTo(app, "thing-colour")                                 // Brand left the walk for Details (0.115)
+        app.typeText("Olive")
+        XCTAssertEqual(says(app, "thing-colour"), "Olive", "what was typed did not reach Colour")
+        shot(app, "keys-focus-colour")
         pressEscape(app)
         XCTAssertTrue(disappears(app, "thing-detail", timeout: 5), "Escape no longer cancels the page")
         #endif
@@ -17354,7 +17359,7 @@ final class AMSPackingUITests: XCTestCase {
         app.typeKey(.space, modifierFlags: [])
         XCTAssertTrue(waitUntil { self.isSwitchOn(app, "thing-kit-check") }, "Space did not switch Check before each trip on")
         app.typeKey(.tab, modifierFlags: [])
-        XCTAssertTrue(focused(app, "thing-brand"), "Tab did not leave the kit part for Brand")
+        XCTAssertTrue(focused(app, "thing-colour"), "Tab did not leave the kit part for Colour")   // Brand: in Details since 0.115 (fieldOrder())
         app.typeKey(.tab, modifierFlags: .shift)
         XCTAssertTrue(focused(app, "thing-kit-check"), "Shift-Tab did not come back into the kit part")
         app.typeKey(.return, modifierFlags: [])
@@ -17586,7 +17591,13 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertTrue(offer.waitForExistence(timeout: 5), "＋ Add suggests nothing for 'gog'")
         XCTAssertEqual(offer.label, "Add Goggles")
         shot(app, "trip-add-suggest")
+        #if os(macOS)
+        // 🪤 Mac: XCUITest finds no hit point in the trip's foot (＋ Add and its field fall back to their centre and
+        // take the click); for a chip inside a ScrollView it tries to scroll that first and fails. Click its own point.
+        offer.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).click()
+        #else
         offer.tap()
+        #endif
         XCTAssertTrue(waitUntil { !app.buttons["trip-add-suggest-0"].exists }, "the suggestion stayed after it was added")
         type("gog", into: addField(app))
         XCTAssertFalse(app.buttons["trip-add-suggest-0"].waitForExistence(timeout: 2), "Goggles offered again once on the trip")
