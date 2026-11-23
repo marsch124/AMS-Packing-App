@@ -250,20 +250,25 @@ struct GrabScreen: View {
         let items = list.items
         let complete = state.isComplete(items)
         VStack(spacing: 0) {
+            // While editing (0.92, Cancel everywhere): Cancel throws the edit away and the list
+            // is as it was; Save keeps it. Escape = Cancel, ⌘S = Save.
+            // 0.128 (his ask, 22 Nov 2026): Cancel is an outlined button (was the plain word). Cancel,
+            // the heading and Save stay on ONE line, as before; the icon with the name is centred on
+            // the page on its own — in the middle whatever the buttons' widths ("the button is its own
+            // entity, and the heading, including the icon, is centred on its own").
+            ZStack {
             HStack(spacing: 8) {
-                // While editing (0.92, Cancel everywhere): Cancel throws the edit away and the list
-                // is as it was; Save keeps it. Escape = Cancel, ⌘S = Save.
                 if editing {
                     Button("Cancel") { cancelEdits() }
-                        .buttonStyle(BarCancelStyle(tint: tint)).focusEffectDisabled()
-                        .font(.system(.body, weight: .semibold))
+                        .buttonStyle(HeaderButtonStyle(tint: tint, filled: false)).focusEffectDisabled()
                         .keyboardShortcut(.cancelAction)
                         .accessibilityIdentifier("grab-cancel")
+                } else {
+                    GrabDoodle(icon: list.icon, size: 36, initial: list.label).foregroundStyle(tint)
+                    Text(list.title).font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
+                        .lineLimit(1).minimumScaleFactor(0.7)
+                        .accessibilityIdentifier("grab-title")
                 }
-                GrabDoodle(icon: editing ? draftIcon : list.icon, size: 36, initial: list.label).foregroundStyle(tint)
-                Text(list.title).font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
-                    .lineLimit(1).minimumScaleFactor(0.7)
-                    .accessibilityIdentifier("grab-title")
                 Spacer(minLength: 4)
                 Button(editing ? "Save" : "Edit") { editing ? saveEdits() : startEditing() }
                     .buttonStyle(HeaderButtonStyle(tint: tint, filled: editing)).focusEffectDisabled()
@@ -280,6 +285,18 @@ struct GrabScreen: View {
                         .commandS { dismiss() }                         // ⌘S = Done (0.103)
                         .accessibilityIdentifier("grab-done")
                 }
+            }
+            if editing {
+                // Kept clear of Cancel and Save (each ~90 pt wide) on both sides, so it stays centred.
+                HStack(spacing: 8) {
+                    GrabDoodle(icon: draftIcon, size: 36, initial: list.label).foregroundStyle(tint)
+                    Text(list.title).font(.system(.title3, weight: .bold)).foregroundStyle(Theme.ink)
+                        .lineLimit(1).minimumScaleFactor(0.6)
+                        .accessibilityIdentifier("grab-title")
+                }
+                .padding(.horizontal, 96)
+                .frame(maxWidth: .infinity)
+            }
             }
             // Save pressed on a list with nothing on it says so right under it, in
             // red, and the editor stays open (5 Oct 2026: it closed and said nothing).
@@ -305,7 +322,7 @@ struct GrabScreen: View {
                             .padding(.vertical, 5)
                             .accessibilityIdentifier("grab-empty")
                     }
-                    // HIS OWN headings (0.85), grey — Title 3 since 0.127 — each over the things he put under
+                    // HIS OWN headings (0.85), grey — Headline semibold since 0.127 — each over the things he put under
                     // it in Edit; what is above his first heading stands under none, and a list
                     // with no headings is one flat run, as before. His words, 15 Oct 2026: "How
                     // do I define the small headings, and how do I group the items in the
@@ -466,7 +483,7 @@ struct GrabScreen: View {
 
     /// One of his headings over its lines, grey — his words (15 Oct 2026, on 0.84's look),
     /// "small headings in the list … maybe another colour, grey or something like that". Footnote
-    /// until 0.127; since then Title 3 semibold, a size above the things' Body, his words of
+    /// until 0.126; since 0.127 Headline (17 pt) semibold, his words of
     /// 22 Nov 2026 on a picture of "Hike" with its five done headings marked: "Larger headings in
     /// the grab lists." In `muted`, a hair of letter-spacing, his own spelling (no capitals: 0.62
     /// took capitals with letter-spacing out of every heading); no tick, no count in words and no
@@ -484,7 +501,8 @@ struct GrabScreen: View {
         let done = p.done
         return HStack(spacing: 6) {
             Text(group.heading)
-                .font(.system(.title3, weight: .semibold)).tracking(0.4)
+                // Larger (0.127, his ask 22 Nov 2026): headline, was footnote.
+                .font(.system(.headline, weight: .semibold))
                 .foregroundStyle(done ? GroupProgressMark.words(scheme) : Theme.muted)
                 .lineLimit(1).truncationMode(.tail)
                 .accessibilityAddTraits(.isHeader)

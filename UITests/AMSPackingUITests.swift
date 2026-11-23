@@ -129,13 +129,19 @@ final class AMSPackingUITests: XCTestCase {
         let app = launch()
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
 
-        let version = app.staticTexts["app-version"]
+        // 0.127 (his ask, 22 Nov 2026): no version under the nut on Home; Settings names it.
+        XCTAssertTrue(app.buttons["home-settings"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["app-version"].exists, "the version is back under the nut on Home")
+        // "Edit Grab Lists", a button (same day).
+        XCTAssertEqual(app.buttons["grab-lists"].label, "Edit Grab Lists")
+        shot(app, "home")
+        tab(app, "settings")
+        let version = app.staticTexts["settings-version"]
         XCTAssertTrue(version.waitForExistence(timeout: 5))
         // The Mac reports a text's words as its value, the iPhone as its label.
         let shown = version.label.isEmpty ? (version.value as? String ?? "") : version.label
         XCTAssertNotNil(shown.rangeOfCharacter(from: .decimalDigits),
                         "the version marker shows no number: '\(shown)'")
-        shot(app, "home")
     }
 
     /// 0.110, the redesign "B" (his pick, 11 Nov 2026): Home's big title, the nut for Settings with the
@@ -144,7 +150,7 @@ final class AMSPackingUITests: XCTestCase {
     func testHomeBHasLibraryNewTripAndTheSettingsNut() {
         let app = launch()
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
-        for id in ["home-heading", "app-version"] {
+        for id in ["home-heading"] {
             XCTAssertTrue(app.staticTexts[id].waitForExistence(timeout: 5), "Home has no \(id)")
         }
         for id in ["home-settings", "search-open", "home-library-events", "home-library-care", "home-library-templates", "home-new-trip"] {
@@ -1311,13 +1317,14 @@ final class AMSPackingUITests: XCTestCase {
     func testWhatsNewStartsWithThisVersion() {
         let app = launch()
         XCTAssertTrue(appears(app, "screen-home", timeout: 20))
-        let marker = app.staticTexts["app-version"]
+        // 0.127: the version is no longer on Home — Settings says it at its foot.
+        tab(app, "settings")
+        let marker = app.staticTexts["settings-version"]
         XCTAssertTrue(marker.waitForExistence(timeout: 5))
-        let shown = words(marker)                                   // "0.23 (2)"
-        let version = String(shown.split(separator: " ").first ?? "")
+        let shown = words(marker)                                   // "AMS Packing 0.23 (2)"
+        let version = String(shown.split(separator: " ").first { $0.first?.isNumber == true } ?? "")
         XCTAssertFalse(version.isEmpty, "no version on screen: '\(shown)'")
 
-        tab(app, "settings")
         tap(app, id: "settings-whatsnew")
         XCTAssertTrue(appears(app, "guide-whatsnew", timeout: 5), "What's new did not open")
         let top = app.staticTexts["guide-release-0-version"]
@@ -7028,8 +7035,10 @@ final class AMSPackingUITests: XCTestCase {
         let mark = groupProgress(app, 2), all = app.buttons["trip-group-2-all"]
         XCTAssertTrue(all.exists, "the heading's round tick is gone")
         XCTAssertLessThan(mark.frame.maxX, all.frame.minX - 40, "the ring is not left of the round tick: \(mark.frame) / \(all.frame)")
-        XCTAssertLessThan(mark.frame.width, all.frame.width, "the ring is not smaller than the round tick")
-        XCTAssertFalse(app.buttons["trip-group-2-progress"].exists, "the ring is a button")
+        // 0.127: the count is plain words — no ring, no second tick beside it.
+        XCTAssertTrue(app.staticTexts["trip-group-2-progress"].exists, "the count is not plain words")
+        XCTAssertFalse(app.images["trip-group-2-progress"].exists || app.otherElements["trip-group-2-progress"].exists, "a ring is back beside the count")
+        XCTAssertFalse(app.buttons["trip-group-2-progress"].exists, "the count is a button")
 
         tap(app, id: "trip-line-2")                                // the Toothbrush
         XCTAssertTrue(waitUntil { self.words(progress) == "1/7" }, "'\(words(progress))'")
@@ -8579,6 +8588,13 @@ final class AMSPackingUITests: XCTestCase {
         let first = app.buttons["grab-item-0"].label
         tap(app, id: "grab-edit")
         XCTAssertTrue(app.buttons["grab-cancel"].waitForExistence(timeout: 5), "editing a grab list has no Cancel")
+        // 0.128 (his ask, 22 Nov 2026): Cancel, the heading and Save on ONE line; the icon and name
+        // centred on the page on their own.
+        let cancel = app.buttons["grab-cancel"], save = app.buttons["grab-edit"], title = app.staticTexts["grab-title"]
+        let middle = (cancel.frame.minX + save.frame.maxX) / 2
+        XCTAssertEqual(title.frame.midY, cancel.frame.midY, accuracy: 10, "the name is not on Cancel's line: \(title.frame) / \(cancel.frame)")
+        XCTAssertLessThan(title.frame.minX - 40, middle, "the name is not centred: \(title.frame), middle \(middle)")
+        XCTAssertGreaterThan(title.frame.maxX, middle, "the name is not centred: \(title.frame), middle \(middle)")
         shot(app, "cancel-grab")
         replace("Swim shorts", in: app.textFields["grab-rename-0"])
         app.buttons["grab-remove-1"].tap()
@@ -9109,6 +9125,16 @@ final class AMSPackingUITests: XCTestCase {
         XCTAssertLessThan(countdown.frame.maxY, heading.frame.minY, "the countdown is not above Grab and go")
         XCTAssertLessThan(first.frame.maxY, library.frame.minY, "Library is not under Grab and go")
         XCTAssertLessThan(library.frame.maxY, new.frame.minY, "New trip is not under Library")
+        // 0.128 (his asks, 22 Nov 2026): "Grab and Go"; Library's heading inside its own frame, like
+        // Grab and Go's; Edit Grab Lists smaller than the New trip button.
+        XCTAssertEqual(words(heading), "Grab and Go")
+        if let frame = find(app, "home-device")?.frame {
+            let box = frame.insetBy(dx: -1, dy: -1)
+            for part in [app.staticTexts["device-heading"], library, app.buttons["home-library-templates"]] {
+                XCTAssertTrue(part.exists && box.contains(part.frame), "\(part.identifier) is outside Library's frame \(frame)")
+            }
+        } else { XCTFail("no frame round Library") }
+        XCTAssertLessThan(app.buttons["grab-lists"].frame.height, new.frame.height, "Edit Grab Lists is not smaller than New trip")
         // Create new trip: its own page, no longer on Home.
         XCTAssertFalse(app.textFields["trip-name"].exists, "the Create new trip form is still on Home")
         openNewTrip(app)
@@ -10678,6 +10704,9 @@ final class AMSPackingUITests: XCTestCase {
         let homeHeading = app.staticTexts["grablists-home-heading"], waiting = app.staticTexts["grablists-waiting-heading"]
         XCTAssertTrue(waitUntil { self.words(homeHeading).contains("6 of 8") },
                       "Home does not start with six of eight: '\(words(homeHeading))'")
+        // 0.128: one "Show on Home" over the switches, not "On Home" on every row.
+        XCTAssertTrue(app.staticTexts["grablists-switch-heading-home"].exists, "no Show on Home heading")
+        XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label == 'On Home'")).count, 0, "On Home is back on the rows")
 
         // New lists take the free places — and the screen says so (it said "is
         // waiting", in red, wherever the list went, until 4 Oct 2026)…
@@ -15517,7 +15546,7 @@ final class AMSPackingUITests: XCTestCase {
         app.typeText("Olive")
         XCTAssertEqual(says(app, "thing-colour"), "Olive", "what was typed did not reach Colour")
         shot(app, "keys-focus-colour")
-        // The Details card's text fields (0.127 — his answer of 22 Nov 2026, "make the details card fields
+        // The Details card's text fields (0.129 — his answer of 22 Nov 2026, "make the details card fields
         // reachable with tab again"): folded to Add details on Map, Tab went past them (above); opened, they
         // follow Before a trip in the card's order — Bought on and Warranty are pickers, passed as every
         // drop-down — and Kind of thing comes after them.

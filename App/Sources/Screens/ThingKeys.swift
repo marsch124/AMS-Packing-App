@@ -41,7 +41,7 @@ enum ThingField: Hashable {
     /// a thing, Return adds it, Esc closes the list.
     case kitFind
     case weight, brand, colour, condition, care, careNotes, liquid, restricted, expiry
-    /// A text field of the Details card besides Brand (0.127 — his answer of 22 Nov 2026: "make the
+    /// A text field of the Details card besides Brand (0.129 — his answer of 22 Nov 2026: "make the
     /// details card fields reachable with tab again"), by its control's id: Model, Serial, Bought at,
     /// Price, Value today, How many (`ThingEditor.detailFields`).
     case detail(String)

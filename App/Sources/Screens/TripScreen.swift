@@ -492,17 +492,14 @@ struct TripScreen: View {
                                     .foregroundStyle(sectionDone ? GroupProgressMark.words(scheme) : headingColour(group))
                                     .accessibilityIdentifier("trip-group-\(g)-label")
                                     .onTapGesture { toggleFold(group.label) }
-                                // The green ring, LEFT of the count it reads (0.82): it fills as the lines
-                                // are ticked, a filled check when all are. Not a button — the round tick
-                                // that ticks the group stays at the right end, bigger.
-                                HStack(spacing: 5) {
-                                    if !mine.isEmpty {
-                                        GroupProgressMark(packed: ticked, total: mine.count, id: "trip-group-\(g)-progress")
-                                    }
-                                    Text("\(ticked)/\(mine.count)")
-                                        .font(.system(.footnote, weight: .semibold).monospacedDigit())
-                                        .foregroundStyle(sectionDone ? GroupProgressMark.words(scheme) : Theme.muted)
-                                }
+                                // The plain count (0.127, the sign check of 19 Nov 2026): no ring beside it any
+                                // more — a dead ring next to the live round tick at the right end looked like
+                                // two ticks. The round tick is the heading's only tick. Its words are its label.
+                                Text("\(ticked)/\(mine.count)")
+                                    .font(.system(.footnote, weight: .semibold).monospacedDigit())
+                                    .foregroundStyle(sectionDone ? GroupProgressMark.words(scheme) : Theme.muted)
+                                    .accessibilityLabel(mine.isEmpty ? "" : sectionDone ? "all packed" : "\(ticked) of \(mine.count) packed")
+                                    .accessibilityIdentifier("trip-group-\(g)-progress")
                                 Spacer()
                                 // Only while the section has something to tick: with every line set
                                 // aside there is nothing, and a switched-off grey circle is what his
@@ -541,7 +538,7 @@ struct TripScreen: View {
                             .animation(.easeInOut(duration: reduceMotion ? 0.2 : 0.3), value: sectionDone)
                             // A little air above a heading, none under it (12 points above,
                             // and 36-point buttons, until 0.67) — 10 from 0.111, the lines in a card under it;
-                            // 6 again since 0.127, his choice of 22 Nov 2026 (the spec's: the words about 12 pt
+                            // 6 again since 0.129, his choice of 22 Nov 2026 (the spec's: the words about 12 pt
                             // under the line above; 10 left 16 on the iPhone). 2 under it, as since 0.111.
                             .padding(.top, 6).padding(.bottom, 2)
                             if !folded {

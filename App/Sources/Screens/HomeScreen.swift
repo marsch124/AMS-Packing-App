@@ -131,14 +131,18 @@ struct HomeScreen: View {
                 // or going home it is ONE quiet line instead (0.109, his words: a new trip is "not
                 // highly sannolikt" then) — both open the same page.
                 if away {
+                    // A button you can see is one (0.128, his ask 22 Nov 2026; was quiet grey words):
+                    // outlined in Home's blue — still calmer than the full-colour one at home.
                     Button { creating = true } label: {
                         HStack(spacing: 6) {
                             plusMark
-                            Text("New trip").font(.system(.subheadline, weight: .semibold))
+                            Text("New trip").font(.system(.body, weight: .semibold))
                         }
-                        .foregroundStyle(Theme.muted)
-                        .frame(maxWidth: .infinity, minHeight: 28)
-                        .contentShape(Rectangle())
+                        .foregroundStyle(AppSection.home.color)
+                        .frame(maxWidth: .infinity, minHeight: Metrics.row)
+                        .background(Capsule().fill(AppSection.home.color.opacity(0.10)))
+                        .overlay(Capsule().stroke(AppSection.home.color, lineWidth: 1.4))
+                        .contentShape(Capsule())
                     }
                     .buttonStyle(.plain).focusEffectDisabled()
                     .accessibilityIdentifier("home-create-folded")
@@ -245,12 +249,8 @@ struct HomeScreen: View {
                 .buttonStyle(.plain).focusEffectDisabled()
                 .accessibilityIdentifier("home-settings")
                 .accessibilityLabel("Settings")
-                Text(AppInfo.version)
-                    .font(.system(.caption2, weight: .semibold))
-                    .foregroundStyle(Theme.muted.opacity(0.7))
-                    .lineLimit(1).fixedSize()
-                    .allowsHitTesting(false)
-                    .accessibilityIdentifier("app-version")
+                // No version under the nut any more (0.127, his ask 22 Nov 2026): it is in Settings
+                // (`settings-version`) and, on the Mac, under the sidebar (`sidebar-version`).
             }
         }
     }
@@ -300,17 +300,18 @@ struct HomeScreen: View {
     /// Grab and go's line, the first inside its frame (0.91): the heading and Grab Lists.
     private var grabHeading: some View {
         HStack(alignment: .center, spacing: 8) {
-            Text("Grab and go").font(.system(.headline, weight: .bold)).foregroundStyle(AppSection.home.color)
+            // "Grab and Go" (0.128, his pick 22 Nov 2026; was "Grab and go").
+            Text("Grab and Go").font(.system(.headline, weight: .bold)).foregroundStyle(AppSection.home.color)
                 .lineLimit(1).minimumScaleFactor(0.8)
                 .accessibilityIdentifier("home-grab-heading")
             Spacer(minLength: 8)
             // This door opens the grab lists — not the templates. His note on the Mac: "Your Grab Lists".
-            Button { showingGrabLists = true } label: {
-                Text("Grab Lists")
-                    .font(.system(.footnote, weight: .semibold)).foregroundStyle(AppSection.home.color)
-                    .frame(minHeight: Metrics.compact).contentShape(Rectangle())
-            }
-            .buttonStyle(.plain).focusEffectDisabled()
+            // A button that looks like one (0.127, his ask 22 Nov 2026): "Edit Grab Lists", outlined
+            // in Home's blue like the app's other Edit buttons — was the plain words "Grab Lists".
+            // Smaller since 0.128 (his "too prominent", 22 Nov 2026): footnote words in a thin capsule.
+            Button("Edit Grab Lists") { showingGrabLists = true }
+                .buttonStyle(SmallOutlineButtonStyle(tint: AppSection.home.color))
+                .focusEffectDisabled()
             .accessibilityIdentifier("grab-lists")
         }
     }
@@ -320,22 +321,25 @@ struct HomeScreen: View {
     /// sync dot (his pick, 0.92) stays on Home, at the right of the Library heading.
     private var library: some View {
         let templates = TemplatesScreen.activityAreas(model.library.templates, model.library).reduce(0) { $0 + $1.lists.count }
-        return VStack(alignment: .leading, spacing: 4) {
+        // ONE panel (0.128, his ask 22 Nov 2026): the heading "Library" with the sync dot is the top
+        // line INSIDE the panel of Trips, Things and Templates — the way Grab and Go holds its heading.
+        // Was the word above the panel. No frame inside a frame.
+        return VStack(spacing: 0) {
             HStack(spacing: 8) {
-                sectionHeading("Library", id: "device-heading")
+                Text("Library").font(.system(.headline, weight: .bold)).foregroundStyle(AppSection.home.color)
+                    .accessibilityIdentifier("device-heading")
                 Spacer(minLength: 8)
-                SyncLight().padding(.top, 4)
+                SyncLight()
             }
-            VStack(spacing: 0) {
-                libraryRow(.events, "Trips", model.library.trips.count, id: "count-trips")
-                CardHairline()
-                libraryRow(.care, "Things", model.library.ownThings().count, id: "count-things")
-                CardHairline()
-                libraryRow(.templates, "Templates", templates, id: "count-templates")
-            }
-            .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
+            .padding(.horizontal, 12).padding(.top, 10).padding(.bottom, 2)
+            libraryRow(.events, "Trips", model.library.trips.count, id: "count-trips")
+            CardHairline()
+            libraryRow(.care, "Things", model.library.ownThings().count, id: "count-things")
+            CardHairline()
+            libraryRow(.templates, "Templates", templates, id: "count-templates")
         }
+        .background(RoundedRectangle(cornerRadius: 12).fill(Theme.card))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Theme.line, lineWidth: 1))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("home-device")
     }

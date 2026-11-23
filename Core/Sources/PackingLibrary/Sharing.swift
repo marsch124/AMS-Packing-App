@@ -7,7 +7,7 @@ import PackingCore
 // link made here opens in the web app, and a link from the web app opens here.
 
 /// Where the web app lives: a shared link opens there for anyone without this app. Its
-/// repository was renamed AMS-Packing → AMS-Packing-Web-Helper on 22 Nov 2026 (0.127), his
+/// repository was renamed AMS-Packing → AMS-Packing-Web-Helper on 22 Nov 2026 (0.129), his
 /// wish: "something with the word helper", so the two repositories are told apart.
 public let SHARE_WEB_BASE = "https://marsch124.github.io/AMS-Packing-Web-Helper/"
 

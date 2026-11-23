@@ -8,9 +8,9 @@ import PackingLibrary
 struct ThingDetailsCard: View {
     @EnvironmentObject var model: LibraryModel
     @Binding var draft: Item
-    /// Opened with "Add details" while the thing has none (the page's, since 0.127: its keys ask).
+    /// Opened with "Add details" while the thing has none (the page's, since 0.129: its keys ask).
     @Binding var open: Bool
-    /// The page's field in focus — the Mac's keys only (0.127): the card's text fields are in Tab's walk.
+    /// The page's field in focus — the Mac's keys only (0.129): the card's text fields are in Tab's walk.
     var typing: FocusState<ThingField?>.Binding? = nil
     @State private var priceText = ""
     @State private var valueText = ""
@@ -182,7 +182,7 @@ struct ThingDetailsCard: View {
         .overlay(alignment: .bottom) { if !last { Theme.line.frame(height: 1).padding(.leading, 12) } }
     }
 
-    /// One of the card's text fields — on the Mac in the keys' walk (0.127): `.detail(id)`, Brand `.brand`.
+    /// One of the card's text fields — on the Mac in the keys' walk (0.129): `.detail(id)`, Brand `.brand`.
     private func text(_ binding: Binding<String>, _ prompt: String, _ id: String, _ field: ThingField? = nil) -> some View {
         let f = field ?? .detail(id)
         return TextField(prompt, text: binding)
@@ -275,7 +275,7 @@ struct ThingStaysHome: View {
 }
 
 extension View {
-    /// A Details text field tied to the page's field in focus — the Mac's keys only (`macFocused`, 0.127).
+    /// A Details text field tied to the page's field in focus — the Mac's keys only (`macFocused`, 0.129).
     @ViewBuilder func detailFocused(_ binding: FocusState<ThingField?>.Binding?, _ f: ThingField) -> some View {
         if let binding { macFocused(binding, f) } else { self }
     }

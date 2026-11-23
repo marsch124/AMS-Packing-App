@@ -330,7 +330,7 @@ extension Importer {
 
     static func backup(in data: Data) throws -> BackupFile {
         guard let json = try? JSONValue.parse(data), BackupFile.looksLikeBackup(json) else { throw Refusal.notABackup }
-        // A file written by 0.124–0.126 holds the quarterly check's day under "checked" (0.127,
+        // A file written by 0.124–0.126 holds the quarterly check's day under "checked" (0.129,
         // QuarterlyCheck.swift): moved first, so the file is read — and checked — as it was meant.
         return BackupFile(json: Library.liftOldStamps(inBackup: json))
     }

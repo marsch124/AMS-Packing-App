@@ -1317,12 +1317,13 @@ left, the choice beside it) are kept.
    `groupBy(view, trip.entries)`; `g` = the group's position in that list:
    - Heading row (top padding **6** — 12 until 0.67, his words of 6 Oct 2026, "Far too much space between the
      lines"; 10 from 0.111 to 0.126, which left the words 16 pt under the line above on the iPhone — back to 6 in
-     0.127, his choice of 22 Nov 2026; 2 under it since 0.111; with a line above it, the heading's words stand about 12 pt under that line, 25 until 0.67):
+     0.129, his choice of 22 Nov 2026; 2 under it since 0.111; with a line above it, the heading's words stand about 12 pt under that line, 25 until 0.67):
      fold arrow (drawn chevron at `Metrics.glyph`, 20 / 16, with `onGrid`, in a `Metrics.lineButton` − 6 ×
      `Metrics.line` target — 34×36 and 20 pt until 0.67; pointing right when folded,
      down when open; id `trip-group-<g>-fold`, label "Open <heading>" / "Fold <heading>"); the heading
      (15 heavy; sorted When: the colour of the FIRST line's phase made readable; otherwise green; id
-     `trip-group-<g>-label`; tapping the words folds too); since 0.82 the **progress mark** (spec 07 part 20 —
+     `trip-group-<g>-label`; tapping the words folds too); **0.127: the progress mark is GONE from trip headings** (two look-alike ticks, one dead; the whole-section tick at the right end is now the only tick; the
+     count and the done colours below stay; grab lists keep their ring, spec 02). The rest of this item is history, 0.82-0.126: since 0.82 the **progress mark** (spec 07 part 20 —
      `GroupProgressMark`, not a button, id `trip-group-<g>-progress`, its label "<ticked> of <packable> packed" /
      "all packed"): 14 pt across on the iPhone, 11 on the Mac, 8 pt after the words — a hairline track
      with a green arc from the top, clockwise, as long as ticked ÷ packable; when every packable line is ticked a
@@ -2970,7 +2971,7 @@ are here: Plan. Ahead: …", at Refine "The loop. Done: Plan, Pack, On site, Rev
 just "The loop") showing the five names with small drawn chevrons between them, each step's own mark
 (`StepMark`, 13 pt; until 0.77 the tab's mark), semibold words, min height `Metrics.loopPill` — 22 on the Mac, 24 on
 the iPhone, with `Metrics.loopReach` (1 / 2) above and below still taking the tap, so the strip is 24 / 28 high
-(since 0.112, a step per button on a trip, each step's button reaches over the track's 2-pt rim and the reach — 0.127;
+(since 0.112, a step per button on a trip, each step's button reaches over the track's 2-pt rim and the reach — 0.129;
 from 0.112 until then each step took a tap only as high as its words, 18 / 20, `testATripsTopIsATadTighter` red) (0.104,
 his arrows of 28 Oct 2026: the pills 28 on both until then); the chevrons drawn on 24 and centred in the pill's height;
 each step in its own tint (Plan and Refine violet, Pack, On site and Review green).
@@ -3791,6 +3792,8 @@ deleted = none). **Not covered:** the real scheduling and a real tap (the system
 **Tests.** One data test per rule (which things, used up left out, room grouping and order, No room yet last, give a room, 30-day and stop rules); one screen test finds the row and ticks a thing by the ids above.
 
 **Version.** 0.126. **Docs.** What's new 0.126; How it works: On site (Unpack, Still in the bag).
+
+**0.127 - wording.** The trip page's Unpack row reads "N/M back · K still in the bag" (K = M - N), and "Everything is back · M" when done (TripScreen). The How it works text now says so, and that Create trip's still-needed line (`trip-create-needs`) is ABOVE the button, not under it (CreateTrip.swift).
 
 ---
 
