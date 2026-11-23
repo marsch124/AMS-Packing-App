@@ -41,8 +41,8 @@ go in `private/`, which git ignores. The parity checker reads them from there.
 - ✅ The app exists: one target for the iPhone and the Mac (`project.yml`, XcodeGen),
   the six sections of the web app as a tab bar with the web app's own hand-drawn
   marks, light and dark.
-- ✅ CI on every push: the model's tests, the UI tests on an iPhone simulator, the
-  UI tests on the Mac.
+- ✅ CI once a day (02:17 UTC, on main; on every push until 23 Nov 2026): the model's
+  tests, the UI tests on an iPhone simulator, the UI tests on the Mac.
 - ✅ `Core/PackingCore` — the whole of `js/model.js` in Swift (the rules of the
   port: [`Core/PORTING.md`](Core/PORTING.md)), held to the web app by
   `tools/parity/` — both models answer 200-odd questions about a backup and every
@@ -79,7 +79,8 @@ attributes that `codesign` refuses ("detritus not allowed"); the scripts clear t
 
 ## Tests
 
-His standing rule, from the first commit: UI tests in CI on every push, every
+His standing rule, from the first commit: UI tests in CI (on every push until 23 Nov
+2026, since then once a night on main — his ask), every
 control found by its `accessibilityIdentifier` and never by its words, starting
 with two and growing one at a time. A red run blocks a release — since 12 Oct 2026
 (the fast lane) the run that blocks it is the short one on his Mac, the model, parity

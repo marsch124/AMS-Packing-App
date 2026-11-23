@@ -1,29 +1,52 @@
 name: Tests
 
-# Every push (but docs-only ones, below) runs the suite — the model's own tests, then the UI tests on the
-# iPhone AND on the Mac, because he uses this app on both. A red run means the
-# build is not fit to install.
+# Once a day, on main (his ask, 23 Nov 2026: "run the full check only once a day") — the model's own
+# tests, then the UI tests on the iPhone AND on the Mac, because he uses this app on both. A red run
+# means the build is not fit to install. Until then every push started the suite: about three hours
+# of GitHub's Mac machines for any change, however small.
 #
 # FIVE jobs, the five Mac machines a free account gets at once (0.67): three iPhone
 # groups and two Mac groups. The model's tests ride in Mac group 1 and the parity
 # check in Mac group 2 — as jobs of their own they made seven, and on 0.66's
 # release one Mac group waited 40 minutes for a free machine.
 on:
-  push:
-    # Commits that cannot change the app or its tests start no suite (9 Oct 2026: a
-    # TestFlight-workflow-only commit held all five Mac machines for an hour). The
-    # TestFlight release still runs the suite through workflow_call; a manual run too.
-    paths-ignore:
-      - .github/workflows/testflight.yml
-      - docs/**
-      - '**/*.md'
-  pull_request:
-  workflow_dispatch:
+  # 02:17 UTC every night. GitHub runs a schedule on the default branch (main) only. A night whose
+  # commit already passed the whole suite starts no Mac machine (the job "Anything new to check?").
+  schedule:
+    - cron: '17 2 * * *'
+  workflow_dispatch:  # by hand, any branch: Actions → Tests → Run workflow
   workflow_call:      # the TestFlight workflow runs this suite first
 
 jobs:
+  # The nightly run checks only something new (23 Nov 2026): if main's commit already has a green
+  # run of this workflow, the five Mac machines are not started again — the run shows green because
+  # the same code was green. A commit whose last run was red is checked again the next night.
+  # A run by hand or from the TestFlight workflow always runs the suite.
+  new:
+    name: Anything new to check?
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+    outputs:
+      run: ${{ steps.look.outputs.run }}
+    steps:
+      - id: look
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          run=true
+          if [ "${{ github.event_name }}" = schedule ]; then
+            green=$(gh api "repos/${{ github.repository }}/actions/workflows/tests.yml/runs?head_sha=${{ github.sha }}&status=success&per_page=1" --jq '.total_count')
+            echo "main at ${{ github.sha }} · green runs of it: ${green:-0}"
+            if [ "${green:-0}" -gt 0 ]; then run=false; fi
+          fi
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+          echo "### $([ "$run" = true ] && echo 'The full check runs now' || echo 'Nothing new on main since its last green check, so it is not run again')" >> "$GITHUB_STEP_SUMMARY"
+
   iphone:
     name: UI tests — iPhone (${{ matrix.group }} of 3)
+    needs: new
+    if: needs.new.outputs.run == 'true'
     # Three groups side by side, about 47 minutes of tests each (tools/ui-shard.py): one
     # after another they took 148 minutes in 0.63's release (his ask, 6 Oct 2026). Three
     # iPhone and two Mac groups are the five Mac machines GitHub gives a free account at once.
@@ -156,6 +179,8 @@ jobs:
 
   mac:
     name: UI tests — Mac (${{ matrix.group }} of 2)
+    needs: new
+    if: needs.new.outputs.run == 'true'
     # Two groups side by side, about 51 minutes of tests each (tools/ui-shard.py); one
     # after another, 101 minutes in 0.63's release.
     strategy:

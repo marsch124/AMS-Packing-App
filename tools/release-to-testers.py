@@ -16,7 +16,7 @@ notes typed when the release was started. Standard library and openssl only.
     python3 tools/release-to-testers.py --self-check
 
 checks, without the network, that the "What to Test" requests are built the way
-App Store Connect wants them (CI runs it on every push).
+App Store Connect wants them (CI runs it in every full check — once a night since 23 Nov 2026).
 
     python3 tools/release-to-testers.py --next-build
 

@@ -1,8 +1,9 @@
 #!/bin/bash
 # The FAST LANE to TestFlight — his decision, 12 Oct 2026: a finished change reaches TestFlight in
 # about half an hour instead of three. A short check on THIS Mac, the archive and the upload from this
-# Mac, and GitHub's full suite (every UI test, ~80 min) runs AFTER, on main, as the safety net. If that
-# goes red later, the next build fixes it. The TestFlight workflow stays as the fallback (spec 06 §28).
+# Mac, and GitHub's full suite (every UI test, ~3 hours) runs AFTER, on main, as the safety net — since
+# 23 Nov 2026 once a night at 02:17 UTC, not on every push (his ask). If that goes red later, the next
+# build fixes it. The TestFlight workflow stays as the fallback (spec 06 §28).
 #
 #   tools/quick-release.sh VERSION "notes" [extra UI tests…]
 #   tools/quick-release.sh --dry-run [VERSION] [extra UI tests…]
@@ -29,7 +30,7 @@
 #    8 Archive         iPhone and Mac with the TestFlight workflow's settings; entitlements checked
 #    9 Upload          both, in the foreground with progress shown; one more try on a dropped connection
 #   10 Testers         both builds VALID, with What to Test, in the tester group — added, retried, checked
-#   11 Main            the release commit pushed to main — GitHub's full suite starts; its run id is printed
+#   11 Main            the release commit pushed to main — GitHub's full suite checks it that night (02:17 UTC)
 #
 # --dry-run: everything but the upload. The export writes to a folder instead (so signing and the
 # entitlements of what WOULD go up are proven), and nothing is committed, revoked, released or pushed.
@@ -876,7 +877,7 @@ SHA=$(git rev-parse HEAD)
 git fetch -q origin
 if [ $DRY = 1 ]; then
   if git merge-base --is-ancestor origin/main HEAD; then
-    done_stage "a real run would push ${SHA:0:7} to main (a fast-forward) and print the full suite's run"
+    done_stage "a real run would push ${SHA:0:7} to main (a fast-forward); the full suite checks it that night"
   else
     done_stage "a real run would stop here: main has moved on"
   fi
@@ -884,17 +885,8 @@ else
   git merge-base --is-ancestor origin/main HEAD \
     || fail "the builds ARE in TestFlight, but main moved on meanwhile — merge origin/main and push to main by hand"
   git push -q origin "HEAD:main" || fail "the push to main was refused — the builds ARE in TestFlight; push ${SHA:0:7} to main by hand"
-  RUN=""
-  for i in $(seq 1 18); do
-    RUN=$(gh run list --workflow tests.yml --branch main --commit "$SHA" -L 1 --json databaseId -q '.[0].databaseId // empty' 2>/dev/null || true)
-    [ -n "$RUN" ] && break
-    sleep 10
-  done
-  if [ -n "$RUN" ]; then
-    done_stage "${SHA:0:7} is on main; the full suite runs after the fact: run $RUN ($(gh run view "$RUN" --json url -q .url 2>/dev/null || true))"
-  else
-    done_stage "${SHA:0:7} is on main; its Tests run did not show within 3 minutes — look in the Actions tab"
-  fi
+  # A push starts no suite since 23 Nov 2026 (his ask: "run the full check only once a day").
+  done_stage "${SHA:0:7} is on main; GitHub's full suite checks it tonight at 02:17 UTC (sooner by hand: Actions → Tests → Run workflow)"
 fi
 
 summary

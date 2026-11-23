@@ -3296,7 +3296,18 @@ so a change to `project.yml` is committed together with the regenerated files. "
   `tools/test-core.sh`. One library test reads its workbook back with the Mac's `/usr/bin/unzip`; on the iPhone
   (no `Process`) that read-back is skipped with `XCTSkip` (`WorkbookTests.run`), the Mac and the `core` job still do it.
 
-## 27. CI on every push (`.github/workflows/tests.yml`)
+## 27. CI once a day (`.github/workflows/tests.yml`)
+
+**Since 23 Nov 2026 once a night, not on every push.** His ask: "run the full check only once a day" — every push
+held GitHub's five Mac machines for about three hours, however small the change. Triggers since then: `schedule`
+(`17 2 * * *`, 02:17 UTC; GitHub runs a schedule on the default branch, main, only), manual (`workflow_dispatch`,
+any branch: Actions → Tests → Run workflow) and `workflow_call` (the TestFlight workflow, §28b). `push`,
+`pull_request` and the `paths-ignore` list below are gone. A first job on Linux, **Anything new to check?** (`new`),
+looks up whether main's commit already has a green run of this workflow; if it has, the iPhone and Mac groups are
+skipped (`needs: new`, `if: needs.new.outputs.run == 'true'`) and the run shows green — the same code was green. A
+commit whose last run was red is checked again the next night; a run by hand or by the TestFlight workflow always
+runs the suite. `tools/quick-release.sh` no longer waits for a run after its push to main: it says the suite checks
+the commit that night. The paragraphs below describe the suite as it was run on every push until then.
 
 **Since 12 Oct 2026 the safety net, not the gate.** His decision ("yes, switch to the fast lane"): a release is
 checked on his Mac before it goes up — the model, parity and the iPhone smoke set (§28a) — and is uploaded from
@@ -3339,7 +3350,7 @@ TestFlight job still `needs: tests` — every group must pass.
 
 His decision (12 Oct 2026, "yes, switch to the fast lane"), as for his Workout Sync app: a finished change reaches
 TestFlight in about half an hour instead of about three hours. A short check on his Mac gates the upload; GitHub's
-full suite (§27 — every UI test on both devices, ~80 minutes) runs AFTER, on main, as the safety net. If it goes
+full suite (§27 — every UI test on both devices, ~80 minutes then, about three hours by Nov 2026) runs AFTER, on main, as the safety net — since 23 Nov 2026 once a night (§27). If it goes
 red, the next build fixes it. Small versions, one change or fix each, shipped when ready.
 
 `tools/quick-release.sh VERSION "notes" [extra UI tests…]` runs on his Mac (Claude runs it; he never needs the
@@ -3575,7 +3586,7 @@ device": since 0.68 a first job `tested` (ubuntu) looks whether the commit BEFOR
    /v1/betaBuildLocalizations/<id>` with `whatsNew`; a 409 on the POST → look again and PATCH). A failure there
    only WARNS ("the build is released all the same") — it never fails a release. Then it POSTs each build to the
    group, lists the group's builds and warns when this number is there fewer than 2 times.
-   `release-to-testers.py --self-check` (run by the `core` job on every push, §27) checks the request bodies and the
+   `release-to-testers.py --self-check` (run in Mac group 1 of every full check, §27) checks the request bodies and the
    GET → POST / PATCH / 409 conversation against a pretend App Store Connect, without the network — and (12 Oct 2026)
    the next build number of step 6: above every number Apple has, never below the run number. 🪤 0.27 (build 33): the old loop gave up after 5 minutes with one build and the Mac
    never got it.

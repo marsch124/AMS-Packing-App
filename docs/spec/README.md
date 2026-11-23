@@ -76,7 +76,7 @@ The Settings screen from top to bottom, Your choices, the in-app guide (What's n
 real trip, Words). The conventions every screen follows: colours in light and dark, drawn marks instead of
 stock icons, buttons and the rule that a main button is never grey, headings and type sizes, scrolling and
 the keyboard, accessibility identifiers, the Mac rules. And the machinery: windows and launch modes, the
-sample library, the project, CI on every push, shipping to TestFlight, crash reports, local tools, the parity
+sample library, the project, CI once a day, shipping to TestFlight, crash reports, local tools, the parity
 check against the web app, the UI-test harness and the test inventory.
 
 **[07 — Beyond the list](07-beyond-the-list.md).** The ideas chosen on 7 Oct 2026 that span several screens:
