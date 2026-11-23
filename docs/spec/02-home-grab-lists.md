@@ -65,7 +65,9 @@ bar", read the following instead:
   and the selected trait as before.
 - **Settings** opens from the **nut** button (the hand-drawn nut, slate) at the top right of Home, as a screen pushed
   above the tab bar's page, with a "‹ Home" back button at its top left. It still opens on an empty library (state
-  `.empty`) so a fresh device can restore from a file. On the Mac Settings is a row of the sidebar (below).
+  `.empty`) so a fresh device can restore from a file: there Home is the first-run screen (`FirstRunView`), which
+  carries the same nut at its top right (`home-settings`, iPhone only; 0.127 — from 0.110 until then an empty
+  iPhone could not reach Settings at all, `testSyncNowOnAnEmptyDeviceKeepsTheTwoDoors` red). On the Mac Settings is a row of the sidebar (below).
 - **The version marker** (`AppInfo.version`, the "0.110 (1)" text) is no longer a row under the tab bar. It shows at
   the foot of Settings and, small and muted, under Home's nut.
 - **Each tab's main screen starts with a big coloured title at the left**, in its part's colour: "Home", "Trips",
@@ -920,6 +922,10 @@ is `"\u{2063}##"`, `GrabLine.storedHeading(name)` the whole form. So on a factor
 - **0.87 (15 Oct 2026), done headings turn green and fold.** His yes to the idea put to him: "Done headings turn
   green and fold: in a grab list, when everything under a heading is in hand, it turns green and folds to one line,
   like the groups on a trip. You scroll less at the door." See "Done headings fold" below.
+- **0.127 (22 Nov 2026), larger headings.** His picture of "Hike" open on the iPhone, its five done headings
+  (Clothes, Nutrition, Tech, Other, Brompton) marked in orange: "Larger headings in the grab lists." The heading
+  goes from Footnote to **Title 3** semibold — a size above the things' Body — and keeps everything else: grey
+  while not done, green on its band when done, the ring (its size unchanged), the spacing (12 above, 2 below).
 - **0.84, Share at the bottom right.** His words, the same day and the same picture (header: Edit · Share ·
   Done): "Please move the share button down to the bottom right. I almost never use it. Now that we are on it, can
   we make the share button more rounded?"
@@ -995,7 +1001,7 @@ is `"\u{2063}##"`, `GrabLine.storedHeading(name)` the whole form. So on a factor
      this once" or "Take <name> along after all".
    - Rows are keyed by their position (`id: \.offset`).
    - **Under his own headings (0.85)** when he has set any (the rule under "His own headings" below): his
-     things above his first heading come first, under no heading; then each of his headings — a **small grey
+     things above his first heading come first, under no heading; then each of his headings — a **grey
      heading** (`grab-group-<g>`, `g` = 0, 1, … his headings top to bottom, as shown) — and the things under it,
      down to the next. The heading: his words as he typed them, **Headline (17 pt) semibold in `muted`, letter-spacing
      0.4** (0.127; Footnote 13 pt until 0.126), one line (cut at the end), left; **12 pt above it (4 when it is the very first line), 2 below**; no
@@ -2268,7 +2274,10 @@ Before its first look the dot's place is kept empty (8 × 8), so nothing shifts 
   pointer on it, no bubble. The bubble is a popover (`presentationCompactAdaptation(.popover)` — a bubble on the
   iPhone too, not a sheet), 270 pt wide, `card` background, padding 14 × 10, to the dot's RIGHT, over the tiles
   (🪤 iOS 26 puts the bubble on the side away from `arrowEdge`: `.trailing` put it off the screen to the left, so
-  the iPhone passes `.leading` and the Mac `.trailing`; and without a width of its own a bubble at the screen's edge
+  the iPhone passed `.leading` and the Mac `.trailing`. **0.127:** since 0.110 the dot is at the RIGHT end of the
+  Library heading, so `.leading` put the bubble off the screen to the right — its line unreadable, Details out of
+  reach (`testTheSyncLightOnHomeSaysHowICloudIsGoing` red on the iPhone since 0.110); both now pass `.trailing`,
+  the bubble to the dot's LEFT; and without a width of its own a bubble at the screen's edge
   shrank to a sliver — wrapping words have no ideal width). In it: the dot again and ONE line (`SyncCheck.line`,
   Subheadline semibold, ink — red when Stuck; `home-sync-line`), then **Details** (Subheadline semibold, Settings
   slate, `home-sync-details`). The bubble is the container `home-sync-popover`. Lines:

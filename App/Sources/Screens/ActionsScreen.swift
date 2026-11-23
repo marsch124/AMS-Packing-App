@@ -52,7 +52,7 @@ struct ActionsScreen: View {
             }
             .padding(.horizontal, 16)
             #if os(macOS)
-            .padding(.bottom, 6)                      // the page below never touches the strip (ScreenHeader.swift)
+            .padding(.top, 6).padding(.bottom, 6)     // under the title bar, as headerOnTheMac since 0.110 (ScreenHeader.swift)
             #endif
             if buying {
                 BuyList(text: $buyText).environmentObject(model)
@@ -149,7 +149,8 @@ struct ActionsScreen: View {
         }
         #if os(macOS)
         .titleBarSafeScroll()
-        .ignoresSafeArea(.container, edges: .top)     // its first line sits in the title bar strip
+        // (Until 0.127 `.ignoresSafeArea(.container, edges: .top)` here put To do's header up in the title bar,
+        // beside the traffic lights: 0.110 took it out of every other tab's header — ScreenHeader.swift — not this one.)
         #endif
         .sheet(isPresented: $searching) { SearchScreen().environmentObject(model) }
     }

@@ -537,8 +537,10 @@ struct TripScreen: View {
                             }
                             .animation(.easeInOut(duration: reduceMotion ? 0.2 : 0.3), value: sectionDone)
                             // A little air above a heading, none under it (12 points above,
-                            // and 36-point buttons, until 0.67) — 10 since 0.111, the lines in a card under it.
-                            .padding(.top, 10).padding(.bottom, 2)
+                            // and 36-point buttons, until 0.67) — 10 from 0.111, the lines in a card under it;
+                            // 6 again since 0.127, his choice of 22 Nov 2026 (the spec's: the words about 12 pt
+                            // under the line above; 10 left 16 on the iPhone). 2 under it, as since 0.111.
+                            .padding(.top, 6).padding(.bottom, 2)
                             if !folded {
                             ForEach(Array(group.entries.enumerated()), id: \.element.id) { place, line in
                                 let n = index[line.id] ?? 0

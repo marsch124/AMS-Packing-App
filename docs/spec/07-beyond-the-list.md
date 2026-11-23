@@ -295,7 +295,7 @@ An app that reads Apple Health carries the HealthKit entitlement — on the iPho
 spec 03 "The trip's page in his vault" has its every size and id).
 
 **Where the button is** (0.73, his ask of 12 Oct 2026): **Send to Obsidian** is at the FOOT of a reviewed trip,
-under Save as Excel and Share and in their style (`WideButtonLabel`, the whole width, a drawn stone as its mark),
+under Save as Excel (and Share, until 0.111 put Share in the floating bar) and in their style (`WideButtonLabel`, the whole width, a drawn stone as its mark),
 with its status line — and on the Mac the folder and Change — small under it; only Delete trip comes after it.
 From 0.70 until then it was a card FIRST on a reviewed trip, above Check before you go. What it does did not
 change.
@@ -509,7 +509,7 @@ read back from the disk: the page, `attachments/… Carry-on - hand luggage 1.jp
 both `testASavedReviewAsksForTheTripsPage` (a review saved through the screen: the iPhone shows
 `trip-vault-waiting`; the Mac, folder chosen, `trip-vault-written` and the page on the disk). Each was seen red
 with a planted fault (0.70 report). Both, 0.73: `testSendToObsidianIsAtTheFootOfAReviewedTrip` (under the lowest
-line, under Save as Excel and Share, as tall as Save as Excel and on its left edge, Delete trip under it; seen red
+line, under Save as Excel (and Share, until 0.111 put Share in the floating bar), as tall as Save as Excel and on its left edge, Delete trip under it; seen red
 with the card back at the top).
 **Not covered:** the real system folder picker and the bookmark across launches (no test can drive the panel);
 a folder that has gone away; a sync bringing the iPhone's wish to an open Mac (the same `didSet` path the review

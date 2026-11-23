@@ -6,8 +6,10 @@ import PackingCore
 // (`encodeTripLink`, `encodeListShare`, `encodeGrabShare` and their decoders), so a
 // link made here opens in the web app, and a link from the web app opens here.
 
-/// Where the web app lives: a shared link opens there for anyone without this app.
-public let SHARE_WEB_BASE = "https://marsch124.github.io/AMS-Packing/"
+/// Where the web app lives: a shared link opens there for anyone without this app. Its
+/// repository was renamed AMS-Packing → AMS-Packing-Web-Helper on 22 Nov 2026 (0.127), his
+/// wish: "something with the word helper", so the two repositories are told apart.
+public let SHARE_WEB_BASE = "https://marsch124.github.io/AMS-Packing-Web-Helper/"
 
 /// What a pasted link or code turned out to hold.
 public enum SharedThing: Equatable {

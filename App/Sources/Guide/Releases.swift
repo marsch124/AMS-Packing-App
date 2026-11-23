@@ -18,6 +18,16 @@ struct Release: Identifiable {
 
 enum Releases {
     static let all: [Release] = [
+        Release(version: "0.129", date: "23 Nov 2026", title: "Backups restore again, the web app\u{2019}s new address, and fixes",
+                changed: ["On a trip, the headings of its groups sit a little closer to the lines above them again (as before 0.111), so more of the list fits on the screen.",
+                          "Share links for a trip, a template or a grab list now use the web app\u{2019}s new address, https://marsch124.github.io/AMS-Packing-Web-Helper/ \u{2014} its home on GitHub was renamed from AMS-Packing to AMS-Packing-Web-Helper, so it is not mixed up with this app. A link pasted into this app works whatever address is in front of it, old or new. A link sent before 0.129, with the old address, no longer opens in a web browser (it shows \u{201C}404\u{201D}, page not found): paste it into this app instead, or ask for a new link."],
+                fixed: ["Restoring a backup: a backup made with 0.124, 0.125 or 0.126 could be refused with \u{201C}The import did not come back the same\u{201D}. The day the Quarterly check notes on a thing (when you tap Still here, or add a new thing) was kept under a name the app also uses for a tick, so it came back wrong. It now has a name of its own, and those backups are read again: the days move to their proper place.",
+                        "The Quarterly check now remembers Still here after the app restarts or syncs. Before, the day could be lost, and the thing was asked about again. A day that was already lost stays lost, so a few things may be asked about once more this quarter.",
+                        "iPhone: on a new iPhone with nothing on it yet, the first screen now has the Settings nut at the top right. Since 0.110 there was no way to open Settings there.",
+                        "iPhone: tapping the sync dot on Home opens its bubble to the left of the dot, on the screen. Since 0.110 it opened off the right edge, so its line and Details could not be reached.",
+                        "On a trip, each step of the strip at the top (Plan, Pack, On site, Review, Refine) takes a tap over its full height again. Since 0.112 a tap near its top or bottom edge did nothing.",
+                        "Mac: the To do tab\u{2019}s heading sits under the window\u{2019}s title bar, level with the other tabs. Since 0.110 it sat up in the title bar, beside the window\u{2019}s three buttons.",
+                        "Mac: Tab reaches the Details card\u{2019}s fields again \u{2014} Brand, Model, Serial, Bought at, Price, Value today and How many \u{2014} right after Before a trip. Since 0.115 Tab went past them. While the card is folded to Add details, Tab goes past it; \u{2318}J still finds its fields and opens it."]),
         Release(version: "0.128", date: "22 Nov 2026", title: "Smaller Edit Grab Lists, Show on Home, Library in one panel",
                 changed: ["Home, Edit Grab Lists: before, an outlined button in body size (17 pt), as tall as the header buttons; now small words (13 pt) in a thin blue outline, so it no longer shouts next to the heading.",
                          "Home: before, the heading read \u{201C}Grab and go\u{201D}; now \u{201C}Grab and Go\u{201D}. The guide uses the same spelling.",

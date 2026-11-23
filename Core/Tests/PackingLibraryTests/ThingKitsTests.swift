@@ -79,7 +79,9 @@ final class ThingKitsTests: XCTestCase {
         XCTAssertNil(plain.extra[KIT_CONTENTS_KEY]); XCTAssertNil(plain.extra[KIT_OUT_KEY])
         XCTAssertEqual(plain.extra[KIT_CHECK_KEY], .bool(false), "his off was forgotten")
         XCTAssertTrue(lib.setKit(kitId: wash, contents: []))
-        XCTAssertTrue(lib.items.first { $0.id == wash }!.extra.isEmpty, "a kit checked before each trip left a key behind")
+        // Only the quarterly check's day stays: every thing added gets it (0.124, QuarterlyCheck.swift).
+        XCTAssertEqual(Set(lib.items.first { $0.id == wash }!.extra.keys), [CHECKED_KEY],
+                       "a kit checked before each trip left a key behind")
     }
 
     func testAKitNeverGoesInsideAKitAndABagIsNeitherAKitNorInsideOne() {

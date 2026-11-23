@@ -1316,7 +1316,8 @@ left, the choice beside it) are kept.
 5. **The groups** (a lazy stack with **no spacing** — 4 until 0.67), one per non-empty group of
    `groupBy(view, trip.entries)`; `g` = the group's position in that list:
    - Heading row (top padding **6** — 12 until 0.67, his words of 6 Oct 2026, "Far too much space between the
-     lines"; with a line above it, the heading's words stand about 12 pt under that line, 25 until 0.67):
+     lines"; 10 from 0.111 to 0.126, which left the words 16 pt under the line above on the iPhone — back to 6 in
+     0.127, his choice of 22 Nov 2026; 2 under it since 0.111; with a line above it, the heading's words stand about 12 pt under that line, 25 until 0.67):
      fold arrow (drawn chevron at `Metrics.glyph`, 20 / 16, with `onGrid`, in a `Metrics.lineButton` − 6 ×
      `Metrics.line` target — 34×36 and 20 pt until 0.67; pointing right when folded,
      down when open; id `trip-group-<g>-fold`, label "Open <heading>" / "Fold <heading>"); the heading
@@ -1855,7 +1856,7 @@ tall, within 0.5); the badge, the pen and Done on ONE centre line (within 1.5 pt
 least 21.5 tall; pictures `trip-header-reviewed`. Seen red on 0.72's header: "the pen is on the count's line",
 "the pen is not a round button" (36 wide, 34 tall), "Reviewed sits -6.0 pt off Done's centre line", "Reviewed is
 bare words, not the Trips row's badge"), `testSendToObsidianIsAtTheFootOfAReviewedTrip` (0.73: Send to Obsidian
-under the trip's first line, then — scrolled to — under the lowest line, under Save as Excel and Share, as tall
+under the trip's first line, then — scrolled to — under the lowest line, under Save as Excel (and Share, until 0.111 put Share in the floating bar), as tall
 as Save as Excel and on its left edge, with Delete trip under it; picture `trip-foot-obsidian`. Seen red with the
 card back at the top: "Send to Obsidian is above the trip's lines").
 Model: `TripByTemplateTests` (7, invented templates Always packed / Run / Bike):
@@ -2969,7 +2970,9 @@ Plan. You are here: Pack. Ahead: On site, Review, Refine." — a part with no st
 are here: Plan. Ahead: …", at Refine "The loop. Done: Plan, Pack, On site, Review. You are here: Refine."; until 0.101
 just "The loop") showing the five names with small drawn chevrons between them, each step's own mark
 (`StepMark`, 13 pt; until 0.77 the tab's mark), semibold words, min height `Metrics.loopPill` — 22 on the Mac, 24 on
-the iPhone, with `Metrics.loopReach` (1 / 2) above and below still taking the tap, so the strip is 24 / 28 high (0.104,
+the iPhone, with `Metrics.loopReach` (1 / 2) above and below still taking the tap, so the strip is 24 / 28 high
+(since 0.112, a step per button on a trip, each step's button reaches over the track's 2-pt rim and the reach — 0.127;
+from 0.112 until then each step took a tap only as high as its words, 18 / 20, `testATripsTopIsATadTighter` red) (0.104,
 his arrows of 28 Oct 2026: the pills 28 on both until then); the chevrons drawn on 24 and centred in the pill's height;
 each step in its own tint (Plan and Refine violet, Pack, On site and Review green).
 
@@ -3345,7 +3348,7 @@ markers is never overwritten (the app's goes beside it as `<name> (AMS Packing).
 itself (front matter, sections, file names, escaping), the marks on the trip and the Mac's writing are in spec
 07 part 8; this is the card on the trip (0.70).
 
-**Where.** The FOOT of the trip screen's scroll area, only on a reviewed trip: under Save as Excel and Share,
+**Where.** The FOOT of the trip screen's scroll area, only on a reviewed trip: under Save as Excel (and Share, until 0.111 put Share in the floating bar),
 above Delete trip (still last — his rule for removing anything); padding 16 sideways, 12 on top. Since 0.73 (his
 ask, 12 Oct 2026: "Send to Obsidian" to the very bottom of the trip page, styled like Save as Excel); from 0.70 a
 card FIRST in the scroll area (above Check before you go, now Before you go), "Obsidian" on its left and a filled Send button at its
