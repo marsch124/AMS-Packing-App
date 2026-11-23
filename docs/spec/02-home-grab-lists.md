@@ -66,7 +66,7 @@ bar", read the following instead:
 - **Settings** opens from the **nut** button (the hand-drawn nut, slate) at the top right of Home, as a screen pushed
   above the tab bar's page, with a "‹ Home" back button at its top left. It still opens on an empty library (state
   `.empty`) so a fresh device can restore from a file: there Home is the first-run screen (`FirstRunView`), which
-  carries the same nut at its top right (`home-settings`, iPhone only; 0.129 — from 0.110 until then an empty
+  carries the same nut at its top right (`home-settings`, iPhone only; 0.127 — from 0.110 until then an empty
   iPhone could not reach Settings at all, `testSyncNowOnAnEmptyDeviceKeepsTheTwoDoors` red). On the Mac Settings is a row of the sidebar (below).
 - **The version marker** (`AppInfo.version`, the "0.110 (1)" text) is no longer a row under the tab bar. It shows at
   the foot of Settings and, small and muted, under Home's nut.
@@ -924,7 +924,7 @@ is `"\u{2063}##"`, `GrabLine.storedHeading(name)` the whole form. So on a factor
   like the groups on a trip. You scroll less at the door." See "Done headings fold" below.
 - **0.127 (22 Nov 2026), larger headings.** His picture of "Hike" open on the iPhone, its five done headings
   (Clothes, Nutrition, Tech, Other, Brompton) marked in orange: "Larger headings in the grab lists." The heading
-  goes from Footnote to **Headline (17 pt)** semibold and keeps everything else: grey
+  goes from Footnote to **Title 3** semibold — a size above the things' Body — and keeps everything else: grey
   while not done, green on its band when done, the ring (its size unchanged), the spacing (12 above, 2 below).
 - **0.84, Share at the bottom right.** His words, the same day and the same picture (header: Edit · Share ·
   Done): "Please move the share button down to the bottom right. I almost never use it. Now that we are on it, can
@@ -2274,7 +2274,7 @@ Before its first look the dot's place is kept empty (8 × 8), so nothing shifts 
   pointer on it, no bubble. The bubble is a popover (`presentationCompactAdaptation(.popover)` — a bubble on the
   iPhone too, not a sheet), 270 pt wide, `card` background, padding 14 × 10, to the dot's RIGHT, over the tiles
   (🪤 iOS 26 puts the bubble on the side away from `arrowEdge`: `.trailing` put it off the screen to the left, so
-  the iPhone passed `.leading` and the Mac `.trailing`. **0.129:** since 0.110 the dot is at the RIGHT end of the
+  the iPhone passed `.leading` and the Mac `.trailing`. **0.127:** since 0.110 the dot is at the RIGHT end of the
   Library heading, so `.leading` put the bubble off the screen to the right — its line unreadable, Details out of
   reach (`testTheSyncLightOnHomeSaysHowICloudIsGoing` red on the iPhone since 0.110); both now pass `.trailing`,
   the bubble to the dot's LEFT; and without a width of its own a bubble at the screen's edge

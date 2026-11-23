@@ -1317,7 +1317,7 @@ left, the choice beside it) are kept.
    `groupBy(view, trip.entries)`; `g` = the group's position in that list:
    - Heading row (top padding **6** — 12 until 0.67, his words of 6 Oct 2026, "Far too much space between the
      lines"; 10 from 0.111 to 0.126, which left the words 16 pt under the line above on the iPhone — back to 6 in
-     0.129, his choice of 22 Nov 2026; 2 under it since 0.111; with a line above it, the heading's words stand about 12 pt under that line, 25 until 0.67):
+     0.127, his choice of 22 Nov 2026; 2 under it since 0.111; with a line above it, the heading's words stand about 12 pt under that line, 25 until 0.67):
      fold arrow (drawn chevron at `Metrics.glyph`, 20 / 16, with `onGrid`, in a `Metrics.lineButton` − 6 ×
      `Metrics.line` target — 34×36 and 20 pt until 0.67; pointing right when folded,
      down when open; id `trip-group-<g>-fold`, label "Open <heading>" / "Fold <heading>"); the heading
@@ -2971,7 +2971,7 @@ are here: Plan. Ahead: …", at Refine "The loop. Done: Plan, Pack, On site, Rev
 just "The loop") showing the five names with small drawn chevrons between them, each step's own mark
 (`StepMark`, 13 pt; until 0.77 the tab's mark), semibold words, min height `Metrics.loopPill` — 22 on the Mac, 24 on
 the iPhone, with `Metrics.loopReach` (1 / 2) above and below still taking the tap, so the strip is 24 / 28 high
-(since 0.112, a step per button on a trip, each step's button reaches over the track's 2-pt rim and the reach — 0.129;
+(since 0.112, a step per button on a trip, each step's button reaches over the track's 2-pt rim and the reach — 0.127;
 from 0.112 until then each step took a tap only as high as its words, 18 / 20, `testATripsTopIsATadTighter` red) (0.104,
 his arrows of 28 Oct 2026: the pills 28 on both until then); the chevrons drawn on 24 and centred in the pill's height;
 each step in its own tint (Plan and Refine violet, Pack, On site and Review green).

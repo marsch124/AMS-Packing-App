@@ -149,7 +149,7 @@ struct ActionsScreen: View {
         }
         #if os(macOS)
         .titleBarSafeScroll()
-        // (Until 0.129 `.ignoresSafeArea(.container, edges: .top)` here put To do's header up in the title bar,
+        // (Until 0.127 `.ignoresSafeArea(.container, edges: .top)` here put To do's header up in the title bar,
         // beside the traffic lights: 0.110 took it out of every other tab's header — ScreenHeader.swift — not this one.)
         #endif
         .sheet(isPresented: $searching) { SearchScreen().environmentObject(model) }

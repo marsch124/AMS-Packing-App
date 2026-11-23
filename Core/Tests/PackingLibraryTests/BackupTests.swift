@@ -192,7 +192,7 @@ final class BackupTests: XCTestCase {
         XCTAssertEqual(counts.first { $0.table == .items }?.count, 2)
     }
 
-    // MARK: - The quarterly check's day (0.129)
+    // MARK: - The quarterly check's day (0.127)
 
     /// Each thing's quarterly-check day by name ("" = never looked at).
     static func quarterlyDays(_ lib: Library) -> [String: String] {

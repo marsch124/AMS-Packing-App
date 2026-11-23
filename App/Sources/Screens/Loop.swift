@@ -319,7 +319,7 @@ struct LoopDoor: View {
         }
         .padding(.horizontal, 2)
         // The track is drawn 2 round the steps as before; each step reaches over its rim and `loopReach`
-        // past it (0.129), so a step takes a tap as high as the strip (24 / 28) — as the one button did
+        // past it (0.127), so a step takes a tap as high as the strip (24 / 28) — as the one button did
         // until 0.112. Since 0.112 each step took a tap only as high as its words (18 / 20).
         .background(RoundedRectangle(cornerRadius: 9).fill(Theme.line.opacity(scheme == .dark ? 0.9 : 0.6))
             .padding(.vertical, Metrics.loopReach))

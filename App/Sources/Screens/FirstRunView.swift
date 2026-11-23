@@ -43,7 +43,7 @@ struct FirstRunView: View {
         .frame(maxWidth: .infinity)
         #if os(iOS)
         // Settings' only door on the iPhone since 0.110 is Home's nut, and on an empty device Home is this
-        // screen — so until 0.129 an empty iPhone could not reach Settings at all (no Sync now, no restore
+        // screen — so until 0.127 an empty iPhone could not reach Settings at all (no Sync now, no restore
         // from a file there). It carries the nut too (spec 02 §1: Settings "still opens on an empty library").
         .overlay(alignment: .topTrailing) {
             Button { model.tabToOpen = .settings } label: {

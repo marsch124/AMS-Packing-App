@@ -67,7 +67,7 @@ extension Library {
         var heads: [(trip: TripEvent, order: [String])] = []
         for r in records {
             switch r.table {
-            case .items: items.append(Item(json: Library.liftOldStamp(r.json)))   // 0.129, QuarterlyCheck.swift
+            case .items: items.append(Item(json: Library.liftOldStamp(r.json)))   // 0.127, QuarterlyCheck.swift
             case .memberships:
                 var m = Membership(json: r.json)
                 if let copy = m.extra.removeValue(forKey: Library.sectionCopyKey) { sectionCopies[m.id] = copy }

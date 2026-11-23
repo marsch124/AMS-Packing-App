@@ -6,7 +6,7 @@ import PackingCore
 // "Still here" stamps `extra[CHECKED_KEY]` with the day; "Gone…" marks it gone. A thing added this
 // quarter counts as looked at (`addThing` stamps it).
 //
-// 0.129: the day sits under "lookedAt". In 0.124–0.126 it sat under "checked" — the name of a trip
+// 0.127: the day sits under "lookedAt". In 0.124–0.126 it sat under "checked" — the name of a trip
 // line's tick, a field EVERY thing has (`Item.checked`, read back as true or false) — so the stored
 // day came back as a tick: the day was lost on the next load, and a backup holding it was REFUSED
 // on restore ("template 1, row 1: checked"; nine model tests red from 0.124 on). `liftOldStamp`

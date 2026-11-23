@@ -546,7 +546,7 @@ struct ThingEditor: View {
     @State private var newTemplates: [PackList] = []
     /// What it holds, or the kit it is in (0.70, ThingKitPart.swift) — kept until Save.
     @State private var kit = KitDraft()
-    /// The Details card opened with "Add details" while the thing has none yet (0.115; here since 0.129,
+    /// The Details card opened with "Add details" while the thing has none yet (0.115; here since 0.127,
     /// so the Mac's keys know whether its fields are on the page).
     @State private var detailsOpen = false
     /// Remember with it and Goes with (0.101, ThingRemember.swift) — kept until Save.
@@ -631,7 +631,7 @@ struct ThingEditor: View {
                     // Lent to… (0.124): who has it, since when; kept on Save.
                     ThingLentLine(draft: $draft).environmentObject(model)
                     // Details (0.115, inventory step 1 — his pick: under the photos, folded while empty).
-                    // On the Mac its text fields are in the keys' order (0.129), right here: after Before a trip.
+                    // On the Mac its text fields are in the keys' order (0.127), right here: after Before a trip.
                     #if os(macOS)
                     ThingDetailsCard(draft: $draft, open: $detailsOpen, typing: $typing).environmentObject(model)
                     #else
@@ -1767,7 +1767,7 @@ extension ThingEditor {
     /// and Remember are not in the walk).
     static let beforeFields: [ThingField] = [.battery, .liquid, .restricted, .expiry]
 
-    /// The Details card's text fields (0.129), in its order. Bought on and Warranty are pickers — Tab
+    /// The Details card's text fields (0.127), in its order. Bought on and Warranty are pickers — Tab
     /// goes past them, as past every drop-down; so does the price's currency, a part of Price.
     static let detailFields: [ThingField] = [.brand, .detail("thing-model"), .detail("thing-serial"),
                                              .detail("thing-bought-at"), .detail("thing-price"),
@@ -1791,7 +1791,7 @@ extension ThingEditor {
     fileprivate func fieldOrder(all: Bool = false) -> [ThingField] {
         var out: [ThingField] = [.name, .notes]
         if all || !ThingEditor.beforeFoldedNow { out += ThingEditor.beforeFields }
-        // The Details card's (0.129), where the card is — under Photos: while it is folded to "Add details"
+        // The Details card's (0.127), where the card is — under Photos: while it is folded to "Add details"
         // Tab goes past them; `all` (⌘J) names them folded too, and landing on one opens it.
         if all || detailsOpen || !ThingDetailsCard.isEmpty(draft) { out += ThingEditor.detailFields }
         out.append(.category)
@@ -2008,7 +2008,7 @@ extension ThingEditor {
         if at == .expiry, f != .expiry { readExpiry() }
         // A field of Before a trip reached while it is folded (⌘J): the frame opens (0.104).
         if let f, ThingEditor.beforeFields.contains(f), ThingEditor.beforeFoldedNow { ThingEditor.beforeFoldedNow = false }
-        // A field of the Details card reached while it is folded (⌘J): the card opens (0.129).
+        // A field of the Details card reached while it is folded (⌘J): the card opens (0.127).
         if let f, ThingEditor.detailFields.contains(f), !detailsOpen, ThingDetailsCard.isEmpty(draft) { detailsOpen = true }
         keyHome.quiet = quiet && f != at
         keyNote = ""

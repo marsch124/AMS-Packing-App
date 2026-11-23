@@ -15546,7 +15546,7 @@ final class AMSPackingUITests: XCTestCase {
         app.typeText("Olive")
         XCTAssertEqual(says(app, "thing-colour"), "Olive", "what was typed did not reach Colour")
         shot(app, "keys-focus-colour")
-        // The Details card's text fields (0.129 — his answer of 22 Nov 2026, "make the details card fields
+        // The Details card's text fields (0.127 — his answer of 22 Nov 2026, "make the details card fields
         // reachable with tab again"): folded to Add details on Map, Tab went past them (above); opened, they
         // follow Before a trip in the card's order — Bought on and Warranty are pickers, passed as every
         // drop-down — and Kind of thing comes after them.
