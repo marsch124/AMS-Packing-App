@@ -63,15 +63,16 @@ blue, the tone Make gives.
 | teal   | `#17969b` |                               |
 | other  | `#64748b` | (none arrives since 5 Oct 2026; a factory row from the web app could carry one) |
 
-**The sun of an outdoor list** (0.130, `GrabDoodle.sunAmber`): amber `#f29100`, one shade for day and
-night. Whatever the list's tone, the sun on its drawing is this amber — a filled disc and rays, not a line —
-so the outdoor Swim, Bike and Run are told from the indoor ones at a glance (his ask, 24 Nov 2026). It is
-more orange than the yellow tone (`#c99700`), so it also stands apart on the bike. Contrast, worked out
-24 Nov 2026: 2.4 : 1 on the light card (`#ffffff`), 2.2 : 1 on the light page (`#f4f6f7`, a Home tile's
-fill), 7.0 : 1 on the dark card (`#161f22`), 7.8 : 1 on the dark page (`#0e1416`). On light it is under the 3 : 1 the tones keep:
-taken on purpose, because it is a solid shape and never the only sign (the list's page says "Outdoor"),
-and a darker amber stops looking like a sun. Seen so far only in drawn pictures of the tiles, not on a
-device.
+**The sun of an outdoor list** (0.130, `GrabDoodle.sunYellow`): yellow `#ffd60a` — the Bike pill's
+yellow, below — one shade for day and night. Whatever the list's tone, the sun on its drawing is this
+yellow — a filled disc and rays, not a line — so the outdoor Swim, Bike and Run are told from the indoor
+ones at a glance (his ask, 24 Nov 2026; his pick of yellow the same day: "Let's make the sun yellow on
+all outdoor buttons" — it was first built as an amber, `#f29100`). Contrast, worked out 24 Nov 2026:
+11.9 : 1 on the dark card (`#161f22`), 13.2 : 1 on the dark page (`#0e1416`, a Home tile's fill); on
+light only 1.4 : 1 on the card (`#ffffff`) and 1.3 : 1 on the page (`#f4f6f7`) — far under the 3 : 1 the
+tones keep, and the reason the tones are not this yellow. Taken all the same: he runs everything in dark
+mode, it is a solid shape, and never the only sign (the list's page says "Outdoor"). Seen so far only in
+drawn pictures of the tiles, not on a device.
 
 ## Workout pills (WET) — decided 28 September 2026, built in 0.40 (`WorkoutTone`, HomeScreen.swift)
 

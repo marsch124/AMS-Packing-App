@@ -374,7 +374,7 @@ struct HowItWorksScreen: View {
             "Round tick on a trip\u{2019}s line (a ring, filled green with a white tick when done): packed. Tap it to tick, tap again to untick.",
             "Round tick at the right end of a trip\u{2019}s group heading: ticks every line of that group at once; tap again and it unticks them all. It is the only tick on a heading. The count beside the heading (\u{201C}3/12\u{201D}) turns green and the heading gets a soft green band when every line of the group is packed.",
             "Small ring at a grab list\u{2019}s heading: it fills green as the things under it are in your hand, and becomes a green tick when they all are \u{2014} then the heading folds. It only shows; there is nothing to tap in it.",
-            "An amber sun at the top left of a grab list\u{2019}s drawing: the outdoor list \u{2014} Outdoor swim, Outdoor bike, Outdoor run. The same drawing without a sun is the indoor one.",
+            "A yellow sun at the top left of a grab list\u{2019}s drawing: the outdoor list \u{2014} Outdoor swim, Outdoor bike, Outdoor run. The same drawing without a sun is the indoor one.",
             "A faint circle with a slash (\u{2298}): not this time. The line stays on the list but is not packed and leaves the count. The arrow round (\u{21BB}) beside it takes it back.",
             "\u{FF0B} Add: put something new on the list or page you are on. \u{FF0B} New trip, the full-colour button at the foot of Home, starts a trip. While you are away or going home it is outlined in blue instead.",
             "The small dot at the right of the Library heading on Home, inside the Library panel: the sync. Green means in sync, orange means changes on their way, red means a send failed, grey means the device cannot tell.",

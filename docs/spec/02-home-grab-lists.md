@@ -537,7 +537,7 @@ the buttons a bit so they are thinner … four on each row … two rows". They w
   - a 1.2-pt stroke in the tone colour at 50 % opacity.
 - Identifier `grab-<n>`, where n is the **position** (0…7), never the name.
 - Accessibility label = `title` (for example "Indoor swim"); the visible word is `label` ("Swim"). The
-  two Swim tiles differ on screen only by the sun in the drawing — since 0.130 a bigger one in its own amber,
+  two Swim tiles differ on screen only by the sun in the drawing — since 0.130 a bigger one in its own yellow,
   standing out past the drawing's top left corner (below). Each tile passes its `label` to
   `GrabDoodle` as `initial`, so a list without a drawing shows the label's first letter.
 - The view takes `prefix` (default `"grab"`) so the Action-button menu can reuse it as `grab-menu-<n>`.
@@ -581,7 +581,9 @@ touch the swimmer's head, the bike frame or the speed lines.
 accentuated and larger on the top left corner of each button." Everywhere the app draws an outdoor list's
 drawing (`GrabDoodle.outdoor(_:)`: the figure without its sun, and the sun's middle and scale — the table above):
 - the figure is drawn as before, in the list's tone, exactly where the indoor list's figure is;
-- over it the sun in **its own amber `#f29100`** (`GrabDoodle.sunAmber`; one shade for day and night): the disc
+- over it the sun in **its own yellow `#ffd60a`** (`GrabDoodle.sunYellow`; the Bike pill's yellow, one shade for
+  day and night — his pick the same day: "Let's make the sun yellow on all outdoor buttons"; first built as an
+  amber `#f29100`): the disc
   (`sunDisc`, GRAB_SUN's closed curve) **filled** and outlined 3 units wide, and the 8 rays (`sunRays`) 4.2 units
   wide with round ends. Until 0.130 the sun was a ring and rays in the drawing's own 4.5-unit line and colour, and
   at 22 pt it ran together into a small star;
@@ -592,8 +594,8 @@ drawing (`GrabDoodle.outdoor(_:)`: the figure without its sun, and the sun's mid
   **past the box**: up to 9.9 units to the left and above (the bike's; 3.4 pt on an iPhone tile, 2.8 pt on a Mac tile — still
   inside the tile, whose drawing has 7 pt / 4 pt above it and at least 4 pt to its left). `GrabDoodle`'s frame is
   still `size` × `size`; nothing clips the drawing;
-- `GrabDoodle.sunColour` (default the amber): `nil` draws the sun in the drawing's own colour — only Icon's
-  "Its drawing" tile uses it, while that tile is the one in force and filled with the list's tone (amber on the
+- `GrabDoodle.sunColour` (default the yellow): `nil` draws the sun in the drawing's own colour — only Icon's
+  "Its drawing" tile uses it, while that tile is the one in force and filled with the list's tone (yellow on the
   yellow or green fill would not read).
 - **Not under the app icon:** the pictures of section 13b (`grab-swim-sun` …) are one-colour template PDFs cut at
   their 35-pt box, drawn from `GrabDoodle.path(_:)`, which still returns the one-line drawing with the sun of
@@ -618,7 +620,7 @@ is on screen."
   with Make opens as `grab-6`.
 - UI `testHomeWithEveryGrabListOffSaysWhereTheyAre`: no `grab-0`, and `home-grab-none` instead.
 - **Not covered:** tone colours, the initial letter, the runner fallback for unknown icons, the
-  accessibility label being the title, the big amber sun (0.130: no test looks at a drawing).
+  accessibility label being the title, the big yellow sun (0.130: no test looks at a drawing).
 
 **Template icons are not used here.** The 90 template icons (`TemplateIcons.swift`, `PackingLibrary/TemplateIconCatalog.swift`,
 `PackingLibrary/TemplateIcon.swift`) belong to templates only. The grab tiles, the grab screen header,

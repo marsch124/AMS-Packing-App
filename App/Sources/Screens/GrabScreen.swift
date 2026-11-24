@@ -26,13 +26,15 @@ struct GrabDoodle: View {
     /// A list of his own has no hand-drawn mark: it wears its INITIAL, the way he
     /// chose template covers to work (2026-09-22). The app never adds stock art.
     var initial: String = ""
-    /// The sun's colour on an outdoor list's drawing (0.130): its own amber, so it is seen before
+    /// The sun's colour on an outdoor list's drawing (0.130): its own yellow, so it is seen before
     /// the word is read; nil = the drawing's own colour — on a tile filled with the list's colour
-    /// (Icon's "Its drawing" when it is the one in force), where amber would not read.
-    var sunColour: Color? = GrabDoodle.sunAmber
+    /// (Icon's "Its drawing" when it is the one in force), where yellow would not read.
+    var sunColour: Color? = GrabDoodle.sunYellow
 
-    /// The sun's amber, #f29100 — one shade for day and night, as the tones are (docs/colours.md).
-    static let sunAmber = Color(red: 0xf2 / 255.0, green: 0x91 / 255.0, blue: 0)
+    /// The sun's yellow, #ffd60a — the Bike pill's yellow, one shade for day and night
+    /// (docs/colours.md). His pick, 24 Nov 2026: "Let's make the sun yellow on all outdoor
+    /// buttons"; it was an amber, #f29100, for the first hours of 0.130.
+    static let sunYellow = Color(red: 1, green: 0xd6 / 255.0, blue: 0x0a / 255.0)
 
     static let swim = "M35,16.6 C38.2,16.4 40.8,19 40.7,22.1 C40.6,25.3 38,27.8 34.8,27.7 C31.7,27.6 29.2,25 29.3,21.9 C29.4,18.9 31.9,16.7 35.5,16.9 M40,24 C45.5,18 51.5,15.5 56.5,17 C58.7,17.8 59.7,19.8 59.4,22 M29.5,24.5 C24,27 19,31 15.5,35.5 M6,42.5 C11,40 16,45 21,42.5 C26,40 31,45 36,42.5 C41,40 46,45 51,42.5 C54.5,40.8 58,43.5 60,42.8 M10,51.5 C15,49 20,54 25,51.5 C30,49 35,54 40,51.5 C45,49 50,54 55,51.5"
     static let bike = "M15,35.4 C20.6,35 25.3,39.6 25,45.2 C24.7,50.6 20.1,54.9 14.7,54.6 C9.4,54.3 5.2,49.7 5.5,44.4 C5.8,39.2 10.2,35.2 15.9,35.8 M49,35.2 C54.7,35 59.2,39.5 58.9,45 C58.6,50.5 54,54.8 48.6,54.4 C43.3,54 39.2,49.5 39.5,44.2 C39.8,39 44.3,35 49.8,35.7 M15,45 C18.5,38.5 22.5,32 27,27.5 M27,27.5 C29.5,33 31.5,38.5 33,43.5 M15,45 C21,44.6 27,44.2 33,43.8 M27.5,27.2 C33,26.2 38.5,25.8 43.6,26.2 M49,45 C47.5,38.6 46,32.3 44.3,26.3 M44.3,26.3 C43.5,23.2 41,21.6 38.4,22.3 M23.5,25.6 C26,24.8 28.6,24.8 30.8,25.5"
@@ -84,7 +86,7 @@ struct GrabDoodle: View {
         case "run": return runBody + " " + runLineTop + " " + runLines
         // The one-line drawings with the sun INSIDE the 64-unit box — what `tools/grab-icons.sh`
         // draws for under the app icon (one colour, cut at the box). In the app itself an outdoor
-        // list wears the bigger amber sun of `outdoor(_:)` since 0.130. A BIGGER sun, his ask
+        // list wears the bigger yellow sun of `outdoor(_:)` since 0.130. A BIGGER sun, his ask
         // (the first one). Its rays reach 9.6 units from the middle at scale
         // 1, so growing it means moving the middle inwards too — or it clips the
         // edge of the 64-unit box — and keeping it clear of the swimmer's head
@@ -114,7 +116,7 @@ struct GrabDoodle: View {
                 .frame(width: size, height: size)
         } else if let out = GrabDoodle.outdoor(icon) {
             // An outdoor list (0.130): the figure in the list's colour, and over its top left corner
-            // the sun — a FILLED disc and eight rays in the sun's own amber. Nothing here is cut at
+            // the sun — a FILLED disc and eight rays in the sun's own yellow. Nothing here is cut at
             // the frame, so the rays stand out past it; the figure stays exactly where the indoor
             // list's is, so the two tiles differ by the sun alone.
             let scale = CGAffineTransform(scaleX: k, y: k)
