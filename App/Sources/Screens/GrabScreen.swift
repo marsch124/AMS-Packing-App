@@ -26,6 +26,13 @@ struct GrabDoodle: View {
     /// A list of his own has no hand-drawn mark: it wears its INITIAL, the way he
     /// chose template covers to work (2026-09-22). The app never adds stock art.
     var initial: String = ""
+    /// The sun's colour on an outdoor list's drawing (0.130): its own amber, so it is seen before
+    /// the word is read; nil = the drawing's own colour — on a tile filled with the list's colour
+    /// (Icon's "Its drawing" when it is the one in force), where amber would not read.
+    var sunColour: Color? = GrabDoodle.sunAmber
+
+    /// The sun's amber, #f29100 — one shade for day and night, as the tones are (docs/colours.md).
+    static let sunAmber = Color(red: 0xf2 / 255.0, green: 0x91 / 255.0, blue: 0)
 
     static let swim = "M35,16.6 C38.2,16.4 40.8,19 40.7,22.1 C40.6,25.3 38,27.8 34.8,27.7 C31.7,27.6 29.2,25 29.3,21.9 C29.4,18.9 31.9,16.7 35.5,16.9 M40,24 C45.5,18 51.5,15.5 56.5,17 C58.7,17.8 59.7,19.8 59.4,22 M29.5,24.5 C24,27 19,31 15.5,35.5 M6,42.5 C11,40 16,45 21,42.5 C26,40 31,45 36,42.5 C41,40 46,45 51,42.5 C54.5,40.8 58,43.5 60,42.8 M10,51.5 C15,49 20,54 25,51.5 C30,49 35,54 40,51.5 C45,49 50,54 55,51.5"
     static let bike = "M15,35.4 C20.6,35 25.3,39.6 25,45.2 C24.7,50.6 20.1,54.9 14.7,54.6 C9.4,54.3 5.2,49.7 5.5,44.4 C5.8,39.2 10.2,35.2 15.9,35.8 M49,35.2 C54.7,35 59.2,39.5 58.9,45 C58.6,50.5 54,54.8 48.6,54.4 C43.3,54 39.2,49.5 39.5,44.2 C39.8,39 44.3,35 49.8,35.7 M15,45 C18.5,38.5 22.5,32 27,27.5 M27,27.5 C29.5,33 31.5,38.5 33,43.5 M15,45 C21,44.6 27,44.2 33,43.8 M27.5,27.2 C33,26.2 38.5,25.8 43.6,26.2 M49,45 C47.5,38.6 46,32.3 44.3,26.3 M44.3,26.3 C43.5,23.2 41,21.6 38.4,22.3 M23.5,25.6 C26,24.8 28.6,24.8 30.8,25.5"
@@ -33,16 +40,41 @@ struct GrabDoodle: View {
     static let runLineTop = "M8,20 C10,19.6 12,19.5 14,19.7"
     static let runLines = "M6,27.5 C8.4,27.4 10.8,27.4 13,27.6 M8,35 C10,34.8 12,34.9 14,35.2"
 
-    /// The sun, drawn at (x, y) at scale s — the web app's GRAB_SUN.
-    static func sun(_ x: Double, _ y: Double, _ s: Double = 1) -> String {
+    /// The sun's disc at (x, y) at scale s — the closed curve of the web app's GRAB_SUN.
+    static func sunDisc(_ x: Double, _ y: Double, _ s: Double = 1) -> String {
         func f(_ v: Double) -> String { String(format: "%.2f", v) }
-        var d = "M\(f(x)),\(f(y - 4.2*s)) C\(f(x + 2.4*s)),\(f(y - 4.4*s)) \(f(x + 4.4*s)),\(f(y - 2.4*s)) \(f(x + 4.3*s)),\(f(y)) C\(f(x + 4.2*s)),\(f(y + 2.4*s)) \(f(x + 2.2*s)),\(f(y + 4.3*s)) \(f(x - 0.2*s)),\(f(y + 4.2*s)) C\(f(x - 2.5*s)),\(f(y + 4.1*s)) \(f(x - 4.4*s)),\(f(y + 2.1*s)) \(f(x - 4.3*s)),\(f(y - 0.1*s)) C\(f(x - 4.2*s)),\(f(y - 2.3*s)) \(f(x - 2.3*s)),\(f(y - 4.1*s)) \(f(x + 0.4*s)),\(f(y - 4*s))"
+        return "M\(f(x)),\(f(y - 4.2*s)) C\(f(x + 2.4*s)),\(f(y - 4.4*s)) \(f(x + 4.4*s)),\(f(y - 2.4*s)) \(f(x + 4.3*s)),\(f(y)) C\(f(x + 4.2*s)),\(f(y + 2.4*s)) \(f(x + 2.2*s)),\(f(y + 4.3*s)) \(f(x - 0.2*s)),\(f(y + 4.2*s)) C\(f(x - 2.5*s)),\(f(y + 4.1*s)) \(f(x - 4.4*s)),\(f(y + 2.1*s)) \(f(x - 4.3*s)),\(f(y - 0.1*s)) C\(f(x - 4.2*s)),\(f(y - 2.3*s)) \(f(x - 2.3*s)),\(f(y - 4.1*s)) \(f(x + 0.4*s)),\(f(y - 4*s))"
+    }
+
+    /// The sun's eight rays at (x, y) at scale s — GRAB_SUN's, reaching 9.6 units from the middle.
+    static func sunRays(_ x: Double, _ y: Double, _ s: Double = 1) -> String {
+        func f(_ v: Double) -> String { String(format: "%.2f", v) }
         let rays: [(Double, Double, Double, Double)] = [
             (-0.1, -9.6, 0.2, -6.9), (6.7, -6.7, 4.9, -4.9), (9.5, 0.2, 6.8, 0), (6.5, 6.8, 4.8, 5),
             (-6.8, -6.5, -5, -4.8), (-9.4, 0.1, -6.7, -0.1), (-6.4, 6.7, -4.8, 4.9), (0.1, 9.4, -0.1, 6.7),
         ]
-        for r in rays { d += " M\(f(x + r.0*s)),\(f(y + r.1*s)) L\(f(x + r.2*s)),\(f(y + r.3*s))" }
-        return d
+        return rays.map { "M\(f(x + $0.0*s)),\(f(y + $0.1*s)) L\(f(x + $0.2*s)),\(f(y + $0.3*s))" }.joined(separator: " ")
+    }
+
+    /// The sun, drawn at (x, y) at scale s — the web app's GRAB_SUN, disc and rays in one line.
+    static func sun(_ x: Double, _ y: Double, _ s: Double = 1) -> String {
+        sunDisc(x, y, s) + " " + sunRays(x, y, s)
+    }
+
+    /// An outdoor list's drawing in the app (0.130) — his ask, 24 Nov 2026: "make the outdoor grab
+    /// list pop more by making the sun more accentuated and larger on the top left corner of each
+    /// button". The figure without the sun, and where the BIG sun stands: at the drawing's top left
+    /// corner, its middle so far out that the rays reach up to 10 units past the box (3.4 points on a
+    /// Home tile) — inside the box there is no room for a bigger one beside the swimmer's head,
+    /// the bike's handlebar and the runner's speed lines. nil = a drawing without a sun.
+    static func outdoor(_ icon: String) -> (figure: String, x: Double, y: Double, s: Double)? {
+        switch icon {
+        case "swim-sun": return (swim, 9, 9, 1.7)
+        case "bike-sun": return (bike, 8.5, 8.5, 1.7)
+        // Higher and a little smaller: its lowest ray ends just above the upper speed line (y 27.5).
+        case "run-sun": return (runBody + " " + runLines, 9, 7.5, 1.55)
+        default: return nil
+        }
     }
 
     static func path(_ icon: String) -> String {
@@ -50,7 +82,10 @@ struct GrabDoodle: View {
         case "swim": return swim
         case "bike": return bike
         case "run": return runBody + " " + runLineTop + " " + runLines
-        // A BIGGER sun, his ask. Its rays reach 9.6 units from the middle at scale
+        // The one-line drawings with the sun INSIDE the 64-unit box — what `tools/grab-icons.sh`
+        // draws for under the app icon (one colour, cut at the box). In the app itself an outdoor
+        // list wears the bigger amber sun of `outdoor(_:)` since 0.130. A BIGGER sun, his ask
+        // (the first one). Its rays reach 9.6 units from the middle at scale
         // 1, so growing it means moving the middle inwards too — or it clips the
         // edge of the 64-unit box — and keeping it clear of the swimmer's head
         // (x from 29), the bike's frame (from 27) and the runner's speed lines
@@ -77,6 +112,25 @@ struct GrabDoodle: View {
             Text(initial.prefix(1).uppercased())
                 .font(.system(size: size * 0.5, weight: .heavy))
                 .frame(width: size, height: size)
+        } else if let out = GrabDoodle.outdoor(icon) {
+            // An outdoor list (0.130): the figure in the list's colour, and over its top left corner
+            // the sun — a FILLED disc and eight rays in the sun's own amber. Nothing here is cut at
+            // the frame, so the rays stand out past it; the figure stays exactly where the indoor
+            // list's is, so the two tiles differ by the sun alone.
+            let scale = CGAffineTransform(scaleX: k, y: k)
+            let shine = sunColour.map { AnyShapeStyle($0) } ?? AnyShapeStyle(.foreground)
+            let disc = SVGPath.path(GrabDoodle.sunDisc(out.x, out.y, out.s) + " Z").applying(scale)
+            ZStack {
+                SVGPath.path(out.figure)
+                    .applying(scale)
+                    .stroke(style: StrokeStyle(lineWidth: 4.5 * k, lineCap: .round, lineJoin: .round))
+                disc.fill(shine)
+                disc.stroke(shine, style: StrokeStyle(lineWidth: 3 * k, lineJoin: .round))
+                SVGPath.path(GrabDoodle.sunRays(out.x, out.y, out.s))
+                    .applying(scale)
+                    .stroke(shine, style: StrokeStyle(lineWidth: 4.2 * k, lineCap: .round))
+            }
+            .frame(width: size, height: size)
         } else {
             SVGPath.path(GrabDoodle.path(icon))
                 .applying(CGAffineTransform(scaleX: k, y: k))

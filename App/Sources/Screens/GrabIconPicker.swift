@@ -49,9 +49,12 @@ struct GrabIconPicker: View {
                         HStack(spacing: 10) {
                             if let original {
                                 // An original list's own doodle — Swim's swimmer, Bike's bike …
-                                IconChoiceTile(title: "Its drawing", on: GRAB_ICONS.contains(current) || current.isEmpty,
+                                // In force, the tile is filled with the list's colour: the sun of an
+                                // outdoor list is then the drawing's colour, not amber (0.130).
+                                let own = GRAB_ICONS.contains(current) || current.isEmpty
+                                IconChoiceTile(title: "Its drawing", on: own,
                                                id: "icon-doodle", tint: tint, ink: ink) {
-                                    GrabDoodle(icon: original.icon, size: 32)
+                                    GrabDoodle(icon: original.icon, size: 32, sunColour: own ? nil : GrabDoodle.sunAmber)
                                 } pick: { choose(original.icon) }
                             } else {
                                 IconChoiceTile(title: "Letter", on: Library.grabTemplateIcon(current) == nil,
